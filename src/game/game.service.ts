@@ -42,9 +42,13 @@ const CARD_LIBRARY: Record<string, Card> = {
 
 // Full deck copies
 const FULL_DECK: string[] = [
-  'fireball','fireball','fireball',
-  'lightning','lightning',
-  'heal','heal'
+  'fireball',
+  'fireball',
+  'fireball',
+  'lightning',
+  'lightning',
+  'heal',
+  'heal',
 ];
 
 /**
@@ -90,7 +94,7 @@ export class GameService {
   private doPlay(player: string, cardId: string, initiator: string): void {
     const state = this.currentGame!;
     const { players, hp, hands, decks, log } = state;
-    const opponent = players.find(p => p !== player)!;
+    const opponent = players.find((p) => p !== player)!;
 
     // validate hand
     const hand = hands[player];

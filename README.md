@@ -101,4 +101,4 @@ https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/api
 - [x] Life points and match end
 - [x] Full deck and draw per turn
 - [x] Multiplayer with WebSocket (basic events working)
-- [ ] PvE support (bot as opponent)
+- [x] PvE support (bot as opponent)
