@@ -14,8 +14,9 @@
 ## 📦 Features
 
 - Create and manage a match between 2 players
-- Track game state, logs, turns, and HP
-- Play cards via text commands (easily testable via `curl`)
+- Track game state, logs, turns, HP, and player hands
+- Each player draws a random hand of 5 cards
+- Only cards in hand can be played
 - REST endpoints for game actions
 - Swagger docs available at `/api`
 
@@ -23,7 +24,7 @@
 
 ## 🚀 Getting Started (Codespaces)
 
-1. Open this repo in GitHub Codespaces  
+1. Open this repo in GitHub Codespaces
 2. Run the NestJS app:
    ```bash
    npm run start:dev
@@ -34,32 +35,34 @@
 
 ## 🧪 Testing the API
 
-> Replace `<URL>` with your Codespaces domain (e.g. `https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev`)
+> You can test everything directly from the terminal using the commands below.
 
 ### ✅ Test the server
 
 ```bash
-curl -k <URL>/game/test
+curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/test
 ```
 
 ### 🎮 Start a new game
 
 ```bash
-curl -k -X POST <URL>/game/start
+curl -k -X POST https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/start
 ```
 
 ### 🔥 Play a card
 
+> ⚠️ The player must have the card in hand! Check `/game/state` first.
+
 ```bash
-curl -k -X POST <URL>/game/play-card \
+curl -k -X POST https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/play-card \
   -H "Content-Type: application/json" \
   -d '{"player": "A", "card": "fireball"}'
 ```
 
-### 📊 Get current game state
+### 📊 Get current game state (to see HP, hands, log)
 
 ```bash
-curl -k <URL>/game/state
+curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/state
 ```
 
 ---
@@ -69,31 +72,27 @@ curl -k <URL>/game/state
 Accessible at:
 
 ```
-<URL>/api
+https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/api
 ```
 
 ---
 
 ## 🧱 Architecture
 
-- `GameModule` → Handles all match logic  
-- `GameService` → Controls state and rules  
-- `GameController` → Exposes REST endpoints for actions  
-- `PlayCardDto` → DTO for incoming move commands  
-- `GameState` → Tracks players, turn, logs, HP, etc.
+- `GameModule` → Handles all match logic
+- `GameService` → Controls state and rules
+- `GameController` → Exposes REST endpoints for actions
+- `PlayCardDto` → DTO for incoming move commands
+- `GameState` → Tracks players, turn, logs, HP, and hands
 
 ---
 
 ## 📅 Roadmap
 
-- [ ] Card database and unique effects  
-- [ ] Life points and match end  
-- [ ] Deck system and shuffling  
-- [ ] Multiplayer with WebSocket  
+- [x] Random hand per player
+- [x] Play only valid cards
+- [ ] Card database and unique effects
+- [ ] Life points and match end
+- [ ] Full deck and draw per turn
+- [ ] Multiplayer with WebSocket
 - [ ] PvE support (bot as opponent)
-
----
-
-## ⚖ License
-
-- none yet

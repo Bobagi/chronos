@@ -6,6 +6,7 @@ export interface GameState {
   log: string[];
   hp: Record<string, number>;
   winner: string | null;
+  hands: Record<string, string[]>;
 }
 
 const CARD_LIBRARY: Record<string, { damage?: number; heal?: number }> = {
@@ -14,17 +15,42 @@ const CARD_LIBRARY: Record<string, { damage?: number; heal?: number }> = {
   heal: { heal: 4 },
 };
 
+// complete deck
+const FULL_DECK = [
+  'fireball',
+  'fireball',
+  'fireball',
+  'lightning',
+  'lightning',
+  'heal',
+  'heal',
+];
+
+function drawCards(deck: string[], count: number): string[] {
+  const pool = [...deck];
+  const hand: string[] = [];
+  for (let i = 0; i < count && pool.length; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    hand.push(pool.splice(idx, 1)[0]);
+  }
+  return hand;
+}
+
 @Injectable()
 export class GameService {
   private currentGame: GameState | null = null;
 
   startGame(): GameState {
+    const handA = drawCards(FULL_DECK, 5);
+    const handB = drawCards(FULL_DECK, 5);
+
     this.currentGame = {
       players: ['A', 'B'],
       turn: 0,
       log: [],
       hp: { A: 20, B: 20 },
       winner: null,
+      hands: { A: handA, B: handB },
     };
     return this.currentGame;
   }
@@ -34,10 +60,16 @@ export class GameService {
     if (this.currentGame.winner) throw new Error('Game is already over');
 
     const currentPlayer = this.currentGame.players[this.currentGame.turn % 2];
-    const opponent = this.currentGame.players.find((p) => p !== player);
+    const opponent = this.currentGame.players.find((p) => p !== player)!;
 
     if (player !== currentPlayer) {
       throw new Error(`It's not player ${player}'s turn`);
+    }
+
+    const hand = this.currentGame.hands[player];
+    const idx = hand.indexOf(card);
+    if (idx === -1) {
+      throw new Error(`Player ${player} does not have "${card}" in hand`);
     }
 
     const effect = CARD_LIBRARY[card];
@@ -47,22 +79,27 @@ export class GameService {
 
     let actionLog = `${player} played ${card}`;
 
-    if (effect.damage && opponent) {
+    // apply damage effect
+    if (effect.damage) {
       this.currentGame.hp[opponent] -= effect.damage;
       actionLog += ` and dealt ${effect.damage} damage to ${opponent}`;
     }
 
+    // apply healing effect
     if (effect.heal) {
       this.currentGame.hp[player] += effect.heal;
       actionLog += ` and healed ${effect.heal} HP`;
     }
 
-    // Clamp HP to min 0
+    // pop card from hand
+    hand.splice(idx, 1);
+
+    // adjust minimum HP to 0
     this.currentGame.hp.A = Math.max(0, this.currentGame.hp.A);
     this.currentGame.hp.B = Math.max(0, this.currentGame.hp.B);
 
-    // Check win condition
-    if (this.currentGame.hp[opponent!] <= 0) {
+    // check victory
+    if (this.currentGame.hp[opponent] <= 0) {
       this.currentGame.winner = player;
       actionLog += ` — ${player} wins!`;
     }
