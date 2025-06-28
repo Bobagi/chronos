@@ -93,6 +93,6 @@ https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/api
 - [x] Play only valid cards
 - [ ] Card database and unique effects
 - [ ] Life points and match end
-- [ ] Full deck and draw per turn
+- [x] Full deck and draw per turn
 - [ ] Multiplayer with WebSocket
 - [ ] PvE support (bot as opponent)
