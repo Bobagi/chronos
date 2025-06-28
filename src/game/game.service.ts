@@ -1,5 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto'; // Node 18+
+import { randomUUID } from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
+
+export const BOT_ID = 'BOT';
 
 export interface Card {
   id: string;
@@ -10,16 +17,17 @@ export interface Card {
 }
 
 export interface GameState {
-  players: string[];
+  players: string[]; // [playerAId, playerBId]
   turn: number;
   log: string[];
   hp: Record<string, number>;
   winner: string | null;
   hands: Record<string, string[]>;
   decks: Record<string, string[]>;
+  lastActivity: number; // timestamp in ms
 }
 
-// full deck definition (IDs only)
+// full deck composition
 const FULL_DECK: string[] = [
   'fireball',
   'fireball',
@@ -30,7 +38,7 @@ const FULL_DECK: string[] = [
   'heal',
 ];
 
-// rich card database
+// card definitions
 const CARD_LIBRARY: Record<string, Card> = {
   fireball: {
     id: 'fireball',
@@ -52,7 +60,7 @@ const CARD_LIBRARY: Record<string, Card> = {
   },
 };
 
-/** draw `count` cards from `deck`, mutating it */
+/** draw `count` random cards from `deck`, mutating it */
 function drawCards(deck: string[], count: number): string[] {
   const hand: string[] = [];
   for (let i = 0; i < count && deck.length > 0; i++) {
@@ -64,11 +72,21 @@ function drawCards(deck: string[], count: number): string[] {
 
 @Injectable()
 export class GameService {
-  // store all games by ID
-  private games: Record<string, GameState> = {};
+  // active games kept in memory
+  private activeGames: Record<string, GameState> = {};
 
-  /** create a new game vs Bot, return its ID and initial state */
-  createGame(): { gameId: string; state: GameState } {
+  // expire after 5 minutes of inactivity
+  private static readonly EXPIRATION_MS = 5 * 60 * 1000;
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Start a new game vs Bot: stored in memory until it finishes.
+   */
+  async createGame(
+    playerAId: string,
+    playerBId: string = BOT_ID,
+  ): Promise<{ gameId: string; state: GameState }> {
     const gameId = randomUUID();
     const deckA = [...FULL_DECK];
     const deckB = [...FULL_DECK];
@@ -76,106 +94,179 @@ export class GameService {
     const handB = drawCards(deckB, 5);
 
     const state: GameState = {
-      players: ['A', 'B'],
+      players: [playerAId, playerBId],
       turn: 0,
       log: ['Game started, hands drawn'],
-      hp: { A: 20, B: 20 },
+      hp: { [playerAId]: 20, [playerBId]: 20 },
       winner: null,
-      hands: { A: handA, B: handB },
-      decks: { A: deckA, B: deckB },
+      hands: { [playerAId]: handA, [playerBId]: handB },
+      decks: { [playerAId]: deckA, [playerBId]: deckB },
+      lastActivity: Date.now(),
     };
 
-    this.games[gameId] = state;
+    this.activeGames[gameId] = state;
     return { gameId, state };
   }
 
-  /** private helper: apply one play (human or bot) */
-  private doPlay(
+  /**
+   * Apply one play and update logs, HP, hands, decks.
+   */
+  private applyPlay(
     state: GameState,
-    player: string,
+    playerId: string,
     cardId: string,
     actorName: string,
-  ): void {
-    const { players, hp, hands, decks, log } = state;
-    const opponent = players.find((p) => p !== player)!;
-
-    // validate
-    const hand = hands[player];
+  ) {
+    const [playerAId, playerBId] = state.players;
+    const opponentId = playerAId === playerId ? playerBId : playerAId;
+    const hand = state.hands[playerId];
     const idx = hand.indexOf(cardId);
     if (idx < 0) throw new Error(`${actorName} does not have "${cardId}"`);
     const card = CARD_LIBRARY[cardId];
-    if (!card) throw new Error(`Card "${cardId}" does not exist`);
+    if (!card) throw new Error(`Card "${cardId}" not found`);
 
-    // log entry
     let entry = `${actorName} played ${card.name} (${card.description})`;
-
     if (card.damage) {
-      hp[opponent] -= card.damage;
-      entry += ` → ${card.damage} damage to ${opponent}`;
+      state.hp[opponentId] -= card.damage;
+      entry += ` → ${card.damage} damage to ${opponentId}`;
     }
     if (card.heal) {
-      hp[player] += card.heal;
+      state.hp[playerId] += card.heal;
       entry += ` → ${card.heal} HP healed`;
     }
 
-    // remove card
+    // remove card from hand
     hand.splice(idx, 1);
 
     // clamp HP ≥ 0
-    hp.A = Math.max(0, hp.A);
-    hp.B = Math.max(0, hp.B);
+    state.hp[playerAId] = Math.max(0, state.hp[playerAId]);
+    state.hp[playerBId] = Math.max(0, state.hp[playerBId]);
 
     // check victory
-    if (hp[opponent] <= 0 && !state.winner) {
-      state.winner = player;
+    if (state.hp[opponentId] <= 0 && !state.winner) {
+      state.winner = playerId;
       entry += ` — ${actorName} wins!`;
     }
 
-    log.push(entry);
-    state.turn += 1;
+    state.log.push(entry);
+    state.turn++;
 
     // next player draws
-    const nextPlayer = players[state.turn % 2];
-    const nextDeck = decks[nextPlayer];
+    const nextPlayerId = state.players[state.turn % 2];
+    const nextDeck = state.decks[nextPlayerId];
     if (nextDeck.length > 0 && !state.winner) {
-      const dIdx = Math.floor(Math.random() * nextDeck.length);
-      const drawn = nextDeck.splice(dIdx, 1)[0];
-      hands[nextPlayer].push(drawn);
-      log.push(`${nextPlayer} draws a card (${CARD_LIBRARY[drawn].name})`);
+      const drawIdx = Math.floor(Math.random() * nextDeck.length);
+      const drawn = nextDeck.splice(drawIdx, 1)[0];
+      state.hands[nextPlayerId].push(drawn);
+      state.log.push(
+        `${nextPlayerId} draws a card (${CARD_LIBRARY[drawn].name})`,
+      );
     }
+    state.lastActivity = Date.now();
   }
 
-  /** human plays, then Bot auto-plays if it's B’s turn */
-  playCard(gameId: string, player: string, cardId: string): GameState {
-    const state = this.games[gameId];
-    if (!state) throw new Error('Game not found');
-    if (state.winner) throw new Error('Game already over');
+  /**
+   * Play a card in an active game. If the game ends, persist to DB and remove from memory.
+   */
+  async playCard(
+    gameId: string,
+    playerId: string,
+    cardId: string,
+  ): Promise<GameState> {
+    const state = this.activeGames[gameId];
+    if (!state) throw new Error('Game not found or already finished');
 
     // human move
-    this.doPlay(state, player, cardId, `Player ${player}`);
+    this.applyPlay(state, playerId, cardId, `Player ${playerId}`);
 
-    // bot move
-    const next = state.players[state.turn % 2];
-    if (next === 'B' && !state.winner) {
-      const botHand = state.hands.B;
+    // bot move if it's next and no winner
+    const nextId = state.players[state.turn % 2];
+    if (nextId === BOT_ID && !state.winner) {
+      const botHand = state.hands[BOT_ID];
       if (botHand.length > 0) {
         const choice = botHand[Math.floor(Math.random() * botHand.length)];
-        this.doPlay(state, 'B', choice, 'Bot B');
+        this.applyPlay(state, BOT_ID, choice, 'Bot');
       }
+    }
+
+    // on finish, persist and clear memory
+    if (state.winner) {
+      await this.prisma.game.create({
+        data: {
+          id: gameId,
+          playerA: {
+            connectOrCreate: {
+              where: { id: state.players[0] },
+              create: { id: state.players[0], username: state.players[0] },
+            },
+          },
+          playerB: {
+            connectOrCreate: {
+              where: { id: state.players[1] },
+              create: { id: state.players[1], username: 'Bot Opponent' },
+            },
+          },
+          turn: state.turn,
+          hp: state.hp,
+          winner: state.winner,
+          hands: state.hands,
+          decks: state.decks,
+          log: state.log,
+        },
+      });
+      delete this.activeGames[gameId];
     }
 
     return state;
   }
 
-  /** get full state by gameId */
-  getState(gameId: string): GameState | null {
-    return this.games[gameId] ?? null;
+  /** Get live state of an active game */
+  async getState(gameId: string): Promise<GameState | null> {
+    return this.activeGames[gameId] ?? null;
   }
 
-  /** get result summary by gameId */
-  getResult(gameId: string): { winner: string | null; log: string[] } {
-    const state = this.games[gameId];
-    if (!state) throw new Error('Game not found');
-    return { winner: state.winner, log: state.log };
+  /**
+   * Get result summary.
+   * If still in memory and finished, return that; otherwise load from DB.
+   */
+  async getResult(
+    gameId: string,
+  ): Promise<{ winner: string | null; log: string[] }> {
+    const mem = this.activeGames[gameId];
+    if (mem && mem.winner) {
+      return { winner: mem.winner, log: mem.log };
+    }
+    const rec = await this.prisma.game.findUnique({ where: { id: gameId } });
+    if (!rec) throw new Error('Game not found');
+    return { winner: rec.winner, log: rec.log as string[] };
+  }
+
+  listActiveGames(): Array<{
+    gameId: string;
+    players: string[];
+    turn: number;
+    lastActivity: number;
+    winner: string | null;
+  }> {
+    return Object.entries(this.activeGames).map(([gameId, s]) => ({
+      gameId,
+      players: s.players,
+      turn: s.turn,
+      lastActivity: s.lastActivity,
+      winner: s.winner,
+    }));
+  }
+
+  /** Expire and remove any games idle for longer than EXPIRATION_MS */
+  expireOldGames(): string[] {
+    const now = Date.now();
+    const expired: string[] = [];
+    for (const [gameId, s] of Object.entries(this.activeGames)) {
+      if (now - s.lastActivity > GameService.EXPIRATION_MS) {
+        expired.push(gameId);
+        delete this.activeGames[gameId];
+      }
+    }
+    return expired;
   }
 }

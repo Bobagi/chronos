@@ -7,61 +7,57 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { GameService, GameState } from './game.service';
+import { Server } from 'socket.io';
+import { BOT_ID, GameService, GameState } from './game.service';
 
 @WebSocketGateway({ namespace: 'game', cors: { origin: '*' } })
 export class GameGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
-  @WebSocketServer() server: Server;
+  @WebSocketServer()
+  server: Server;
 
   constructor(private readonly gameService: GameService) {}
 
-  afterInit(server: Server) {
-    // Called once after gateway is initialized
-  }
+  afterInit() {}
+  handleConnection() {}
+  handleDisconnect() {}
 
-  handleConnection(client: Socket) {
-    // New client connected
-  }
-
-  handleDisconnect(client: Socket) {
-    // Client disconnected
-  }
-
-  /** start a new game vs Bot */
+  /**
+   * WebSocket: start a new game vs Bot.
+   * Expects message body: { playerAId: string }
+   */
   @SubscribeMessage('start')
-  handleStart(): { gameId: string; state: GameState } {
-    const { gameId, state } = this.gameService.createGame();
-    // broadcast the new state along with the gameId
-    this.server.emit('state', { gameId, state });
-    return { gameId, state };
+  async handleStart(
+    @MessageBody() data: { playerAId: string },
+  ): Promise<{ gameId: string; state: GameState }> {
+    const res = await this.gameService.createGame(data.playerAId, BOT_ID);
+    this.server.emit('state', { gameId: res.gameId, state: res.state });
+    return res;
   }
 
-  /** human plays a card – expects { gameId, player, card } */
+  /**
+   * WebSocket: play a card.
+   * Expects: { gameId, player, card }
+   */
   @SubscribeMessage('play')
-  handlePlay(
-    @MessageBody()
-    data: {
-      gameId: string;
-      player: string;
-      card: string;
-    },
-  ): GameState {
-    const state = this.gameService.playCard(
+  async handlePlay(
+    @MessageBody() data: { gameId: string; player: string; card: string },
+  ): Promise<GameState> {
+    const state = await this.gameService.playCard(
       data.gameId,
       data.player,
       data.card,
     );
-    // broadcast updated state to all clients
     this.server.emit('state', { gameId: data.gameId, state });
     return state;
   }
 
-  /** fetch current state of a given gameId */
+  /** WebSocket: fetch current state for a game */
   @SubscribeMessage('state')
-  handleState(@MessageBody() data: { gameId: string }): GameState | null {
+  async handleState(
+    @MessageBody() data: { gameId: string },
+  ): Promise<GameState | null> {
     return this.gameService.getState(data.gameId);
   }
 }

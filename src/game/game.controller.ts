@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Logger, Param, Post } from '@nestjs/common';
 import { PlayCardDto } from './dto/play-card.dto';
-import { GameService, GameState } from './game.service';
+import { BOT_ID, GameService, GameState } from './game.service';
 
 @Controller('game')
 export class GameController {
@@ -8,36 +8,50 @@ export class GameController {
 
   constructor(private readonly gameService: GameService) {}
 
-  /** start a new game vs Bot */
+  /**
+   * Start a new game vs Bot.
+   * Expects body: { "playerAId": "<yourPlayerId>" }
+   */
   @Post('start')
-  startGame(): { gameId: string; state: GameState } {
-    this.logger.log('Creating new game vs Bot');
-    return this.gameService.createGame();
+  async startGame(
+    @Body('playerAId') playerAId: string,
+  ): Promise<{ gameId: string; state: GameState }> {
+    this.logger.log(`Starting new game: ${playerAId} vs Bot`);
+    return this.gameService.createGame(playerAId, BOT_ID);
   }
 
-  /** play a card in a specific game */
   @Post('play-card')
-  playCard(@Body() dto: PlayCardDto): GameState {
+  async playCard(@Body() dto: PlayCardDto): Promise<GameState> {
     this.logger.log(
       `Game ${dto.gameId}: Player ${dto.player} plays ${dto.card}`,
     );
     return this.gameService.playCard(dto.gameId, dto.player, dto.card);
   }
 
-  /** get live state of a specific game */
   @Get('state/:gameId')
-  getState(@Param('gameId') gameId: string): GameState | null {
+  async getState(@Param('gameId') gameId: string): Promise<GameState | null> {
     return this.gameService.getState(gameId);
   }
 
-  /** get final result of a specific game */
   @Get('result/:gameId')
-  getResult(@Param('gameId') gameId: string) {
+  async getResult(@Param('gameId') gameId: string) {
     return this.gameService.getResult(gameId);
   }
 
   @Get('test')
   getHello(): string {
     return 'test returned!';
+  }
+
+  /** List active games still in memory */
+  @Get('active')
+  getActiveGames() {
+    return this.gameService.listActiveGames();
+  }
+
+  /** Expire any old games and return their IDs */
+  @Post('expire')
+  expireGames() {
+    return { expired: this.gameService.expireOldGames() };
   }
 }
