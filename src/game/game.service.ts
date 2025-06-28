@@ -1,5 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
+export interface Card {
+  id: string;
+  name: string;
+  description: string;
+  damage?: number;
+  heal?: number;
+  // future fields: cost, rarity, specialEffectFn, etc.
+}
+
 export interface GameState {
   players: string[];
   turn: number;
@@ -10,14 +19,38 @@ export interface GameState {
   decks: Record<string, string[]>;
 }
 
-const CARD_LIBRARY: Record<string, { damage?: number; heal?: number }> = {
-  fireball: { damage: 5 },
-  lightning: { damage: 3 },
-  heal: { heal: 4 },
+// Card database with unique effects described
+const CARD_LIBRARY: Record<string, Card> = {
+  fireball: {
+    id: 'fireball',
+    name: 'Fireball',
+    description: 'Deal 5 damage to the opponent',
+    damage: 5,
+  },
+  lightning: {
+    id: 'lightning',
+    name: 'Lightning Bolt',
+    description: 'Deal 3 damage to the opponent',
+    damage: 3,
+  },
+  heal: {
+    id: 'heal',
+    name: 'Heal',
+    description: 'Restore 4 HP to yourself',
+    heal: 4,
+  },
+  // Example of a future unique effect:
+  // chain: {
+  //   id: 'chain',
+  //   name: 'Chain Lightning',
+  //   description: 'Deal 2 damage to both players',
+  //   damage: 2,
+  //   special: 'both'
+  // }
 };
 
-// Complete deck (multiple copies)
-const FULL_DECK = [
+// Full deck representation by card ids
+const FULL_DECK: string[] = [
   'fireball',
   'fireball',
   'fireball',
@@ -28,7 +61,7 @@ const FULL_DECK = [
 ];
 
 /**
- * Draws `count` cards from the `deck` array, removing them from it.
+ * Draws `count` random cards from `deck`, removing them.
  */
 function drawCards(deck: string[], count: number): string[] {
   const hand: string[] = [];
@@ -44,11 +77,9 @@ export class GameService {
   private currentGame: GameState | null = null;
 
   startGame(): GameState {
-    // Create separate decks for each player
+    // Initialize separate decks and hands
     const deckA = [...FULL_DECK];
     const deckB = [...FULL_DECK];
-
-    // Draw 5 cards from deck to each hand
     const handA = drawCards(deckA, 5);
     const handB = drawCards(deckB, 5);
 
@@ -64,7 +95,7 @@ export class GameService {
     return this.currentGame;
   }
 
-  playCard(player: string, card: string): GameState {
+  playCard(player: string, cardId: string): GameState {
     if (!this.currentGame) throw new Error('No game in progress');
     if (this.currentGame.winner) throw new Error('Game is already over');
 
@@ -78,52 +109,58 @@ export class GameService {
 
     // Validate card in hand
     const hand = hands[player];
-    const idx = hand.indexOf(card);
+    const idx = hand.indexOf(cardId);
     if (idx === -1) {
-      throw new Error(`Player ${player} does not have "${card}" in hand`);
+      throw new Error(`Player ${player} does not have "${cardId}" in hand`);
     }
 
-    // Apply effect
-    const effect = CARD_LIBRARY[card];
-    if (!effect) {
-      throw new Error(`Card "${card}" does not exist`);
+    // Fetch card metadata
+    const card = CARD_LIBRARY[cardId];
+    if (!card) {
+      throw new Error(`Card "${cardId}" does not exist`);
     }
 
-    let actionLog = `${player} played ${card}`;
+    // Build log entry with name and description
+    let entry = `${player} played ${card.name} (${card.description})`;
 
-    if (effect.damage) {
-      hp[opponent] -= effect.damage;
-      actionLog += ` and dealt ${effect.damage} damage to ${opponent}`;
+    // Apply damage
+    if (card.damage) {
+      hp[opponent] -= card.damage;
+      entry += ` → ${card.damage} damage to ${opponent}`;
     }
-    if (effect.heal) {
-      hp[player] += effect.heal;
-      actionLog += ` and healed ${effect.heal} HP`;
+    // Apply healing
+    if (card.heal) {
+      hp[player] += card.heal;
+      entry += ` → ${card.heal} HP healed`;
     }
 
-    // Remove card from hand
+    // Remove the card from hand
     hand.splice(idx, 1);
 
-    // HP clamping
+    // Clamp HP to minimum 0
     hp.A = Math.max(0, hp.A);
     hp.B = Math.max(0, hp.B);
 
-    // Check victory condition
+    // Check for victory
     if (hp[opponent] <= 0) {
       this.currentGame.winner = player;
-      actionLog += ` — ${player} wins!`;
+      entry += ` — ${player} wins!`;
     }
 
-    log.push(actionLog);
+    // Record action
+    log.push(entry);
+
+    // Advance turn
     this.currentGame.turn += 1;
 
-    // Draw 1 card for next player if deck isn't empty and game hasn't ended
-    const nextPlayer = players[this.currentGame.turn % 2];
-    const nextDeck = decks[nextPlayer];
+    // Next player draws a card automatically (if any left and no winner)
+    const next = players[this.currentGame.turn % 2];
+    const nextDeck = decks[next];
     if (nextDeck.length > 0 && !this.currentGame.winner) {
       const drawIdx = Math.floor(Math.random() * nextDeck.length);
       const drawn = nextDeck.splice(drawIdx, 1)[0];
-      hands[nextPlayer].push(drawn);
-      log.push(`${nextPlayer} draws a card`);
+      hands[next].push(drawn);
+      log.push(`${next} draws a card (${CARD_LIBRARY[drawn].name})`);
     }
 
     return this.currentGame;
