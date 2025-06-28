@@ -49,6 +49,9 @@ curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/test
 curl -k -X POST https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/start
 ```
 
+# Response:
+# { "gameId": "550e8400-e29b-41d4-a716-446655440000", "state": { ... } }
+
 ### 🔥 Play a card
 
 > ⚠️ The player must have the card in hand! Check `/game/state` first.
@@ -56,19 +59,19 @@ curl -k -X POST https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/ga
 ```bash
 curl -k -X POST https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/play-card \
   -H "Content-Type: application/json" \
-  -d '{"player": "A", "card": "fireball"}'
+  -d '{"gameId": "550e8400-e29b-41d4-a716-446655440000", "player": "A", "card": "fireball"}'
 ```
 
 ### 📊 Get current game state (to see HP, hands, log)
 
 ```bash
-curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/state
+curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/state/550e8400-e29b-41d4-a716-446655440000
 ```
 
 ### 📈 Final Result Summary
 
 ```bash
-curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/result
+curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/result/550e8400-e29b-41d4-a716-446655440000
 ```
 
 ---
@@ -90,15 +93,3 @@ https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/api
 - `GameController` → Exposes REST endpoints for actions
 - `PlayCardDto` → DTO for incoming move commands
 - `GameState` → Tracks players, turn, logs, HP, and hands
-
----
-
-## 📅 Roadmap
-
-- [x] Random hand per player
-- [x] Play only valid cards
-- [x] Card database and unique effects
-- [x] Life points and match end
-- [x] Full deck and draw per turn
-- [x] Multiplayer with WebSocket (basic events working)
-- [x] PvE support (bot as opponent)
