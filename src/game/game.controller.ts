@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Logger, Post } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Post } from '@nestjs/common';
 import { PlayCardDto } from './dto/play-card.dto';
 import { GameService, GameState } from './game.service';
 
@@ -8,31 +8,32 @@ export class GameController {
 
   constructor(private readonly gameService: GameService) {}
 
+  /** start a new game vs Bot */
   @Post('start')
-  startGame(): GameState {
-    this.logger.log('Starting a new game');
-    return this.gameService.startGame();
+  startGame(): { gameId: string; state: GameState } {
+    this.logger.log('Creating new game vs Bot');
+    return this.gameService.createGame();
   }
 
+  /** play a card in a specific game */
   @Post('play-card')
   playCard(@Body() dto: PlayCardDto): GameState {
-    this.logger.log(`Player ${dto.player} is playing card ${dto.card}`);
-    return this.gameService.playCard(dto.player, dto.card);
+    this.logger.log(
+      `Game ${dto.gameId}: Player ${dto.player} plays ${dto.card}`,
+    );
+    return this.gameService.playCard(dto.gameId, dto.player, dto.card);
   }
 
-  @Get('state')
-  getState(): GameState | null {
-    return this.gameService.getState();
+  /** get live state of a specific game */
+  @Get('state/:gameId')
+  getState(@Param('gameId') gameId: string): GameState | null {
+    return this.gameService.getState(gameId);
   }
 
-  @Get('result')
-  getResult(): { winner: string | null; log: string[] } {
-    const state = this.gameService.getState();
-    if (!state) throw new Error('No game in progress');
-    return {
-      winner: state.winner,
-      log: state.log,
-    };
+  /** get final result of a specific game */
+  @Get('result/:gameId')
+  getResult(@Param('gameId') gameId: string) {
+    return this.gameService.getResult(gameId);
   }
 
   @Get('test')

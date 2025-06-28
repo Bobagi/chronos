@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto'; // Node 18+
 
 export interface Card {
   id: string;
@@ -18,7 +19,18 @@ export interface GameState {
   decks: Record<string, string[]>;
 }
 
-// Card database
+// full deck definition (IDs only)
+const FULL_DECK: string[] = [
+  'fireball',
+  'fireball',
+  'fireball',
+  'lightning',
+  'lightning',
+  'heal',
+  'heal',
+];
+
+// rich card database
 const CARD_LIBRARY: Record<string, Card> = {
   fireball: {
     id: 'fireball',
@@ -40,20 +52,7 @@ const CARD_LIBRARY: Record<string, Card> = {
   },
 };
 
-// Full deck copies
-const FULL_DECK: string[] = [
-  'fireball',
-  'fireball',
-  'fireball',
-  'lightning',
-  'lightning',
-  'heal',
-  'heal',
-];
-
-/**
- * Draws `count` cards from `deck`, removing them.
- */
+/** draw `count` cards from `deck`, mutating it */
 function drawCards(deck: string[], count: number): string[] {
   const hand: string[] = [];
   for (let i = 0; i < count && deck.length > 0; i++) {
@@ -65,17 +64,18 @@ function drawCards(deck: string[], count: number): string[] {
 
 @Injectable()
 export class GameService {
-  private currentGame: GameState | null = null;
+  // store all games by ID
+  private games: Record<string, GameState> = {};
 
-  startGame(): GameState {
-    // initialize decks
+  /** create a new game vs Bot, return its ID and initial state */
+  createGame(): { gameId: string; state: GameState } {
+    const gameId = randomUUID();
     const deckA = [...FULL_DECK];
     const deckB = [...FULL_DECK];
-    // initial hands
     const handA = drawCards(deckA, 5);
     const handB = drawCards(deckB, 5);
 
-    this.currentGame = {
+    const state: GameState = {
       players: ['A', 'B'],
       turn: 0,
       log: ['Game started, hands drawn'],
@@ -84,46 +84,41 @@ export class GameService {
       hands: { A: handA, B: handB },
       decks: { A: deckA, B: deckB },
     };
-    return this.currentGame;
+
+    this.games[gameId] = state;
+    return { gameId, state };
   }
 
-  /**
-   * Core play logic: applies effects, logs, advances turn, and draws for next.
-   * `initiator` is used for logging (“Player A” or “Bot B”).
-   */
-  private doPlay(player: string, cardId: string, initiator: string): void {
-    const state = this.currentGame!;
+  /** private helper: apply one play (human or bot) */
+  private doPlay(
+    state: GameState,
+    player: string,
+    cardId: string,
+    actorName: string,
+  ): void {
     const { players, hp, hands, decks, log } = state;
     const opponent = players.find((p) => p !== player)!;
 
-    // validate hand
+    // validate
     const hand = hands[player];
     const idx = hand.indexOf(cardId);
-    if (idx === -1) {
-      throw new Error(`${initiator} does not have "${cardId}" in hand`);
-    }
-
-    // fetch card metadata
+    if (idx < 0) throw new Error(`${actorName} does not have "${cardId}"`);
     const card = CARD_LIBRARY[cardId];
-    if (!card) {
-      throw new Error(`Card "${cardId}" does not exist`);
-    }
+    if (!card) throw new Error(`Card "${cardId}" does not exist`);
 
-    // build log entry
-    let entry = `${initiator} played ${card.name} (${card.description})`;
+    // log entry
+    let entry = `${actorName} played ${card.name} (${card.description})`;
 
-    // apply damage
     if (card.damage) {
       hp[opponent] -= card.damage;
       entry += ` → ${card.damage} damage to ${opponent}`;
     }
-    // apply healing
     if (card.heal) {
       hp[player] += card.heal;
       entry += ` → ${card.heal} HP healed`;
     }
 
-    // remove from hand
+    // remove card
     hand.splice(idx, 1);
 
     // clamp HP ≥ 0
@@ -133,48 +128,54 @@ export class GameService {
     // check victory
     if (hp[opponent] <= 0 && !state.winner) {
       state.winner = player;
-      entry += ` — ${initiator} wins!`;
+      entry += ` — ${actorName} wins!`;
     }
 
-    // record action and advance turn
     log.push(entry);
     state.turn += 1;
 
-    // next player draws one card, if available and game not over
-    const next = players[state.turn % 2];
-    const nextDeck = decks[next];
+    // next player draws
+    const nextPlayer = players[state.turn % 2];
+    const nextDeck = decks[nextPlayer];
     if (nextDeck.length > 0 && !state.winner) {
-      const drawIdx = Math.floor(Math.random() * nextDeck.length);
-      const drawn = nextDeck.splice(drawIdx, 1)[0];
-      hands[next].push(drawn);
-      log.push(`${next} draws a card (${CARD_LIBRARY[drawn].name})`);
+      const dIdx = Math.floor(Math.random() * nextDeck.length);
+      const drawn = nextDeck.splice(dIdx, 1)[0];
+      hands[nextPlayer].push(drawn);
+      log.push(`${nextPlayer} draws a card (${CARD_LIBRARY[drawn].name})`);
     }
   }
 
-  /**
-   * Human plays a card, then Bot (player "B") auto-plays if it's its turn.
-   */
-  playCard(player: string, card: string): GameState {
-    if (!this.currentGame) throw new Error('No game in progress');
-    if (this.currentGame.winner) throw new Error('Game is already over');
+  /** human plays, then Bot auto-plays if it's B’s turn */
+  playCard(gameId: string, player: string, cardId: string): GameState {
+    const state = this.games[gameId];
+    if (!state) throw new Error('Game not found');
+    if (state.winner) throw new Error('Game already over');
 
     // human move
-    this.doPlay(player, card, `Player ${player}`);
+    this.doPlay(state, player, cardId, `Player ${player}`);
 
-    // if next turn is Bot's and no winner, bot plays automatically
-    const nextPlayer = this.currentGame.players[this.currentGame.turn % 2];
-    if (nextPlayer === 'B' && !this.currentGame.winner) {
-      const botHand = this.currentGame.hands.B;
+    // bot move
+    const next = state.players[state.turn % 2];
+    if (next === 'B' && !state.winner) {
+      const botHand = state.hands.B;
       if (botHand.length > 0) {
-        const botCard = botHand[Math.floor(Math.random() * botHand.length)];
-        this.doPlay('B', botCard, 'Bot B');
+        const choice = botHand[Math.floor(Math.random() * botHand.length)];
+        this.doPlay(state, 'B', choice, 'Bot B');
       }
     }
 
-    return this.currentGame;
+    return state;
   }
 
-  getState(): GameState | null {
-    return this.currentGame;
+  /** get full state by gameId */
+  getState(gameId: string): GameState | null {
+    return this.games[gameId] ?? null;
+  }
+
+  /** get result summary by gameId */
+  getResult(gameId: string): { winner: string | null; log: string[] } {
+    const state = this.games[gameId];
+    if (!state) throw new Error('Game not found');
+    return { winner: state.winner, log: state.log };
   }
 }

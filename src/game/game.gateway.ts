@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import {
   MessageBody,
   OnGatewayConnection,
@@ -22,7 +19,7 @@ export class GameGateway
   constructor(private readonly gameService: GameService) {}
 
   afterInit(server: Server) {
-    // Called once after gateway initialization
+    // Called once after gateway is initialized
   }
 
   handleConnection(client: Socket) {
@@ -33,25 +30,38 @@ export class GameGateway
     // Client disconnected
   }
 
-  // Start a new game via WebSocket
+  /** start a new game vs Bot */
   @SubscribeMessage('start')
-  handleStart(): GameState {
-    const state = this.gameService.startGame();
-    this.server.emit('state', state);
-    return state;
+  handleStart(): { gameId: string; state: GameState } {
+    const { gameId, state } = this.gameService.createGame();
+    // broadcast the new state along with the gameId
+    this.server.emit('state', { gameId, state });
+    return { gameId, state };
   }
 
-  // Play a card via WebSocket
+  /** human plays a card – expects { gameId, player, card } */
   @SubscribeMessage('play')
-  handlePlay(@MessageBody() data: { player: string; card: string }): GameState {
-    const state = this.gameService.playCard(data.player, data.card);
-    this.server.emit('state', state);
+  handlePlay(
+    @MessageBody()
+    data: {
+      gameId: string;
+      player: string;
+      card: string;
+    },
+  ): GameState {
+    const state = this.gameService.playCard(
+      data.gameId,
+      data.player,
+      data.card,
+    );
+    // broadcast updated state to all clients
+    this.server.emit('state', { gameId: data.gameId, state });
     return state;
   }
 
-  // Fetch current state via WebSocket
+  /** fetch current state of a given gameId */
   @SubscribeMessage('state')
-  handleState(): GameState | null {
-    return this.gameService.getState();
+  handleState(@MessageBody() data: { gameId: string }): GameState | null {
+    return this.gameService.getState(data.gameId);
   }
 }
