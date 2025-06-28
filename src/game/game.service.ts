@@ -6,7 +6,6 @@ export interface Card {
   description: string;
   damage?: number;
   heal?: number;
-  // future fields: cost, rarity, specialEffectFn, etc.
 }
 
 export interface GameState {
@@ -19,7 +18,7 @@ export interface GameState {
   decks: Record<string, string[]>;
 }
 
-// Card database with unique effects described
+// Card database
 const CARD_LIBRARY: Record<string, Card> = {
   fireball: {
     id: 'fireball',
@@ -39,29 +38,17 @@ const CARD_LIBRARY: Record<string, Card> = {
     description: 'Restore 4 HP to yourself',
     heal: 4,
   },
-  // Example of a future unique effect:
-  // chain: {
-  //   id: 'chain',
-  //   name: 'Chain Lightning',
-  //   description: 'Deal 2 damage to both players',
-  //   damage: 2,
-  //   special: 'both'
-  // }
 };
 
-// Full deck representation by card ids
+// Full deck copies
 const FULL_DECK: string[] = [
-  'fireball',
-  'fireball',
-  'fireball',
-  'lightning',
-  'lightning',
-  'heal',
-  'heal',
+  'fireball','fireball','fireball',
+  'lightning','lightning',
+  'heal','heal'
 ];
 
 /**
- * Draws `count` random cards from `deck`, removing them.
+ * Draws `count` cards from `deck`, removing them.
  */
 function drawCards(deck: string[], count: number): string[] {
   const hand: string[] = [];
@@ -77,9 +64,10 @@ export class GameService {
   private currentGame: GameState | null = null;
 
   startGame(): GameState {
-    // Initialize separate decks and hands
+    // initialize decks
     const deckA = [...FULL_DECK];
     const deckB = [...FULL_DECK];
+    // initial hands
     const handA = drawCards(deckA, 5);
     const handB = drawCards(deckB, 5);
 
@@ -95,72 +83,88 @@ export class GameService {
     return this.currentGame;
   }
 
-  playCard(player: string, cardId: string): GameState {
-    if (!this.currentGame) throw new Error('No game in progress');
-    if (this.currentGame.winner) throw new Error('Game is already over');
+  /**
+   * Core play logic: applies effects, logs, advances turn, and draws for next.
+   * `initiator` is used for logging (“Player A” or “Bot B”).
+   */
+  private doPlay(player: string, cardId: string, initiator: string): void {
+    const state = this.currentGame!;
+    const { players, hp, hands, decks, log } = state;
+    const opponent = players.find(p => p !== player)!;
 
-    const { players, turn, hp, hands, decks, log } = this.currentGame;
-    const currentPlayer = players[turn % 2];
-    const opponent = players.find((p) => p !== player)!;
-
-    if (player !== currentPlayer) {
-      throw new Error(`It's not player ${player}'s turn`);
-    }
-
-    // Validate card in hand
+    // validate hand
     const hand = hands[player];
     const idx = hand.indexOf(cardId);
     if (idx === -1) {
-      throw new Error(`Player ${player} does not have "${cardId}" in hand`);
+      throw new Error(`${initiator} does not have "${cardId}" in hand`);
     }
 
-    // Fetch card metadata
+    // fetch card metadata
     const card = CARD_LIBRARY[cardId];
     if (!card) {
       throw new Error(`Card "${cardId}" does not exist`);
     }
 
-    // Build log entry with name and description
-    let entry = `${player} played ${card.name} (${card.description})`;
+    // build log entry
+    let entry = `${initiator} played ${card.name} (${card.description})`;
 
-    // Apply damage
+    // apply damage
     if (card.damage) {
       hp[opponent] -= card.damage;
       entry += ` → ${card.damage} damage to ${opponent}`;
     }
-    // Apply healing
+    // apply healing
     if (card.heal) {
       hp[player] += card.heal;
       entry += ` → ${card.heal} HP healed`;
     }
 
-    // Remove the card from hand
+    // remove from hand
     hand.splice(idx, 1);
 
-    // Clamp HP to minimum 0
+    // clamp HP ≥ 0
     hp.A = Math.max(0, hp.A);
     hp.B = Math.max(0, hp.B);
 
-    // Check for victory
-    if (hp[opponent] <= 0) {
-      this.currentGame.winner = player;
-      entry += ` — ${player} wins!`;
+    // check victory
+    if (hp[opponent] <= 0 && !state.winner) {
+      state.winner = player;
+      entry += ` — ${initiator} wins!`;
     }
 
-    // Record action
+    // record action and advance turn
     log.push(entry);
+    state.turn += 1;
 
-    // Advance turn
-    this.currentGame.turn += 1;
-
-    // Next player draws a card automatically (if any left and no winner)
-    const next = players[this.currentGame.turn % 2];
+    // next player draws one card, if available and game not over
+    const next = players[state.turn % 2];
     const nextDeck = decks[next];
-    if (nextDeck.length > 0 && !this.currentGame.winner) {
+    if (nextDeck.length > 0 && !state.winner) {
       const drawIdx = Math.floor(Math.random() * nextDeck.length);
       const drawn = nextDeck.splice(drawIdx, 1)[0];
       hands[next].push(drawn);
       log.push(`${next} draws a card (${CARD_LIBRARY[drawn].name})`);
+    }
+  }
+
+  /**
+   * Human plays a card, then Bot (player "B") auto-plays if it's its turn.
+   */
+  playCard(player: string, card: string): GameState {
+    if (!this.currentGame) throw new Error('No game in progress');
+    if (this.currentGame.winner) throw new Error('Game is already over');
+
+    // human move
+    this.doPlay(player, card, `Player ${player}`);
+
+    // if next turn is Bot's and no winner, bot plays automatically
+    const nextPlayer = this.currentGame.players[this.currentGame.turn % 2];
+    if (nextPlayer === 'B' && !this.currentGame.winner) {
+      const botHand = this.currentGame.hands.B;
+      if (botHand.length > 0) {
+        const botCard = botHand[Math.floor(Math.random() * botHand.length)];
+        this.doPlay('B', botCard, 'Bot B');
+      }
     }
 
     return this.currentGame;

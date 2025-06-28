@@ -5,6 +5,7 @@ import { GameService, GameState } from './game.service';
 @Controller('game')
 export class GameController {
   private readonly logger = new Logger(GameController.name);
+
   constructor(private readonly gameService: GameService) {}
 
   @Post('start')
@@ -22,6 +23,16 @@ export class GameController {
   @Get('state')
   getState(): GameState | null {
     return this.gameService.getState();
+  }
+
+  @Get('result')
+  getResult(): { winner: string | null; log: string[] } {
+    const state = this.gameService.getState();
+    if (!state) throw new Error('No game in progress');
+    return {
+      winner: state.winner,
+      log: state.log,
+    };
   }
 
   @Get('test')

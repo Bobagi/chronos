@@ -65,6 +65,12 @@ curl -k -X POST https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/ga
 curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/state
 ```
 
+### 📈 Final Result Summary
+
+```bash
+curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/result
+```
+
 ---
 
 ## 📘 Swagger Documentation
@@ -91,8 +97,8 @@ https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/api
 
 - [x] Random hand per player
 - [x] Play only valid cards
-- [ ] Card database and unique effects
-- [ ] Life points and match end
+- [x] Card database and unique effects
+- [x] Life points and match end
 - [x] Full deck and draw per turn
-- [ ] Multiplayer with WebSocket
+- [x] Multiplayer with WebSocket (basic events working)
 - [ ] PvE support (bot as opponent)
