@@ -32,6 +32,7 @@ services:
       CHRONOS_PORT: ${CHRONOS_PORT}
     ports:
       - '${CHRONOS_PORT}:3000'
+      - '5555:5555'
     restart: always
 
 volumes:
