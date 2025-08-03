@@ -14,19 +14,20 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export const BOT_ID = 'BOT';
 
+/** Represents the in-memory state of a running game */
 export interface GameState {
-  players: string[]; // [playerAId, playerBId]
-  turn: number;
-  log: string[];
+  players: string[];         // [playerAId, playerBId]
+  turn: number;              // 0 = playerA, 1 = playerB, etc.
+  log: string[];             // history of plays and draws
   hp: Record<string, number>;
   winner: string | null;
-  hands: Record<string, string[]>; // card codes
-  decks: Record<string, string[]>;
-  lastActivity: number;
+  hands: Record<string, string[]>; // card codes per player
+  decks: Record<string, string[]>; // remaining card codes per player
+  lastActivity: number;      // timestamp for expiration
 }
 
 /**
- * Draws `count` random cards from `deck`, removing them from it.
+ * Draws `count` random cards from `deck`, removing them from the deck.
  */
 function drawCards(deck: string[], count: number): string[] {
   const hand: string[] = [];
@@ -40,28 +41,30 @@ function drawCards(deck: string[], count: number): string[] {
 @Injectable()
 export class GameService {
   private activeGames: Record<string, GameState> = {};
-  private static readonly EXPIRATION_MS = 5 * 60 * 1000;
+  private static readonly EXPIRATION_MS = 5 * 60 * 1000; // 5 minutes
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Fetch all cards from DB (code, name, desc, damage/heal, imageUrl) */
+  /** Load all cards from the database */
   async getAllCards(): Promise<PrismaCard[]> {
     return this.prisma.card.findMany();
   }
 
-  /** Fetch all card templates from DB */
+  /** Load all card templates from the database */
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
     return this.prisma.cardTemplate.findMany();
   }
 
-  /** Start a new match vs BOT, in memory only */
+  /**
+   * Start a new game, deal initial hands, persist in DB and register in memory.
+   */
   async createGame(
     playerAId: string,
     playerBId: string = BOT_ID,
   ): Promise<{ gameId: string; state: GameState }> {
     const gameId = randomUUID();
 
-    // Monta FULL_DECK a partir do DB ou fallback
+    // Build full deck from DB or default
     const dbCards = await this.getAllCards();
     const FULL_DECK = dbCards.length
       ? dbCards.map((c) => c.code)
@@ -75,7 +78,7 @@ export class GameService {
           'heal',
         ];
 
-    // Inicializa decks e mãos
+    // Shuffle and draw hands
     const deckA = [...FULL_DECK];
     const deckB = [...FULL_DECK];
     const handA = drawCards(deckA, 5);
@@ -92,7 +95,7 @@ export class GameService {
       lastActivity: Date.now(),
     };
 
-    // **PERSISTE A PARTIDA IMEDIATAMENTE**
+    // Persist initial state to DB
     await this.prisma.game.create({
       data: {
         id: gameId,
@@ -120,22 +123,22 @@ export class GameService {
       },
     });
 
-    // Agora guarda em memória para continuar o jogo
+    // Register in memory
     this.activeGames[gameId] = state;
     return { gameId, state };
   }
 
-  /** Core logic to apply one play and handle draw for next turn */
+  /**
+   * Internal helper: apply a single play (damage/heal),
+   * update turn, draw next card, update log.
+   */
   private async applyPlay(
     state: GameState,
     playerId: string,
     cardCode: string,
     actorName: string,
   ) {
-    // Load card details from DB
-    const card = await this.prisma.card.findUnique({
-      where: { code: cardCode },
-    });
+    const card = await this.prisma.card.findUnique({ where: { code: cardCode } });
     if (!card) throw new Error(`Card "${cardCode}" not found in DB`);
 
     const [pA, pB] = state.players;
@@ -144,7 +147,7 @@ export class GameService {
     const idx = hand.indexOf(cardCode);
     if (idx < 0) throw new Error(`${actorName} does not have "${cardCode}"`);
 
-    // Resolve effects
+    // Apply effects
     let entry = `${actorName} played ${card.name} (${card.description})`;
     if (card.damage) {
       state.hp[opponent] -= card.damage;
@@ -158,11 +161,11 @@ export class GameService {
     // Remove card from hand
     hand.splice(idx, 1);
 
-    // Clamp HP
+    // Clamp HP to ≥ 0
     state.hp[pA] = Math.max(0, state.hp[pA]);
     state.hp[pB] = Math.max(0, state.hp[pB]);
 
-    // Check victory
+    // Check for win
     if (state.hp[opponent] <= 0 && !state.winner) {
       state.winner = playerId;
       entry += ` — ${actorName} wins!`;
@@ -172,7 +175,7 @@ export class GameService {
     state.turn++;
     state.lastActivity = Date.now();
 
-    // Draw for next player if game still going
+    // If game still on, draw one card for next player
     const next = state.players[state.turn % 2];
     if (!state.winner) {
       const drawn = drawCards(state.decks[next], 1)[0];
@@ -183,7 +186,8 @@ export class GameService {
   }
 
   /**
-   * Human plays a card; then BOT auto-plays if applicable. Persist on finish.
+   * Player plays a card; then BOT plays if it's their turn;
+   * persist final state on game end.
    */
   async playCard(
     gameId: string,
@@ -193,10 +197,9 @@ export class GameService {
     const state = this.activeGames[gameId];
     if (!state) throw new Error('Game not found or already finished');
 
-    // Player move
     await this.applyPlay(state, playerId, cardCode, `Player ${playerId}`);
 
-    // BOT move if next
+    // BOT turn
     const next = state.players[state.turn % 2];
     if (next === BOT_ID && !state.winner) {
       const botHand = state.hands[BOT_ID];
@@ -206,7 +209,7 @@ export class GameService {
       }
     }
 
-    // On game end, persist final record
+    // Persist when game ends
     if (state.winner) {
       await this.prisma.game.update({
         where: { id: gameId },
@@ -225,12 +228,12 @@ export class GameService {
     return state;
   }
 
-  /** Get in-memory state or null */
+  /** Return in-memory state or null if not running */
   async getState(gameId: string): Promise<GameState | null> {
     return this.activeGames[gameId] ?? null;
   }
 
-  /** Get final result, preferring memory then DB */
+  /** Return final result, preferring memory then DB */
   async getResult(
     gameId: string,
   ): Promise<{ winner: string | null; log: string[] }> {
@@ -243,7 +246,7 @@ export class GameService {
     return { winner: rec.winner, log: rec.log as string[] };
   }
 
-  /** List active in-memory games */
+  /** List all active games in memory */
   listActiveGames() {
     return Object.entries(this.activeGames).map(([gameId, s]) => ({
       gameId,
@@ -254,7 +257,7 @@ export class GameService {
     }));
   }
 
-  /** Expire idle games */
+  /** Expire games not used for a while */
   expireOldGames() {
     const now = Date.now();
     const expired: string[] = [];
@@ -265,5 +268,11 @@ export class GameService {
       }
     }
     return expired;
+  }
+
+  async deleteGame(gameId: string): Promise<{ removed: boolean }> {
+    const exists = !!this.activeGames[gameId];
+    delete this.activeGames[gameId];
+    return { removed: exists };
   }
 }

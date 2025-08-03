@@ -1,7 +1,6 @@
-import { Body, Controller, Get, Logger, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Post, Delete } from '@nestjs/common';
 import { PlayCardDto } from './dto/play-card.dto';
 import { BOT_ID, GameService, GameState } from './game.service';
-
 @Controller('game')
 export class GameController {
   private readonly logger = new Logger(GameController.name);
@@ -24,6 +23,11 @@ export class GameController {
       `Game ${dto.gameId}: Player ${dto.player} plays ${dto.card}`,
     );
     return this.gameService.playCard(dto.gameId, dto.player, dto.card);
+  }
+
+  @Delete('end/:gameId')
+  async deleteGame(@Param('gameId') gameId: string) {
+    return this.gameService.deleteGame(gameId);
   }
 
   /** Get in-memory state for a game */
