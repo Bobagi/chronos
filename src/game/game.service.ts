@@ -179,8 +179,12 @@ export class GameService {
     const next = state.players[state.turn % 2];
     if (!state.winner) {
       const drawn = drawCards(state.decks[next], 1)[0];
-      state.hands[next].push(drawn);
-      state.log.push(`${next} draws a card (${drawn})`);
+      if (drawn) {
+        state.hands[next].push(drawn);
+        state.log.push(`${next} draws a card (${drawn})`);
+      } else {
+        state.log.push(`${next} tried to draw a card but deck was empty`);
+      }
       state.lastActivity = Date.now();
     }
   }
