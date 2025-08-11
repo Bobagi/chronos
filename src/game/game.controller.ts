@@ -1,13 +1,14 @@
-import { Body, Controller, Get, Logger, Param, Post, Delete } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, Post } from '@nestjs/common';
 import { PlayCardDto } from './dto/play-card.dto';
 import { BOT_ID, GameService, GameState } from './game.service';
+
 @Controller('game')
 export class GameController {
   private readonly logger = new Logger(GameController.name);
 
   constructor(private readonly gameService: GameService) {}
 
-  /** Start a new game vs Bot: { playerAId } */
+  /** Start a new game vs BOT: { playerAId } */
   @Post('start')
   async startGame(
     @Body('playerAId') playerAId: string,
@@ -19,54 +20,60 @@ export class GameController {
   /** Play a card: { gameId, player, card } */
   @Post('play-card')
   async playCard(@Body() dto: PlayCardDto): Promise<GameState> {
-    this.logger.log(
-      `Game ${dto.gameId}: Player ${dto.player} plays ${dto.card}`,
-    );
+    this.logger.log(`Game ${dto.gameId}: Player ${dto.player} plays ${dto.card}`);
     return this.gameService.playCard(dto.gameId, dto.player, dto.card);
   }
 
+  /** Skip the player's turn: { gameId, player } */
+  @Post('skip-turn')
+  async skipTurn(@Body() body: { gameId: string; player: string }) {
+    const { gameId, player } = body;
+    this.logger.log(`Game ${gameId}: Player ${player} skips turn`);
+    return this.gameService.skipTurn(gameId, player);
+  }
+
+  /** End a running in‑memory game (does not delete DB record) */
   @Delete('end/:gameId')
-  async deleteGame(@Param('gameId') gameId: string) {
+  async endGame(@Param('gameId') gameId: string) {
     return this.gameService.deleteGame(gameId);
   }
 
-  /** Get in-memory state for a game */
+  /** Get in‑memory state (null if finished) */
   @Get('state/:gameId')
   async getState(@Param('gameId') gameId: string): Promise<GameState | null> {
     return this.gameService.getState(gameId);
   }
 
-  /** Get final result (persisted or just-finished) */
+  /** Get final result from memory or DB */
   @Get('result/:gameId')
   async getResult(@Param('gameId') gameId: string) {
     return this.gameService.getResult(gameId);
   }
 
-  /** List active in-memory games */
+  /** List active in‑memory games */
   @Get('active')
   getActiveGames() {
     return this.gameService.listActiveGames();
   }
 
-  /** Expire stale games */
+  /** Expire idle games */
   @Post('expire')
   expireGames() {
     return { expired: this.gameService.expireOldGames() };
   }
 
-  /** Expose full card database to Kairos */
+  /** Card and template catalogs (for Kairos) */
   @Get('cards')
   getCards() {
     return this.gameService.getAllCards();
   }
 
-  /** Expose card-template database to Kairos */
   @Get('templates')
   getTemplates() {
     return this.gameService.getAllTemplates();
   }
 
-  /** simple test endpoint */
+  /** Healthcheck */
   @Get('test')
   getHello(): string {
     return 'test returned!';
