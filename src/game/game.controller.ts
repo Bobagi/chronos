@@ -1,81 +1,121 @@
-import { Body, Controller, Delete, Get, Logger, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Logger,
+  Param,
+  Post,
+} from '@nestjs/common';
+import { ChooseAttributeDto } from './dto/choose-attribute.dto';
+import { ChooseCardDto } from './dto/choose-card.dto';
 import { PlayCardDto } from './dto/play-card.dto';
 import { BOT_ID, GameService, GameState } from './game.service';
 
 @Controller('game')
 export class GameController {
   private readonly logger = new Logger(GameController.name);
-
   constructor(private readonly gameService: GameService) {}
 
-  /** Start a new game vs BOT: { playerAId } */
-  @Post('start')
-  async startGame(
+  /** Start CLASSIC */
+  @Post('start-classic')
+  async startClassic(
     @Body('playerAId') playerAId: string,
   ): Promise<{ gameId: string; state: GameState }> {
-    this.logger.log(`Starting new game: ${playerAId} vs Bot`);
-    return this.gameService.createGame(playerAId, BOT_ID);
+    this.logger.log(`Starting CLASSIC for ${playerAId} vs BOT`);
+    return this.gameService.createGame(playerAId, BOT_ID, 'CLASSIC');
   }
 
-  /** Play a card: { gameId, player, card } */
+  /** Start DUEL */
+  @Post('start-duel')
+  async startDuel(
+    @Body('playerAId') playerAId: string,
+  ): Promise<{ gameId: string; state: GameState }> {
+    this.logger.log(`Starting ATTRIBUTE_DUEL for ${playerAId} vs BOT`);
+    return this.gameService.createGame(playerAId, BOT_ID, 'ATTRIBUTE_DUEL');
+  }
+
+  /** Legacy start (kept for compatibility) -> CLASSIC */
+  @Post('start')
+  async startLegacy(
+    @Body('playerAId') playerAId: string,
+  ): Promise<{ gameId: string; state: GameState }> {
+    this.logger.log(`Starting legacy (CLASSIC) for ${playerAId} vs BOT`);
+    return this.gameService.createGame(playerAId, BOT_ID, 'CLASSIC');
+  }
+
+  /** Classic actions */
   @Post('play-card')
-  async playCard(@Body() dto: PlayCardDto): Promise<GameState> {
-    this.logger.log(`Game ${dto.gameId}: Player ${dto.player} plays ${dto.card}`);
+  async playCard(@Body() dto: PlayCardDto) {
     return this.gameService.playCard(dto.gameId, dto.player, dto.card);
   }
 
-  /** Skip the player's turn: { gameId, player } */
   @Post('skip-turn')
   async skipTurn(@Body() body: { gameId: string; player: string }) {
-    const { gameId, player } = body;
-    this.logger.log(`Game ${gameId}: Player ${player} skips turn`);
-    return this.gameService.skipTurn(gameId, player);
+    return this.gameService.skipTurn(body.gameId, body.player);
   }
 
-  /** End a running in‑memory game (does not delete DB record) */
-  @Delete('end/:gameId')
-  async endGame(@Param('gameId') gameId: string) {
-    return this.gameService.deleteGame(gameId);
+  /** Duel actions */
+  @Post(':id/duel/choose-card')
+  chooseCard(@Param('id') id: string, @Body() dto: ChooseCardDto) {
+    return this.gameService.chooseCardForDuel(id, dto);
   }
 
-  /** Get in‑memory state (null if finished) */
+  @Post(':id/duel/choose-attribute')
+  chooseAttribute(@Param('id') id: string, @Body() dto: ChooseAttributeDto) {
+    return this.gameService.chooseAttributeForDuel(id, dto);
+  }
+
+  /** Commit a REVEAL and advance to next round (or finish) */
+  @Post(':id/duel/advance')
+  advance(@Param('id') id: string) {
+    return this.gameService.advanceDuelRound(id);
+  }
+
+  /** State & result */
   @Get('state/:gameId')
   async getState(@Param('gameId') gameId: string): Promise<GameState | null> {
     return this.gameService.getState(gameId);
   }
 
-  /** Get final result from memory or DB */
   @Get('result/:gameId')
   async getResult(@Param('gameId') gameId: string) {
     return this.gameService.getResult(gameId);
   }
 
-  /** List active in‑memory games */
+  /** Active games: returns CLASSIC (memory) + DUEL (DB) */
   @Get('active')
   getActiveGames() {
-    return this.gameService.listActiveGames();
+    return this.gameService.listActiveGamesUnified();
   }
 
-  /** Expire idle games */
+  /** Expire only in-memory games (classic) */
   @Post('expire')
-  expireGames() {
+  expire() {
     return { expired: this.gameService.expireOldGames() };
   }
 
-  /** Card and template catalogs (for Kairos) */
+  /** Card catalog */
   @Get('cards')
   getCards() {
     return this.gameService.getAllCards();
   }
 
-  @Get('templates')
-  getTemplates() {
-    return this.gameService.getAllTemplates();
+  /** Single card by code */
+  @Get('cards/:code')
+  getCardByCode(@Param('code') code: string) {
+    return this.gameService.getCardByCode(code);
   }
 
-  /** Healthcheck */
+  /** Health */
   @Get('test')
-  getHello(): string {
+  test(): string {
     return 'test returned!';
+  }
+
+  /** End in-memory game */
+  @Delete('end/:gameId')
+  async end(@Param('gameId') gameId: string) {
+    return this.gameService.deleteGame(gameId);
   }
 }

@@ -4,10 +4,10 @@
 
 ## 🛠 Tech Stack
 
-- [NestJS](https://nestjs.com/) – backend framework (TypeScript)
-- REST API + Swagger for testing
+- [NestJS](https://nestjs.com/) (TypeScript)
+- REST API + Swagger
 - PostgreSQL + Prisma ORM
-- Deployment: GitHub Codespaces / Docker-ready
+- Docker-ready
 
 ---
 
@@ -18,13 +18,13 @@
 - Each player starts with 5 random cards in hand
 - Only cards in hand can be played
 - REST endpoints for game actions
-- Swagger docs available at `/api`
+- Swagger docs at `/api`
 
 ---
 
-## 🚀 Running Locally with Docker
+## 🚀 Run with Docker
 
-### 1. Create `.env` file in the project root:
+### 1) `.env` (root)
 
 ```env
 CHRONOS_PORT=3053
@@ -34,13 +34,13 @@ POSTGRES_DB=chronos
 DATABASE_URL=postgresql://postgres:postgres@db:5432/chronos
 ```
 
-### 2. Build and start services:
+### 2) Start services
 
 ```bash
-docker compose up --build
+docker compose up -d db chronos
 ```
 
-### 3. API will be available at:
+### 3) API base URL
 
 ```
 http://localhost:3053
@@ -48,56 +48,42 @@ http://localhost:3053
 
 ---
 
-## Create migration
+## 📜 Create Migration (exact commands)
 
 ```bash
-# from host (NOT inside container)
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chronos" \
-npx prisma migrate reset
-# answer "y" when asked
-
-# then (re)create the migration from your current schema
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chronos" \
-npx prisma migrate dev --name add-card-stats
-
-npx prisma generate
-# optional
-npx prisma db seed
+docker compose up -d db chronos
+docker compose exec chronos sh -lc 'npx prisma migrate dev --name add-new-game-mode'
 ```
+
+> Generates and applies the migration; files appear under `prisma/migrations/`.
 
 ---
 
-## 🗄 Accessing Prisma Studio (Database UI)
-
-Run inside your terminal:
+## 🗄 Prisma Studio (DB UI)
 
 ```bash
 docker exec -it chronos-backend npx prisma studio --port 5555 --hostname 0.0.0.0 --browser none
 ```
 
-Then open in your browser:
-
-```
-http://localhost:5555
-```
+Open: `http://localhost:5555`
 
 ---
 
-## 🧪 Testing the API
+## 🧪 Quick API Checks
 
-**Test server:**
+**Health/test**
 
 ```bash
 curl -k http://localhost:3053/game/test
 ```
 
-**Start a new game:**
+**Start a new game**
 
 ```bash
 curl -k -X POST http://localhost:3053/game/start
 ```
 
-**Play a card:**
+**Play a card**
 
 ```bash
 curl -k -X POST http://localhost:3053/game/play-card \
@@ -107,9 +93,7 @@ curl -k -X POST http://localhost:3053/game/play-card \
 
 ---
 
-## 📘 Swagger Documentation
-
-After running:
+## 📘 Swagger
 
 ```
 http://localhost:3053/api
@@ -117,9 +101,9 @@ http://localhost:3053/api
 
 ---
 
-## 🔄 Reset Database and Run Seed (No Duplicate Error)
+## 🔄 Reset DB and Seed (optional)
 
 ```bash
-docker exec -it chronos-backend npx prisma migrate reset --force
-docker exec -it chronos-backend npx ts-node prisma/seed.ts
+docker compose exec chronos sh -lc 'npx prisma migrate reset --force'
+docker compose exec chronos sh -lc 'npx ts-node prisma/seed.ts'
 ```

@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum GameMode {
+  CLASSIC
+  ATTRIBUTE_DUEL
+}
+
+enum DuelStage {
+  PICK_CARD
+  PICK_ATTRIBUTE
+  REVEAL
+  RESOLVED
+}
+
 model Player {
   id        String   @id @default(uuid())
   username  String   @unique
@@ -31,6 +43,11 @@ model Game {
   decks     Json
   log       Json
 
+  mode        GameMode   @default(CLASSIC)
+  duelStage   DuelStage?
+  duelCenter  Json?      // { aCardCode?:string, bCardCode?:string, chosenAttribute?: "magic"|"might"|"fire", revealed?:boolean }
+  discardPiles Json?     // { [playerId:string]: string[] }
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -40,6 +57,7 @@ model Card {
   code        String   @unique
   name        String
   description String
+  number      Int      @default(0)
   damage      Int?
   heal        Int?
   imageUrl    String
