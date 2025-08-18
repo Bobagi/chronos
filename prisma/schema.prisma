@@ -45,8 +45,8 @@ model Game {
 
   mode        GameMode   @default(CLASSIC)
   duelStage   DuelStage?
-  duelCenter  Json?      // { aCardCode?:string, bCardCode?:string, chosenAttribute?: "magic"|"might"|"fire", revealed?:boolean }
-  discardPiles Json?     // { [playerId:string]: string[] }
+  duelCenter  Json?
+  discardPiles Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
