@@ -8,7 +8,8 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { BOT_ID, GameService, GameState } from './game.service';
+import { GameService } from './game.service';
+import { BOT_ID, GameState } from './game.types';
 
 @WebSocketGateway({ namespace: 'game', cors: { origin: '*' } })
 export class GameGateway

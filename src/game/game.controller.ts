@@ -10,7 +10,8 @@ import {
 import { ChooseAttributeDto } from './dto/choose-attribute.dto';
 import { ChooseCardDto } from './dto/choose-card.dto';
 import { PlayCardDto } from './dto/play-card.dto';
-import { BOT_ID, GameService, GameState } from './game.service';
+import { GameService } from './game.service';
+import { BOT_ID, GameState } from './game.types';
 
 @Controller('game')
 export class GameController {
