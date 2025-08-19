@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  DuelStage,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
   Game as PrismaGame,
@@ -16,6 +17,8 @@ import {
   jsonInputOrDbNull,
 } from './game.types';
 
+const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
+
 @Injectable()
 export class GameService {
   constructor(
@@ -23,6 +26,8 @@ export class GameService {
     private readonly classic: ClassicGameService,
     private readonly duel: DuelGameService,
   ) {}
+
+  /* ---------- Catalog ---------- */
 
   async getAllCards(): Promise<PrismaCard[]> {
     return this.prisma.card.findMany();
@@ -35,6 +40,8 @@ export class GameService {
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
     return this.prisma.cardTemplate.findMany();
   }
+
+  /* ---------- Create Game ---------- */
 
   async createGame(
     playerAId: string,
@@ -110,6 +117,8 @@ export class GameService {
     return { gameId, state: initialState };
   }
 
+  /* ---------- Classic actions ---------- */
+
   async playCard(gameId: string, actorId: string, cardCode: string) {
     return this.classic.playCard(gameId, actorId, cardCode);
   }
@@ -117,6 +126,8 @@ export class GameService {
   async skipTurn(gameId: string, skipperId: string) {
     return this.classic.skipTurn(gameId, skipperId);
   }
+
+  /* ---------- Duel actions ---------- */
 
   async chooseCardForDuel(
     gameId: string,
@@ -136,11 +147,15 @@ export class GameService {
     return this.duel.advanceDuelRound(gameId);
   }
 
+  /* ---------- State & Result ---------- */
+
   async getState(gameId: string): Promise<GameState | null> {
     const mem = this.classic.getActiveState(gameId);
     if (mem) return mem;
+
     const db = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!db) return null;
+
     const mapped: GameState = {
       players: [db.playerAId, db.playerBId],
       turn: db.turn,
@@ -162,16 +177,21 @@ export class GameService {
     const mem = this.classic.getActiveState(gameId);
     if (mem && mem.winner !== undefined)
       return { winner: mem.winner, log: mem.log };
+
     const db = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!db) throw new Error('Game not found');
     return { winner: db.winner, log: db.log as string[] };
   }
 
+  /* ---------- Active list ---------- */
+
   private async listActiveDuelFromDb() {
     const rows: PrismaGame[] = await this.prisma.game.findMany({
       where: {
         mode: 'ATTRIBUTE_DUEL',
-        OR: [{ winner: null }, { duelStage: { not: 'RESOLVED' } }],
+        // ATIVOS = winner é null E duelStage != 'RESOLVED'
+        winner: null,
+        duelStage: { not: 'RESOLVED' },
       },
       orderBy: { updatedAt: 'desc' },
       take: 50,
@@ -192,13 +212,36 @@ export class GameService {
     return [...duel, ...classic];
   }
 
-  expireOldGames() {
-    return this.classic.expireOldGames();
+  /* ---------- Expire & Delete ---------- */
+  async expireOldGames(): Promise<string[]> {
+    const expiredClassic = this.classic.expireOldGames();
+    const cutoff = new Date(Date.now() - DUEL_EXP_MS);
+    await this.prisma.game.updateMany({
+      where: {
+        mode: 'ATTRIBUTE_DUEL',
+        winner: null,
+        duelStage: { not: 'RESOLVED' },
+        updatedAt: { lt: cutoff },
+      },
+      data: { duelStage: 'RESOLVED' as DuelStage },
+    });
+
+    return expiredClassic;
   }
 
   async deleteGame(gameId: string) {
-    const existed = !!this.classic.getActiveState(gameId);
+    const existedClassic = !!this.classic.getActiveState(gameId);
     this.classic.removeActiveState(gameId);
-    return { removed: existed };
+
+    const res = await this.prisma.game.updateMany({
+      where: {
+        id: gameId,
+        mode: 'ATTRIBUTE_DUEL',
+        duelStage: { not: 'RESOLVED' },
+      },
+      data: { duelStage: 'RESOLVED' as DuelStage },
+    });
+
+    return { removed: existedClassic || res.count > 0 };
   }
 }

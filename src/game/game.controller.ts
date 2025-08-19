@@ -90,10 +90,16 @@ export class GameController {
     return this.gameService.listActiveGamesUnified();
   }
 
-  /** Expire only in-memory games (classic) */
+  /** Expire only in-memory games */
   @Post('expire')
   expire() {
     return { expired: this.gameService.expireOldGames() };
+  }
+
+  /** End in-memory game */
+  @Delete('end/:gameId')
+  async end(@Param('gameId') gameId: string) {
+    return this.gameService.deleteGame(gameId);
   }
 
   /** Card catalog */
@@ -112,11 +118,5 @@ export class GameController {
   @Get('test')
   test(): string {
     return 'test returned!';
-  }
-
-  /** End in-memory game */
-  @Delete('end/:gameId')
-  async end(@Param('gameId') gameId: string) {
-    return this.gameService.deleteGame(gameId);
   }
 }
