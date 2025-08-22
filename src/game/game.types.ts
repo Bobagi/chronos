@@ -48,15 +48,15 @@ export function takeOneRandomFromDeck(
 }
 
 export function removeOneCardFromHand(
-  handsByPlayerId: Record<string, string[]>,
+  hands: Record<string, string[]>,
   playerId: string,
-  cardCode: string,
+  code: string,
 ): boolean {
-  const playerHand = [...(handsByPlayerId[playerId] ?? [])];
-  const position = playerHand.indexOf(cardCode);
-  if (position === -1) return false;
-  playerHand.splice(position, 1);
-  handsByPlayerId[playerId] = playerHand;
+  const arr = hands[playerId] ?? [];
+  const idx = arr.indexOf(code);
+  if (idx === -1) return false;
+  arr.splice(idx, 1);
+  hands[playerId] = arr;
   return true;
 }
 

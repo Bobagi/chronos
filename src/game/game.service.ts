@@ -244,4 +244,8 @@ export class GameService {
 
     return { removed: existedClassic || res.count > 0 };
   }
+
+  async unchooseCardForDuel(gameId: string, dto: { playerId: string }) {
+    return this.duel.unchooseCardForDuel(gameId, dto);
+  }
 }

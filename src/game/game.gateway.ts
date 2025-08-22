@@ -142,4 +142,20 @@ export class GameGateway
   ): Promise<GameState | null> {
     return this.gameService.getState(data.gameId);
   }
+
+  @SubscribeMessage('duel:unchoose-card')
+  async handleDuelUnchoose(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { gameId: string; playerId: string },
+  ) {
+    const game = await this.gameService.unchooseCardForDuel(data.gameId, {
+      playerId: data.playerId,
+    });
+    const room = `game:${data.gameId}`;
+    this.server.to(room).emit('state', {
+      gameId: data.gameId,
+      state: await this.gameService.getState(data.gameId),
+    });
+    return game;
+  }
 }

@@ -119,4 +119,9 @@ export class GameController {
   test(): string {
     return 'test returned!';
   }
+
+  @Post(':id/duel/unchoose-card')
+  unchooseCard(@Param('id') id: string, @Body() body: { playerId: string }) {
+    return this.gameService.unchooseCardForDuel(id, body);
+  }
 }

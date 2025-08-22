@@ -416,4 +416,63 @@ export class DuelGameService {
     );
     return result;
   }
+
+  async unchooseCardForDuel(gameId: string, dto: { playerId: string }) {
+    return this.prisma.$transaction(async (tx) => {
+      const game = await tx.game.findUnique({ where: { id: gameId } });
+      if (!game) return null;
+      if (game.mode !== 'ATTRIBUTE_DUEL') return game;
+      if (game.duelStage === 'REVEAL' || game.duelStage === 'RESOLVED')
+        return game;
+
+      const hands = (game.hands as Record<string, string[]>) ?? {};
+      const center =
+        (game.duelCenter as NonNullable<GameState['duelCenter']>) ??
+        ({} as any);
+
+      const isPlayerA = dto.playerId === game.playerAId;
+      const mySideKey = isPlayerA ? 'aCardCode' : 'bCardCode';
+      const oppSideKey = isPlayerA ? 'bCardCode' : 'aCardCode';
+
+      const myCode: string | undefined = (center as any)[mySideKey];
+      if (!myCode) return game;
+
+      // devolve MINHA carta
+      (hands[dto.playerId] ??= []).push(myCode);
+      delete (center as any)[mySideKey];
+
+      // 🔧 devolve TAMBÉM a carta do oponente (se existir) para evitar drenar mão do BOT
+      const oppId = isPlayerA ? game.playerBId : game.playerAId;
+      const oppCode: string | undefined = (center as any)[oppSideKey];
+      if (oppCode) {
+        (hands[oppId] ??= []).push(oppCode);
+        delete (center as any)[oppSideKey];
+      }
+
+      // limpa qualquer lixo de reveal/atributo pendente
+      delete (center as any).chosenAttribute;
+      delete (center as any).attribute;
+      delete (center as any).attr;
+      delete (center as any).attributeName;
+      delete (center as any).revealed;
+      delete (center as any).aVal;
+      delete (center as any).bVal;
+      delete (center as any).roundWinner;
+
+      // volta para PICK_CARD, e mantém o turno de escolha com quem desfez
+      const nextStage: DuelStage = 'PICK_CARD';
+      center.chooserId = dto.playerId;
+
+      const updated = await tx.game.update({
+        where: { id: gameId },
+        data: {
+          hands,
+          duelCenter: jsonInputOrDbNull(center),
+          duelStage: nextStage,
+        },
+      });
+
+      return updated;
+    });
+  }
 }
