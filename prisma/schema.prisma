@@ -19,13 +19,22 @@ enum DuelStage {
   RESOLVED
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model Player {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  gamesAsA  Game[]   @relation("PlayerA")
-  gamesAsB  Game[]   @relation("PlayerB")
+  id           String    @id @default(uuid())
+  username     String    @unique
+
+  passwordHash String
+  role         UserRole  @default(USER)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  gamesAsA     Game[]    @relation("PlayerA")
+  gamesAsB     Game[]    @relation("PlayerB")
 }
 
 model Game {

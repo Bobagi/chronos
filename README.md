@@ -55,7 +55,18 @@ docker compose up -d db chronos
 docker compose exec chronos sh -lc 'npx prisma migrate dev --name add-new-game-mode'
 ```
 
-> Generates and applies the migration; files appear under `prisma/migrations/`.
+In case of 'We found changes that cannot be executed':
+
+```bash
+docker compose exec chronos sh -lc 'npx prisma migrate dev --name add_auth_player_role --create-only'
+docker compose exec chronos sh -lc 'npx prisma migrate reset --force --skip-seed'
+```
+
+Then, generate files:
+
+```bash
+docker compose exec chronos sh -lc 'npx prisma generate'
+```
 
 ---
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import {
   DuelStage,
@@ -16,6 +17,8 @@ import {
   drawRandomCardsFromDeck,
   jsonInputOrDbNull,
 } from './game.types';
+
+import * as bcrypt from 'bcryptjs';
 
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
 
@@ -49,6 +52,7 @@ export class GameService {
     mode: PrismaGameMode = 'CLASSIC',
   ): Promise<{ gameId: string; state: GameState }> {
     const gameId = randomUUID();
+    const placeholderHash = await bcrypt.hash(randomUUID(), 10);
 
     const cards = await this.getAllCards();
     const pool = cards.length
@@ -98,7 +102,11 @@ export class GameService {
         playerA: {
           connectOrCreate: {
             where: { id: playerAId },
-            create: { id: playerAId, username: playerAId },
+            create: {
+              id: playerAId,
+              username: playerAId,
+              passwordHash: placeholderHash,
+            },
           },
         },
         playerB: {
@@ -107,6 +115,7 @@ export class GameService {
             create: {
               id: playerBId,
               username: playerBId === BOT_ID ? 'Bot Opponent' : playerBId,
+              passwordHash: placeholderHash,
             },
           },
         },

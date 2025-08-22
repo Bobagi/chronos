@@ -13,6 +13,11 @@ import { PlayCardDto } from './dto/play-card.dto';
 import { GameService } from './game.service';
 import { BOT_ID, GameState } from './game.types';
 
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
+
 @Controller('game')
 export class GameController {
   private readonly logger = new Logger(GameController.name);
@@ -84,12 +89,6 @@ export class GameController {
     return this.gameService.getResult(gameId);
   }
 
-  /** Active games: returns CLASSIC (memory) + DUEL (DB) */
-  @Get('active')
-  getActiveGames() {
-    return this.gameService.listActiveGamesUnified();
-  }
-
   /** Expire only in-memory games */
   @Post('expire')
   expire() {
@@ -123,5 +122,12 @@ export class GameController {
   @Post(':id/duel/unchoose-card')
   unchooseCard(@Param('id') id: string, @Body() body: { playerId: string }) {
     return this.gameService.unchooseCardForDuel(id, body);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('active')
+  getActiveGames() {
+    return this.gameService.listActiveGamesUnified();
   }
 }
