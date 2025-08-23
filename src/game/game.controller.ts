@@ -117,7 +117,7 @@ export class GameController {
   /** Health */
   @Get('test')
   test(): string {
-    return 'test returned!';
+    return 'Online';
   }
 
   @Post(':id/duel/unchoose-card')
