@@ -257,4 +257,32 @@ export class GameService {
   async unchooseCardForDuel(gameId: string, dto: { playerId: string }) {
     return this.duel.unchooseCardForDuel(gameId, dto);
   }
+
+  async listActiveForPlayer(playerId: string) {
+    const classic = this.classic
+      .listActiveFromMemory()
+      .filter((g) => g.players?.includes(playerId));
+
+    const rows = await this.prisma.game.findMany({
+      where: {
+        mode: 'ATTRIBUTE_DUEL',
+        winner: null,
+        duelStage: { not: 'RESOLVED' },
+        OR: [{ playerAId: playerId }, { playerBId: playerId }],
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 50,
+    });
+
+    const duel = rows.map((g) => ({
+      gameId: g.id,
+      players: [g.playerAId, g.playerBId],
+      mode: g.mode,
+      turn: g.turn,
+      lastActivity: new Date(g.updatedAt).getTime(),
+      winner: g.winner ?? null,
+    }));
+
+    return [...duel, ...classic];
+  }
 }

@@ -6,6 +6,8 @@ import {
   Logger,
   Param,
   Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ChooseAttributeDto } from './dto/choose-attribute.dto';
 import { ChooseCardDto } from './dto/choose-card.dto';
@@ -13,7 +15,6 @@ import { PlayCardDto } from './dto/play-card.dto';
 import { GameService } from './game.service';
 import { BOT_ID, GameState } from './game.types';
 
-import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -129,5 +130,12 @@ export class GameController {
   @Get('active')
   getActiveGames() {
     return this.gameService.listActiveGamesUnified();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('active/mine')
+  getActiveGamesOfMine(@Req() req: any) {
+    const userId = req.user?.sub ?? req.user?.id;
+    return this.gameService.listActiveForPlayer(userId);
   }
 }
