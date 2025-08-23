@@ -120,11 +120,13 @@ export class GameController {
     return 'Online';
   }
 
+  /** Undo pick */
   @Post(':id/duel/unchoose-card')
   unchooseCard(@Param('id') id: string, @Body() body: { playerId: string }) {
     return this.gameService.unchooseCardForDuel(id, body);
   }
 
+  /** Admin: all actives */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get('active')
@@ -132,10 +134,19 @@ export class GameController {
     return this.gameService.listActiveGamesUnified();
   }
 
+  /** My actives */
   @UseGuards(JwtAuthGuard)
   @Get('active/mine')
   getActiveGamesOfMine(@Req() req: any) {
     const userId = req.user?.sub ?? req.user?.id;
     return this.gameService.listActiveForPlayer(userId);
+  }
+
+  /** Me: stats (games played / wins) */
+  @UseGuards(JwtAuthGuard)
+  @Get('stats/me')
+  getMyStats(@Req() req: any) {
+    const userId = req.user?.sub ?? req.user?.id;
+    return this.gameService.getUserStats(userId);
   }
 }

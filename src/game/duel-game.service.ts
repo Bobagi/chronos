@@ -15,8 +15,6 @@ export class DuelGameService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /* --------------- Helper Methods --------------- */
-
   private autoPickBotCardIfNeeded(
     gameData: { playerAId: string; playerBId: string },
     playerHands: Record<string, string[]>,
@@ -32,8 +30,6 @@ export class DuelGameService {
         this.logger.log(
           `[autoPickBotCardIfNeeded] BOT (A) selected card=${selectedCard}`,
         );
-      } else {
-        this.logger.log(`[autoPickBotCardIfNeeded] BOT (A) has no cards`);
       }
     }
     if (!duelCenter.bCardCode && gameData.playerBId === BOT_ID) {
@@ -46,8 +42,6 @@ export class DuelGameService {
         this.logger.log(
           `[autoPickBotCardIfNeeded] BOT (B) selected card=${selectedCard}`,
         );
-      } else {
-        this.logger.log(`[autoPickBotCardIfNeeded] BOT (B) has no cards`);
       }
     }
   }
@@ -62,7 +56,6 @@ export class DuelGameService {
       where: { code: { in: [playerACardCode, playerBCardCode] } },
     });
     const findCard = (code: string) => cards.find((c) => c.code === code)!;
-
     const playerACard = findCard(playerACardCode);
     const playerBCard = findCard(playerBCardCode);
     const isBotPlayerA = gameData.playerAId === BOT_ID;
@@ -81,19 +74,17 @@ export class DuelGameService {
       const valueDifference = isBotPlayerA
         ? playerAValue - playerBValue
         : playerBValue - playerAValue;
-      this.logger.log(
-        `[determineBestAttributeForBot] A=${playerACardCode}.${attribute}=${playerAValue} B=${playerBCardCode}.${attribute}=${playerBValue} difference=${valueDifference}`,
-      );
       if (valueDifference > bestValueDifference) {
         bestValueDifference = valueDifference;
         bestAttribute = attribute;
       }
+      this.logger.log(
+        `[determineBestAttributeForBot] A=${playerACardCode}.${attribute}=${playerAValue} B=${playerBCardCode}.${attribute}=${playerBValue} diff=${valueDifference}`,
+      );
     }
     this.logger.log(`[determineBestAttributeForBot] selected=${bestAttribute}`);
     return bestAttribute;
   }
-
-  /* --------------- Core Game Methods --------------- */
 
   async chooseCardForDuel(
     gameId: string,
@@ -103,19 +94,10 @@ export class DuelGameService {
       `[chooseCardForDuel] game=${gameId} player=${playerAction.playerId} card=${playerAction.cardCode}`,
     );
 
-    // 1) Transaction to update hands/center/stage
     const updatedGame = await this.prisma.$transaction(async (tx) => {
       const game = await tx.game.findUnique({ where: { id: gameId } });
-      if (!game) {
-        this.logger.warn(`[chooseCardForDuel] game not found`);
-        return null;
-      }
-      if (game.mode !== 'ATTRIBUTE_DUEL') {
-        this.logger.warn(
-          `[chooseCardForDuel] invalid mode=${game.mode} (expected ATTRIBUTE_DUEL)`,
-        );
-        return game;
-      }
+      if (!game) return null;
+      if (game.mode !== 'ATTRIBUTE_DUEL') return game;
 
       const hands = (game.hands as Record<string, string[]>) ?? {};
       const center =
@@ -123,20 +105,11 @@ export class DuelGameService {
         ({} as any);
       let stage: DuelStage = game.duelStage ?? 'PICK_CARD';
 
-      if (stage !== 'PICK_CARD') {
-        this.logger.log(
-          `[chooseCardForDuel] ignored: stage=${stage} != PICK_CARD`,
-        );
-        return game;
-      }
+      if (stage !== 'PICK_CARD') return game;
 
       const isPlayerA = playerAction.playerId === game.playerAId;
-      if ((isPlayerA && center.aCardCode) || (!isPlayerA && center.bCardCode)) {
-        this.logger.log(
-          `[chooseCardForDuel] duplicate: side already has card (isPlayerA=${isPlayerA})`,
-        );
+      if ((isPlayerA && center.aCardCode) || (!isPlayerA && center.bCardCode))
         return game;
-      }
 
       if (
         !removeOneCardFromHand(
@@ -144,12 +117,8 @@ export class DuelGameService {
           playerAction.playerId,
           playerAction.cardCode,
         )
-      ) {
-        this.logger.warn(
-          `[chooseCardForDuel] card not in hand: ${playerAction.cardCode}`,
-        );
+      )
         return game;
-      }
 
       if (isPlayerA) center.aCardCode = playerAction.cardCode;
       else center.bCardCode = playerAction.cardCode;
@@ -163,9 +132,6 @@ export class DuelGameService {
       if (center.aCardCode && center.bCardCode) {
         stage = 'PICK_ATTRIBUTE';
         center.chooserId = center.chooserId ?? game.playerAId;
-        this.logger.log(
-          `[chooseCardForDuel] transition -> PICK_ATTRIBUTE (chooserId=${center.chooserId})`,
-        );
       }
 
       const result = await tx.game.update({
@@ -177,26 +143,17 @@ export class DuelGameService {
         },
       });
 
-      this.logger.log(
-        `[chooseCardForDuel] TX update successful: stage=${result.duelStage}`,
-      );
       return result;
     });
 
     if (!updatedGame) return null;
 
-    // 2) Outside transaction: If BOT is the chooser, it selects attribute now
     const centerAfterUpdate =
       (updatedGame.duelCenter as NonNullable<GameState['duelCenter']>) ??
       ({} as any);
     const chooserId = centerAfterUpdate.chooserId ?? updatedGame.playerAId;
 
-    this.logger.log(
-      `[chooseCardForDuel] post-TX: stage=${updatedGame.duelStage} chooserId=${chooserId}`,
-    );
-
     if (updatedGame.duelStage === 'PICK_ATTRIBUTE' && chooserId === BOT_ID) {
-      this.logger.log(`[chooseCardForDuel] BOT will choose attribute`);
       const bestAttribute = await this.determineBestAttributeForBot(
         updatedGame,
         centerAfterUpdate,
@@ -205,9 +162,6 @@ export class DuelGameService {
         playerId: BOT_ID,
         attribute: bestAttribute,
       });
-      this.logger.log(
-        `[chooseCardForDuel] BOT chose attribute=${bestAttribute} -> stage=${resultAfterReveal?.duelStage}`,
-      );
       return resultAfterReveal;
     }
 
@@ -221,41 +175,25 @@ export class DuelGameService {
     this.logger.log(
       `[chooseAttributeForDuel] game=${gameId} chooser=${playerAction.playerId} attr=${playerAction.attribute}`,
     );
-    const game = await this.prisma.game.findUnique({ where: { id: gameId } });
-    if (!game) {
-      this.logger.warn(`[chooseAttributeForDuel] game not found`);
-      return null;
-    }
-    if (game.mode !== 'ATTRIBUTE_DUEL') {
-      this.logger.warn(
-        `[chooseAttributeForDuel] invalid mode=${game.mode} (expected ATTRIBUTE_DUEL)`,
-      );
-      return game;
-    }
-    if (game.duelStage !== 'PICK_ATTRIBUTE') {
-      this.logger.log(
-        `[chooseAttributeForDuel] ignored: stage=${game.duelStage} != PICK_ATTRIBUTE`,
-      );
-      return game;
-    }
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        playerA: { select: { username: true } },
+        playerB: { select: { username: true } },
+      },
+    });
+    if (!game) return null;
+    if (game.mode !== 'ATTRIBUTE_DUEL') return game;
+    if (game.duelStage !== 'PICK_ATTRIBUTE') return game;
 
     const center =
       (game.duelCenter as NonNullable<GameState['duelCenter']>) ?? ({} as any);
-    if (center.chooserId && playerAction.playerId !== center.chooserId) {
-      this.logger.log(
-        `[chooseAttributeForDuel] ignored: current chooserId=${center.chooserId} != ${playerAction.playerId}`,
-      );
+    if (center.chooserId && playerAction.playerId !== center.chooserId)
       return game;
-    }
 
     const playerACardCode = center.aCardCode;
     const playerBCardCode = center.bCardCode;
-    if (!playerACardCode || !playerBCardCode) {
-      this.logger.warn(
-        `[chooseAttributeForDuel] no cards in center (A=${playerACardCode}, B=${playerBCardCode})`,
-      );
-      return game;
-    }
+    if (!playerACardCode || !playerBCardCode) return game;
 
     const cards = await this.prisma.card.findMany({
       where: { code: { in: [playerACardCode, playerBCardCode] } },
@@ -268,9 +206,6 @@ export class DuelGameService {
     );
     const playerBValue = Number(
       (getCard(playerBCardCode) as any)[attributeKey] ?? 0,
-    );
-    this.logger.log(
-      `[chooseAttributeForDuel] comparison: A(${playerACardCode}).${attributeKey}=${playerAValue} vs B(${playerBCardCode}).${attributeKey}=${playerBValue}`,
     );
 
     let roundWinner: string | null = null;
@@ -292,24 +227,23 @@ export class DuelGameService {
     });
 
     this.logger.log(
-      `[chooseAttributeForDuel] -> REVEAL (winner=${roundWinner ?? 'TIE'})`,
+      `[chooseAttributeForDuel] -> REVEAL (winner=${roundWinner ?? 'DRAW'})`,
     );
     return result;
   }
 
   async advanceDuelRound(gameId: string) {
     this.logger.log(`[advanceDuelRound] game=${gameId}`);
-    const game = await this.prisma.game.findUnique({ where: { id: gameId } });
-    if (!game) {
-      this.logger.warn(`[advanceDuelRound] game not found`);
-      return null;
-    }
-    if (game.mode !== 'ATTRIBUTE_DUEL' || game.duelStage !== 'REVEAL') {
-      this.logger.log(
-        `[advanceDuelRound] ignored: mode=${game.mode} stage=${game.duelStage}`,
-      );
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        playerA: { select: { username: true } },
+        playerB: { select: { username: true } },
+      },
+    });
+    if (!game) return null;
+    if (game.mode !== 'ATTRIBUTE_DUEL' || game.duelStage !== 'REVEAL')
       return game;
-    }
 
     const center = game.duelCenter as any as NonNullable<
       GameState['duelCenter']
@@ -321,10 +255,6 @@ export class DuelGameService {
     const playerAValue = Number(center.aVal ?? 0);
     const playerBValue = Number(center.bVal ?? 0);
     const roundWinner = (center.roundWinner as string | null) ?? null;
-
-    this.logger.log(
-      `[advanceDuelRound] REVEAL: ${attribute} A(${playerACardCode})=${playerAValue} vs B(${playerBCardCode})=${playerBValue} -> ${roundWinner ?? 'TIE'}`,
-    );
 
     const discardPiles = (game.discardPiles as Record<string, string[]>) ?? {
       [game.playerAId]: [],
@@ -352,10 +282,6 @@ export class DuelGameService {
     if (playerADraw) (hands[game.playerAId] ??= []).push(playerADraw);
     if (playerBDraw) (hands[game.playerBId] ??= []).push(playerBDraw);
 
-    this.logger.log(
-      `[advanceDuelRound] draws: A=${playerADraw ?? '-'} B=${playerBDraw ?? '-'}`,
-    );
-
     const nextChooser =
       center.chooserId === game.playerAId ? game.playerBId : game.playerAId;
 
@@ -374,24 +300,40 @@ export class DuelGameService {
           ? game.playerAId
           : playerBScore > playerAScore
             ? game.playerBId
-            : null;
+            : 'DRAW';
       nextStage = 'RESOLVED';
       nextCenter = null;
-      this.logger.log(
-        `[advanceDuelRound] game end: piles A=${playerAScore} B=${playerBScore} -> winner=${gameWinner ?? 'TIE'}`,
-      );
-    } else {
-      this.logger.log(
-        `[advanceDuelRound] next round -> chooserId=${nextChooser}`,
-      );
     }
 
     const cards = await this.prisma.card.findMany({
       where: { code: { in: [playerACardCode!, playerBCardCode!] } },
     });
+    const playerAName = game.playerA?.username ?? game.playerAId;
+    const playerBName = game.playerB?.username ?? game.playerBId;
+    const chooserName =
+      (center.chooserId ?? game.playerAId) === game.playerAId
+        ? playerAName
+        : playerBName;
     const getCardName = (code?: string) =>
       cards.find((c) => c.code === code)?.name ?? code ?? 'unknown';
-    const gameLogEntry = `DUEL ${attribute.toUpperCase()} (chooser=${center.chooserId ?? game.playerAId}): ${getCardName(playerACardCode)}(${attribute}=${playerAValue}) vs ${getCardName(playerBCardCode)}(${attribute}=${playerBValue}) => ${gameWinner ?? roundWinner ?? 'TIE'}`;
+
+    const winnerLabel =
+      gameWinner && gameWinner !== 'DRAW'
+        ? gameWinner === game.playerAId
+          ? playerAName
+          : playerBName
+        : gameWinner === 'DRAW'
+          ? 'Draw'
+          : roundWinner
+            ? roundWinner === game.playerAId
+              ? playerAName
+              : playerBName
+            : 'Draw';
+
+    const gameLogEntry =
+      `${attribute.toUpperCase()} duel(${chooserName}): ` +
+      `${getCardName(playerACardCode)}(${playerAValue}) vs ` +
+      `${getCardName(playerBCardCode)}(${playerBValue}) => ${winnerLabel}`;
 
     const result = await this.prisma.game.update({
       where: { id: gameId },
@@ -401,18 +343,18 @@ export class DuelGameService {
         duelCenter: jsonInputOrDbNull(nextCenter),
         duelStage: nextStage,
         discardPiles: jsonInputOrDbNull(discardPiles),
-        winner: gameWinner,
+        winner: nextStage === 'RESOLVED' ? gameWinner : game.winner,
         log: [
           ...(game.log as string[]),
           gameLogEntry,
-          ...(playerADraw ? [`${game.playerAId} draws`] : []),
-          ...(playerBDraw ? [`${game.playerBId} draws`] : []),
+          ...(playerADraw ? [`${playerAName} draws`] : []),
+          ...(playerBDraw ? [`${playerBName} draws`] : []),
         ],
       },
     });
 
     this.logger.log(
-      `[advanceDuelRound] update successful: stage=${result.duelStage} winner=${result.winner ?? '-'}`,
+      `[advanceDuelRound] stage=${result.duelStage} winner=${result.winner ?? '-'}`,
     );
     return result;
   }
@@ -437,11 +379,9 @@ export class DuelGameService {
       const myCode: string | undefined = (center as any)[mySideKey];
       if (!myCode) return game;
 
-      // devolve MINHA carta
       (hands[dto.playerId] ??= []).push(myCode);
       delete (center as any)[mySideKey];
 
-      // 🔧 devolve TAMBÉM a carta do oponente (se existir) para evitar drenar mão do BOT
       const oppId = isPlayerA ? game.playerBId : game.playerAId;
       const oppCode: string | undefined = (center as any)[oppSideKey];
       if (oppCode) {
@@ -449,7 +389,6 @@ export class DuelGameService {
         delete (center as any)[oppSideKey];
       }
 
-      // limpa qualquer lixo de reveal/atributo pendente
       delete (center as any).chosenAttribute;
       delete (center as any).attribute;
       delete (center as any).attr;
@@ -459,7 +398,6 @@ export class DuelGameService {
       delete (center as any).bVal;
       delete (center as any).roundWinner;
 
-      // volta para PICK_CARD, e mantém o turno de escolha com quem desfez
       const nextStage: DuelStage = 'PICK_CARD';
       center.chooserId = dto.playerId;
 

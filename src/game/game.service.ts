@@ -7,6 +7,7 @@ import {
   Game as PrismaGame,
   GameMode as PrismaGameMode,
 } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassicGameService } from './classic-game.service';
@@ -17,8 +18,6 @@ import {
   drawRandomCardsFromDeck,
   jsonInputOrDbNull,
 } from './game.types';
-
-import * as bcrypt from 'bcryptjs';
 
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
 
@@ -31,21 +30,17 @@ export class GameService {
   ) {}
 
   /* ---------- Catalog ---------- */
-
   async getAllCards(): Promise<PrismaCard[]> {
     return this.prisma.card.findMany();
   }
-
   async getCardByCode(code: string): Promise<PrismaCard | null> {
     return this.prisma.card.findUnique({ where: { code } });
   }
-
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
     return this.prisma.cardTemplate.findMany();
   }
 
   /* ---------- Create Game ---------- */
-
   async createGame(
     playerAId: string,
     playerBId: string = BOT_ID,
@@ -54,19 +49,22 @@ export class GameService {
     const gameId = randomUUID();
     const placeholderHash = await bcrypt.hash(randomUUID(), 10);
 
-    const cards = await this.getAllCards();
-    const pool = cards.length
-      ? cards.map((c) => c.code)
+    const allCards = await this.getAllCards();
+    const poolCodes = allCards.length
+      ? Array.from(new Set(allCards.map((c) => c.code)))
       : ['fireball', 'lightning', 'heal'];
 
-    const buildDeck = (codes: string[], size: number) =>
-      Array.from(
-        { length: size },
-        () => codes[Math.floor(Math.random() * codes.length)],
-      );
+    function shuffleArray<T>(arr: T[]): T[] {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
-    const deckA = buildDeck(pool, 15);
-    const deckB = buildDeck(pool, 15);
+    const deckA = shuffleArray(poolCodes);
+    const deckB = shuffleArray(poolCodes);
     const handA = drawRandomCardsFromDeck(deckA, 4);
     const handB = drawRandomCardsFromDeck(deckB, 4);
 
@@ -127,59 +125,65 @@ export class GameService {
   }
 
   /* ---------- Classic actions ---------- */
-
   async playCard(gameId: string, actorId: string, cardCode: string) {
     return this.classic.playCard(gameId, actorId, cardCode);
   }
-
   async skipTurn(gameId: string, skipperId: string) {
     return this.classic.skipTurn(gameId, skipperId);
   }
 
   /* ---------- Duel actions ---------- */
-
   async chooseCardForDuel(
     gameId: string,
     dto: { playerId: string; cardCode: string },
   ) {
     return this.duel.chooseCardForDuel(gameId, dto);
   }
-
   async chooseAttributeForDuel(
     gameId: string,
     dto: { playerId: string; attribute: 'magic' | 'might' | 'fire' },
   ) {
     return this.duel.chooseAttributeForDuel(gameId, dto);
   }
-
   async advanceDuelRound(gameId: string) {
     return this.duel.advanceDuelRound(gameId);
   }
 
   /* ---------- State & Result ---------- */
-
   async getState(gameId: string): Promise<GameState | null> {
-    const mem = this.classic.getActiveState(gameId);
-    if (mem) return mem;
+    const inMemoryState = this.classic.getActiveState(gameId);
+    if (inMemoryState) return inMemoryState;
 
-    const db = await this.prisma.game.findUnique({ where: { id: gameId } });
-    if (!db) return null;
+    const dbGame = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        playerA: { select: { username: true } },
+        playerB: { select: { username: true } },
+      },
+    });
+    if (!dbGame) return null;
 
-    const mapped: GameState = {
-      players: [db.playerAId, db.playerBId],
-      turn: db.turn,
-      log: (db.log as string[]) ?? [],
-      hp: db.hp as Record<string, number>,
-      winner: db.winner ?? null,
-      hands: db.hands as Record<string, string[]>,
-      decks: db.decks as Record<string, string[]>,
-      lastActivity: new Date(db.updatedAt).getTime(),
-      mode: db.mode,
-      duelStage: db.duelStage ?? null,
-      duelCenter: (db.duelCenter as any) ?? null,
-      discardPiles: (db.discardPiles as any) ?? null,
+    const mappedState: GameState = {
+      players: [dbGame.playerAId, dbGame.playerBId],
+      turn: dbGame.turn,
+      log: (dbGame.log as string[]) ?? [],
+      hp: dbGame.hp as Record<string, number>,
+      winner: dbGame.winner ?? null,
+      hands: dbGame.hands as Record<string, string[]>,
+      decks: dbGame.decks as Record<string, string[]>,
+      lastActivity: new Date(dbGame.updatedAt).getTime(),
+      mode: dbGame.mode,
+      duelStage: dbGame.duelStage ?? null,
+      duelCenter:
+        (dbGame.duelCenter as Record<string, string[]> | null) ?? null,
+      discardPiles:
+        (dbGame.discardPiles as Record<string, string[]> | null) ?? null,
+      playerUsernames: {
+        [dbGame.playerAId]: dbGame.playerA?.username ?? dbGame.playerAId,
+        [dbGame.playerBId]: dbGame.playerB?.username ?? dbGame.playerBId,
+      },
     };
-    return mapped;
+    return mappedState;
   }
 
   async getResult(gameId: string) {
@@ -193,12 +197,10 @@ export class GameService {
   }
 
   /* ---------- Active list ---------- */
-
   private async listActiveDuelFromDb() {
     const rows: PrismaGame[] = await this.prisma.game.findMany({
       where: {
         mode: 'ATTRIBUTE_DUEL',
-        // ATIVOS = winner é null E duelStage != 'RESOLVED'
         winner: null,
         duelStage: { not: 'RESOLVED' },
       },
@@ -214,7 +216,6 @@ export class GameService {
       winner: g.winner ?? null,
     }));
   }
-
   async listActiveGamesUnified() {
     const classic = this.classic.listActiveFromMemory();
     const duel = await this.listActiveDuelFromDb();
@@ -234,14 +235,12 @@ export class GameService {
       },
       data: { duelStage: 'RESOLVED' as DuelStage },
     });
-
     return expiredClassic;
   }
 
   async deleteGame(gameId: string) {
     const existedClassic = !!this.classic.getActiveState(gameId);
     this.classic.removeActiveState(gameId);
-
     const res = await this.prisma.game.updateMany({
       where: {
         id: gameId,
@@ -250,7 +249,6 @@ export class GameService {
       },
       data: { duelStage: 'RESOLVED' as DuelStage },
     });
-
     return { removed: existedClassic || res.count > 0 };
   }
 
@@ -262,7 +260,6 @@ export class GameService {
     const classic = this.classic
       .listActiveFromMemory()
       .filter((g) => g.players?.includes(playerId));
-
     const rows = await this.prisma.game.findMany({
       where: {
         mode: 'ATTRIBUTE_DUEL',
@@ -273,7 +270,6 @@ export class GameService {
       orderBy: { updatedAt: 'desc' },
       take: 50,
     });
-
     const duel = rows.map((g) => ({
       gameId: g.id,
       players: [g.playerAId, g.playerBId],
@@ -282,7 +278,23 @@ export class GameService {
       lastActivity: new Date(g.updatedAt).getTime(),
       winner: g.winner ?? null,
     }));
-
     return [...duel, ...classic];
+  }
+
+  /* ---------- Stats ---------- */
+  async getUserStats(userId: string) {
+    const gamesPlayed = await this.prisma.game.count({
+      where: { OR: [{ playerAId: userId }, { playerBId: userId }] },
+    });
+    const gamesWon = await this.prisma.game.count({
+      where: { winner: userId },
+    });
+    const gamesDrawn = await this.prisma.game.count({
+      where: {
+        winner: 'DRAW',
+        OR: [{ playerAId: userId }, { playerBId: userId }],
+      },
+    });
+    return { gamesPlayed, gamesWon, gamesDrawn };
   }
 }

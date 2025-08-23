@@ -8,6 +8,7 @@ export const BOT_ID = 'BOT';
 
 export interface GameState {
   players: string[];
+  playerUsernames?: Record<string, string>;
   turn: number;
   log: string[];
   hp: Record<string, number>;
