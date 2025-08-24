@@ -1,111 +1,110 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-
 import { Injectable } from '@nestjs/common';
-import type {
+import {
+  DuelStage,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
+  Game as PrismaGame,
+  GameMode as PrismaGameMode,
 } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { ClassicGameService } from './classic-game.service';
+import { DuelGameService } from './duel-game.service';
+import {
+  BOT_ID,
+  GameState,
+  drawRandomCardsFromDeck,
+  jsonInputOrDbNull,
+} from './game.types';
 
-export const BOT_ID = 'BOT';
-
-export interface GameState {
-  players: string[]; // [playerAId, playerBId]
-  turn: number;
-  log: string[];
-  hp: Record<string, number>;
-  winner: string | null;
-  hands: Record<string, string[]>; // card codes
-  decks: Record<string, string[]>;
-  lastActivity: number;
-}
-
-/**
- * Draws `count` random cards from `deck`, removing them from it.
- */
-function drawCards(deck: string[], count: number): string[] {
-  const hand: string[] = [];
-  for (let i = 0; i < count && deck.length > 0; i++) {
-    const idx = Math.floor(Math.random() * deck.length);
-    hand.push(deck.splice(idx, 1)[0]);
-  }
-  return hand;
-}
+const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
 
 @Injectable()
 export class GameService {
-  private activeGames: Record<string, GameState> = {};
-  private static readonly EXPIRATION_MS = 5 * 60 * 1000;
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly classic: ClassicGameService,
+    private readonly duel: DuelGameService,
+  ) {}
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  /** Fetch all cards from DB (code, name, desc, damage/heal, imageUrl) */
+  /* ---------- Catalog ---------- */
   async getAllCards(): Promise<PrismaCard[]> {
     return this.prisma.card.findMany();
   }
-
-  /** Fetch all card templates from DB */
+  async getCardByCode(code: string): Promise<PrismaCard | null> {
+    return this.prisma.card.findUnique({ where: { code } });
+  }
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
     return this.prisma.cardTemplate.findMany();
   }
 
-  /** Start a new match vs BOT, in memory only */
+  /* ---------- Create Game ---------- */
   async createGame(
     playerAId: string,
     playerBId: string = BOT_ID,
+    mode: PrismaGameMode = 'CLASSIC',
   ): Promise<{ gameId: string; state: GameState }> {
     const gameId = randomUUID();
+    const placeholderHash = await bcrypt.hash(randomUUID(), 10);
 
-    // Monta FULL_DECK a partir do DB ou fallback
-    const dbCards = await this.getAllCards();
-    const FULL_DECK = dbCards.length
-      ? dbCards.map((c) => c.code)
-      : [
-          'fireball',
-          'fireball',
-          'fireball',
-          'lightning',
-          'lightning',
-          'heal',
-          'heal',
-        ];
+    const allCards = await this.getAllCards();
+    const poolCodes = allCards.length
+      ? Array.from(new Set(allCards.map((c) => c.code)))
+      : ['fireball', 'lightning', 'heal'];
 
-    // Inicializa decks e mãos
-    const deckA = [...FULL_DECK];
-    const deckB = [...FULL_DECK];
-    const handA = drawCards(deckA, 5);
-    const handB = drawCards(deckB, 5);
+    function shuffleArray<T>(arr: T[]): T[] {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
-    const state: GameState = {
+    const deckA = shuffleArray(poolCodes);
+    const deckB = shuffleArray(poolCodes);
+    const handA = drawRandomCardsFromDeck(deckA, 4);
+    const handB = drawRandomCardsFromDeck(deckB, 4);
+
+    const initialState: GameState = {
       players: [playerAId, playerBId],
       turn: 0,
-      log: ['Game started, hands drawn'],
+      log: ['Game created'],
       hp: { [playerAId]: 20, [playerBId]: 20 },
       winner: null,
       hands: { [playerAId]: handA, [playerBId]: handB },
       decks: { [playerAId]: deckA, [playerBId]: deckB },
       lastActivity: Date.now(),
+      mode,
+      duelStage: mode === 'ATTRIBUTE_DUEL' ? 'PICK_CARD' : null,
+      duelCenter: mode === 'ATTRIBUTE_DUEL' ? { chooserId: playerAId } : null,
+      discardPiles:
+        mode === 'ATTRIBUTE_DUEL' ? { [playerAId]: [], [playerBId]: [] } : null,
     };
 
-    // **PERSISTE A PARTIDA IMEDIATAMENTE**
     await this.prisma.game.create({
       data: {
         id: gameId,
-        turn: state.turn,
-        hp: state.hp,
-        winner: state.winner,
-        hands: state.hands,
-        decks: state.decks,
-        log: state.log,
+        turn: initialState.turn,
+        hp: initialState.hp,
+        winner: initialState.winner,
+        hands: initialState.hands,
+        decks: initialState.decks,
+        log: initialState.log,
+        mode,
+        duelStage: initialState.duelStage ?? null,
+        duelCenter: jsonInputOrDbNull(initialState.duelCenter),
+        discardPiles: jsonInputOrDbNull(initialState.discardPiles),
         playerA: {
           connectOrCreate: {
             where: { id: playerAId },
-            create: { id: playerAId, username: playerAId },
+            create: {
+              id: playerAId,
+              username: playerAId,
+              passwordHash: placeholderHash,
+            },
           },
         },
         playerB: {
@@ -114,156 +113,188 @@ export class GameService {
             create: {
               id: playerBId,
               username: playerBId === BOT_ID ? 'Bot Opponent' : playerBId,
+              passwordHash: placeholderHash,
             },
           },
         },
       },
     });
 
-    // Agora guarda em memória para continuar o jogo
-    this.activeGames[gameId] = state;
-    return { gameId, state };
+    if (mode === 'CLASSIC') this.classic.setActiveState(gameId, initialState);
+    return { gameId, state: initialState };
   }
 
-  /** Core logic to apply one play and handle draw for next turn */
-  private async applyPlay(
-    state: GameState,
-    playerId: string,
-    cardCode: string,
-    actorName: string,
+  /* ---------- Classic actions ---------- */
+  async playCard(gameId: string, actorId: string, cardCode: string) {
+    return this.classic.playCard(gameId, actorId, cardCode);
+  }
+  async skipTurn(gameId: string, skipperId: string) {
+    return this.classic.skipTurn(gameId, skipperId);
+  }
+
+  /* ---------- Duel actions ---------- */
+  async chooseCardForDuel(
+    gameId: string,
+    dto: { playerId: string; cardCode: string },
   ) {
-    // Load card details from DB
-    const card = await this.prisma.card.findUnique({
-      where: { code: cardCode },
-    });
-    if (!card) throw new Error(`Card "${cardCode}" not found in DB`);
-
-    const [pA, pB] = state.players;
-    const opponent = pA === playerId ? pB : pA;
-    const hand = state.hands[playerId];
-    const idx = hand.indexOf(cardCode);
-    if (idx < 0) throw new Error(`${actorName} does not have "${cardCode}"`);
-
-    // Resolve effects
-    let entry = `${actorName} played ${card.name} (${card.description})`;
-    if (card.damage) {
-      state.hp[opponent] -= card.damage;
-      entry += ` → ${card.damage} damage to ${opponent}`;
-    }
-    if (card.heal) {
-      state.hp[playerId] += card.heal;
-      entry += ` → ${card.heal} HP healed`;
-    }
-
-    // Remove card from hand
-    hand.splice(idx, 1);
-
-    // Clamp HP
-    state.hp[pA] = Math.max(0, state.hp[pA]);
-    state.hp[pB] = Math.max(0, state.hp[pB]);
-
-    // Check victory
-    if (state.hp[opponent] <= 0 && !state.winner) {
-      state.winner = playerId;
-      entry += ` — ${actorName} wins!`;
-    }
-
-    state.log.push(entry);
-    state.turn++;
-    state.lastActivity = Date.now();
-
-    // Draw for next player if game still going
-    const next = state.players[state.turn % 2];
-    if (!state.winner) {
-      const drawn = drawCards(state.decks[next], 1)[0];
-      state.hands[next].push(drawn);
-      state.log.push(`${next} draws a card (${drawn})`);
-      state.lastActivity = Date.now();
-    }
+    return this.duel.chooseCardForDuel(gameId, dto);
   }
-
-  /**
-   * Human plays a card; then BOT auto-plays if applicable. Persist on finish.
-   */
-  async playCard(
+  async chooseAttributeForDuel(
     gameId: string,
-    playerId: string,
-    cardCode: string,
-  ): Promise<GameState> {
-    const state = this.activeGames[gameId];
-    if (!state) throw new Error('Game not found or already finished');
-
-    // Player move
-    await this.applyPlay(state, playerId, cardCode, `Player ${playerId}`);
-
-    // BOT move if next
-    const next = state.players[state.turn % 2];
-    if (next === BOT_ID && !state.winner) {
-      const botHand = state.hands[BOT_ID];
-      if (botHand.length) {
-        const choice = botHand[Math.floor(Math.random() * botHand.length)];
-        await this.applyPlay(state, BOT_ID, choice, 'Bot');
-      }
-    }
-
-    // On game end, persist final record
-    if (state.winner) {
-      await this.prisma.game.update({
-        where: { id: gameId },
-        data: {
-          turn: state.turn,
-          hp: state.hp,
-          winner: state.winner,
-          hands: state.hands,
-          decks: state.decks,
-          log: state.log,
-        },
-      });
-      delete this.activeGames[gameId];
-    }
-
-    return state;
+    dto: { playerId: string; attribute: 'magic' | 'might' | 'fire' },
+  ) {
+    return this.duel.chooseAttributeForDuel(gameId, dto);
+  }
+  async advanceDuelRound(gameId: string) {
+    return this.duel.advanceDuelRound(gameId);
   }
 
-  /** Get in-memory state or null */
+  /* ---------- State & Result ---------- */
   async getState(gameId: string): Promise<GameState | null> {
-    return this.activeGames[gameId] ?? null;
+    const inMemoryState = this.classic.getActiveState(gameId);
+    if (inMemoryState) return inMemoryState;
+
+    const dbGame = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        playerA: { select: { username: true } },
+        playerB: { select: { username: true } },
+      },
+    });
+    if (!dbGame) return null;
+
+    const mappedState: GameState = {
+      players: [dbGame.playerAId, dbGame.playerBId],
+      turn: dbGame.turn,
+      log: (dbGame.log as string[]) ?? [],
+      hp: dbGame.hp as Record<string, number>,
+      winner: dbGame.winner ?? null,
+      hands: dbGame.hands as Record<string, string[]>,
+      decks: dbGame.decks as Record<string, string[]>,
+      lastActivity: new Date(dbGame.updatedAt).getTime(),
+      mode: dbGame.mode,
+      duelStage: dbGame.duelStage ?? null,
+      duelCenter:
+        (dbGame.duelCenter as Record<string, string[]> | null) ?? null,
+      discardPiles:
+        (dbGame.discardPiles as Record<string, string[]> | null) ?? null,
+      playerUsernames: {
+        [dbGame.playerAId]: dbGame.playerA?.username ?? dbGame.playerAId,
+        [dbGame.playerBId]: dbGame.playerB?.username ?? dbGame.playerBId,
+      },
+    };
+    return mappedState;
   }
 
-  /** Get final result, preferring memory then DB */
-  async getResult(
-    gameId: string,
-  ): Promise<{ winner: string | null; log: string[] }> {
-    const mem = this.activeGames[gameId];
-    if (mem && mem.winner) {
+  async getResult(gameId: string) {
+    const mem = this.classic.getActiveState(gameId);
+    if (mem && mem.winner !== undefined)
       return { winner: mem.winner, log: mem.log };
-    }
-    const rec = await this.prisma.game.findUnique({ where: { id: gameId } });
-    if (!rec) throw new Error('Game not found');
-    return { winner: rec.winner, log: rec.log as string[] };
+
+    const db = await this.prisma.game.findUnique({ where: { id: gameId } });
+    if (!db) throw new Error('Game not found');
+    return { winner: db.winner, log: db.log as string[] };
   }
 
-  /** List active in-memory games */
-  listActiveGames() {
-    return Object.entries(this.activeGames).map(([gameId, s]) => ({
-      gameId,
-      players: s.players,
-      turn: s.turn,
-      lastActivity: s.lastActivity,
-      winner: s.winner,
+  /* ---------- Active list ---------- */
+  private async listActiveDuelFromDb() {
+    const rows: PrismaGame[] = await this.prisma.game.findMany({
+      where: {
+        mode: 'ATTRIBUTE_DUEL',
+        winner: null,
+        duelStage: { not: 'RESOLVED' },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 50,
+    });
+    return rows.map((g) => ({
+      gameId: g.id,
+      players: [g.playerAId, g.playerBId],
+      mode: g.mode,
+      turn: g.turn,
+      lastActivity: new Date(g.updatedAt).getTime(),
+      winner: g.winner ?? null,
     }));
   }
+  async listActiveGamesUnified() {
+    const classic = this.classic.listActiveFromMemory();
+    const duel = await this.listActiveDuelFromDb();
+    return [...duel, ...classic];
+  }
 
-  /** Expire idle games */
-  expireOldGames() {
-    const now = Date.now();
-    const expired: string[] = [];
-    for (const [gameId, s] of Object.entries(this.activeGames)) {
-      if (now - s.lastActivity > GameService.EXPIRATION_MS) {
-        expired.push(gameId);
-        delete this.activeGames[gameId];
-      }
-    }
-    return expired;
+  /* ---------- Expire & Delete ---------- */
+  async expireOldGames(): Promise<string[]> {
+    const expiredClassic = this.classic.expireOldGames();
+    const cutoff = new Date(Date.now() - DUEL_EXP_MS);
+    await this.prisma.game.updateMany({
+      where: {
+        mode: 'ATTRIBUTE_DUEL',
+        winner: null,
+        duelStage: { not: 'RESOLVED' },
+        updatedAt: { lt: cutoff },
+      },
+      data: { duelStage: 'RESOLVED' as DuelStage },
+    });
+    return expiredClassic;
+  }
+
+  async deleteGame(gameId: string) {
+    const existedClassic = !!this.classic.getActiveState(gameId);
+    this.classic.removeActiveState(gameId);
+    const res = await this.prisma.game.updateMany({
+      where: {
+        id: gameId,
+        mode: 'ATTRIBUTE_DUEL',
+        duelStage: { not: 'RESOLVED' },
+      },
+      data: { duelStage: 'RESOLVED' as DuelStage },
+    });
+    return { removed: existedClassic || res.count > 0 };
+  }
+
+  async unchooseCardForDuel(gameId: string, dto: { playerId: string }) {
+    return this.duel.unchooseCardForDuel(gameId, dto);
+  }
+
+  async listActiveForPlayer(playerId: string) {
+    const classic = this.classic
+      .listActiveFromMemory()
+      .filter((g) => g.players?.includes(playerId));
+    const rows = await this.prisma.game.findMany({
+      where: {
+        mode: 'ATTRIBUTE_DUEL',
+        winner: null,
+        duelStage: { not: 'RESOLVED' },
+        OR: [{ playerAId: playerId }, { playerBId: playerId }],
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 50,
+    });
+    const duel = rows.map((g) => ({
+      gameId: g.id,
+      players: [g.playerAId, g.playerBId],
+      mode: g.mode,
+      turn: g.turn,
+      lastActivity: new Date(g.updatedAt).getTime(),
+      winner: g.winner ?? null,
+    }));
+    return [...duel, ...classic];
+  }
+
+  /* ---------- Stats ---------- */
+  async getUserStats(userId: string) {
+    const gamesPlayed = await this.prisma.game.count({
+      where: { OR: [{ playerAId: userId }, { playerBId: userId }] },
+    });
+    const gamesWon = await this.prisma.game.count({
+      where: { winner: userId },
+    });
+    const gamesDrawn = await this.prisma.game.count({
+      where: {
+        winner: 'DRAW',
+        OR: [{ playerAId: userId }, { playerBId: userId }],
+      },
+    });
+    return { gamesPlayed, gamesWon, gamesDrawn };
   }
 }

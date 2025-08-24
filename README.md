@@ -4,10 +4,10 @@
 
 ## 🛠 Tech Stack
 
-- [NestJS](https://nestjs.com/) – backend framework (TypeScript)
-- REST API + Swagger for testing
-- Future support: WebSocket for real-time interaction
-- Deployment: GitHub Codespaces / Docker-ready
+- [NestJS](https://nestjs.com/) (TypeScript)
+- REST API + Swagger
+- PostgreSQL + Prisma ORM
+- Docker-ready
 
 ---
 
@@ -15,81 +15,106 @@
 
 - Create and manage a match between 2 players
 - Track game state, logs, turns, HP, and player hands
-- Each player draws a random hand of 5 cards
+- Each player starts with 5 random cards in hand
 - Only cards in hand can be played
 - REST endpoints for game actions
-- Swagger docs available at `/api`
+- Swagger docs at `/api`
 
 ---
 
-## 🚀 Getting Started (Codespaces)
+## 🚀 Run with Docker
 
-1. Open this repo in GitHub Codespaces
-2. Run the NestJS app:
-   ```bash
-   npm run start:dev
-   ```
-3. Make port `3000` public in Codespaces
+### 1) `.env` (root)
+
+```env
+CHRONOS_PORT=3053
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=chronos
+DATABASE_URL=postgresql://postgres:postgres@db:5432/chronos
+```
+
+### 2) Start services
+
+```bash
+docker compose up -d db chronos
+```
+
+### 3) API base URL
+
+```
+http://localhost:3053
+```
 
 ---
 
-## 🧪 Testing the API
-
-> You can test everything directly from the terminal using the commands below.
-
-### ✅ Test the server
+## 📜 Create Migration (exact commands)
 
 ```bash
-curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/test
+docker compose up -d db chronos
+docker compose exec chronos sh -lc 'npx prisma migrate dev --name add-new-game-mode'
 ```
 
-### 🎮 Start a new game
+In case of 'We found changes that cannot be executed':
 
 ```bash
-curl -k -X POST https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/start
+docker compose exec chronos sh -lc 'npx prisma migrate dev --name add_auth_player_role --create-only'
+docker compose exec chronos sh -lc 'npx prisma migrate reset --force --skip-seed'
 ```
 
-# Response:
-# { "gameId": "550e8400-e29b-41d4-a716-446655440000", "state": { ... } }
-
-### 🔥 Play a card
-
-> ⚠️ The player must have the card in hand! Check `/game/state` first.
+Then, generate files:
 
 ```bash
-curl -k -X POST https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/play-card \
+docker compose exec chronos sh -lc 'npx prisma generate'
+```
+
+---
+
+## 🗄 Prisma Studio (DB UI)
+
+```bash
+docker exec -it chronos-backend npx prisma studio --port 5555 --hostname 0.0.0.0 --browser none
+```
+
+Open: `http://localhost:5555`
+
+---
+
+## 🧪 Quick API Checks
+
+**Health/test**
+
+```bash
+curl -k http://localhost:3053/game/test
+```
+
+**Start a new game**
+
+```bash
+curl -k -X POST http://localhost:3053/game/start
+```
+
+**Play a card**
+
+```bash
+curl -k -X POST http://localhost:3053/game/play-card \
   -H "Content-Type: application/json" \
-  -d '{"gameId": "550e8400-e29b-41d4-a716-446655440000", "player": "A", "card": "fireball"}'
-```
-
-### 📊 Get current game state (to see HP, hands, log)
-
-```bash
-curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/state/550e8400-e29b-41d4-a716-446655440000
-```
-
-### 📈 Final Result Summary
-
-```bash
-curl -k https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/game/result/550e8400-e29b-41d4-a716-446655440000
+  -d '{"gameId":"550e8400-e29b-41d4-a716-446655440000","player":"A","card":"fireball"}'
 ```
 
 ---
 
-## 📘 Swagger Documentation
-
-Accessible at:
+## 📘 Swagger
 
 ```
-https://animated-bassoon-jqq44xj75qwfqw4g-3000.app.github.dev/api
+http://localhost:3053/api
 ```
 
 ---
 
-## 🧱 Architecture
+## 🔄 Reset DB and Seed (optional)
 
-- `GameModule` → Handles all match logic
-- `GameService` → Controls state and rules
-- `GameController` → Exposes REST endpoints for actions
-- `PlayCardDto` → DTO for incoming move commands
-- `GameState` → Tracks players, turn, logs, HP, and hands
+```bash
+docker compose exec chronos sh -lc 'npx prisma migrate reset --force'
+docker compose exec chronos sh -lc 'npx ts-node prisma/seed.ts'
+```

@@ -1,4 +1,5 @@
 import {
+  ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -7,8 +8,9 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server } from 'socket.io';
-import { BOT_ID, GameService, GameState } from './game.service';
+import { Server, Socket } from 'socket.io';
+import { GameService } from './game.service';
+import { BOT_ID, GameState } from './game.types';
 
 @WebSocketGateway({ namespace: 'game', cors: { origin: '*' } })
 export class GameGateway
@@ -23,41 +25,137 @@ export class GameGateway
   handleConnection() {}
   handleDisconnect() {}
 
-  /**
-   * WebSocket: start a new game vs Bot.
-   * Expects message body: { playerAId: string }
-   */
   @SubscribeMessage('start')
   async handleStart(
-    @MessageBody() data: { playerAId: string },
+    @ConnectedSocket() socket: Socket,
+    @MessageBody()
+    data: { playerAId: string; mode?: 'CLASSIC' | 'ATTRIBUTE_DUEL' },
   ): Promise<{ gameId: string; state: GameState }> {
-    const res = await this.gameService.createGame(data.playerAId, BOT_ID);
-    this.server.emit('state', { gameId: res.gameId, state: res.state });
-    return res;
+    const mode = data.mode ?? 'CLASSIC';
+    const result = await this.gameService.createGame(
+      data.playerAId,
+      BOT_ID,
+      mode,
+    );
+    const room = `game:${result.gameId}`;
+    socket.join(room);
+    this.server
+      .to(room)
+      .emit('state', { gameId: result.gameId, state: result.state });
+    return result;
   }
 
-  /**
-   * WebSocket: play a card.
-   * Expects: { gameId, player, card }
-   */
+  @SubscribeMessage('join')
+  async handleJoin(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { gameId: string },
+  ): Promise<{ joined: string }> {
+    const room = `game:${data.gameId}`;
+    socket.join(room);
+    const state = await this.gameService.getState(data.gameId);
+    if (state) socket.emit('state', { gameId: data.gameId, state });
+    return { joined: data.gameId };
+  }
+
   @SubscribeMessage('play')
   async handlePlay(
-    @MessageBody() data: { gameId: string; player: string; card: string },
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { gameId: string; playerId: string; cardCode: string },
   ): Promise<GameState> {
     const state = await this.gameService.playCard(
       data.gameId,
-      data.player,
-      data.card,
+      data.playerId,
+      data.cardCode,
     );
-    this.server.emit('state', { gameId: data.gameId, state });
+    const room = `game:${data.gameId}`;
+    this.server.to(room).emit('state', { gameId: data.gameId, state });
     return state;
   }
 
-  /** WebSocket: fetch current state for a game */
-  @SubscribeMessage('state')
-  async handleState(
+  @SubscribeMessage('skip')
+  async handleSkip(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { gameId: string; playerId: string },
+  ): Promise<GameState> {
+    const state = await this.gameService.skipTurn(data.gameId, data.playerId);
+    const room = `game:${data.gameId}`;
+    this.server.to(room).emit('state', { gameId: data.gameId, state });
+    return state;
+  }
+
+  @SubscribeMessage('duel:choose-card')
+  async handleDuelChooseCard(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { gameId: string; playerId: string; cardCode: string },
+  ) {
+    const game = await this.gameService.chooseCardForDuel(data.gameId, {
+      playerId: data.playerId,
+      cardCode: data.cardCode,
+    });
+    const room = `game:${data.gameId}`;
+    this.server.to(room).emit('state', {
+      gameId: data.gameId,
+      state: await this.gameService.getState(data.gameId),
+    });
+    return game;
+  }
+
+  @SubscribeMessage('duel:choose-attribute')
+  async handleDuelChooseAttribute(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody()
+    data: {
+      gameId: string;
+      playerId: string;
+      attribute: 'magic' | 'might' | 'fire';
+    },
+  ) {
+    const game = await this.gameService.chooseAttributeForDuel(data.gameId, {
+      playerId: data.playerId,
+      attribute: data.attribute,
+    });
+    const room = `game:${data.gameId}`;
+    this.server.to(room).emit('state', {
+      gameId: data.gameId,
+      state: await this.gameService.getState(data.gameId),
+    });
+    return game;
+  }
+
+  @SubscribeMessage('duel:advance')
+  async handleDuelAdvance(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { gameId: string },
+  ) {
+    const game = await this.gameService.advanceDuelRound(data.gameId);
+    const room = `game:${data.gameId}`;
+    this.server.to(room).emit('state', {
+      gameId: data.gameId,
+      state: await this.gameService.getState(data.gameId),
+    });
+    return game;
+  }
+
+  @SubscribeMessage('get-state')
+  async handleGetState(
     @MessageBody() data: { gameId: string },
   ): Promise<GameState | null> {
     return this.gameService.getState(data.gameId);
+  }
+
+  @SubscribeMessage('duel:unchoose-card')
+  async handleDuelUnchoose(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() data: { gameId: string; playerId: string },
+  ) {
+    const game = await this.gameService.unchooseCardForDuel(data.gameId, {
+      playerId: data.playerId,
+    });
+    const room = `game:${data.gameId}`;
+    this.server.to(room).emit('state', {
+      gameId: data.gameId,
+      state: await this.gameService.getState(data.gameId),
+    });
+    return game;
   }
 }

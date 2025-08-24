@@ -1,0 +1,86 @@
+services:
+  db:
+    image: postgres:15
+    container_name: chronos-db
+    restart: on-failure
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5434:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: 'none'
+
+  db-collation-fix:
+    image: postgres:15
+    container_name: chronos-db-collation-fix
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ['sh', '-lc']
+    command: |
+      set -e
+      while ! pg_isready -h db -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -t 1 >/dev/null 2>&1; do sleep 1; done
+      psql -h db -U "${POSTGRES_USER}" -d postgres -v ON_ERROR_STOP=1 \
+        -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${POSTGRES_DB}';" \
+        -c "ALTER DATABASE \"${POSTGRES_DB}\" REFRESH COLLATION VERSION;" \
+        -c "REINDEX DATABASE \"${POSTGRES_DB}\";"
+    restart: 'no'
+    logging:
+      driver: 'none'
+
+  chronos:
+    build: .
+    container_name: chronos-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      db-collation-fix:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      CHRONOS_PORT: ${CHRONOS_PORT}
+    ports:
+      - '${CHRONOS_PORT}:3000'
+      - '5555:5555'
+    volumes:
+      - ./prisma:/app/prisma
+    restart: always
+
+  prisma:
+    image: node:20
+    container_name: chronos-prisma
+    working_dir: /app
+    depends_on:
+      db:
+        condition: service_healthy
+      db-collation-fix:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    volumes:
+      - .:/app
+    command: tail -f /dev/null
+    logging:
+      driver: 'none'
+
+volumes:
+  pgdata:
