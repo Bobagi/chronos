@@ -76,6 +76,10 @@ docker compose exec chronos sh -lc 'npx prisma generate'
 docker exec -it chronos-backend npx prisma studio --port 5555 --hostname 0.0.0.0 --browser none
 ```
 
+```bash
+ssh -L 5555:127.0.0.1:5555 user@host
+```
+
 Open: `http://localhost:5555`
 
 ---
