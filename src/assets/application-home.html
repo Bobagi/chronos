@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Chronos | Titan of Time</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1.5rem;
+        background: radial-gradient(circle at top, #1f2937 0%, #030712 55%, #000000 100%);
+        color: #e2e8f0;
+        font-family: 'Cinzel', 'Cormorant Garamond', system-ui, serif;
+        letter-spacing: 0.03em;
+      }
+
+      main {
+        max-width: 640px;
+        width: 100%;
+        background: rgba(3, 7, 18, 0.78);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 20px;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 25px 60px rgba(15, 23, 42, 0.6);
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin: 0 0 0.5rem;
+        text-transform: uppercase;
+        color: #f8fafc;
+        text-shadow: 0 0 8px rgba(148, 163, 184, 0.35);
+        letter-spacing: 0.25rem;
+      }
+
+      .tagline {
+        margin: 0 0 1.75rem;
+        font-size: 1rem;
+        color: #cbd5f5;
+        text-transform: uppercase;
+        letter-spacing: 0.2rem;
+      }
+
+      .narrative {
+        font-size: 1.125rem;
+        line-height: 1.8;
+        color: #e2e8f0;
+        margin-bottom: 2rem;
+      }
+
+      .message {
+        font-size: 1rem;
+        line-height: 1.7;
+        color: #94a3b8;
+        margin-bottom: 2.5rem;
+      }
+
+      .links {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .link-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 1rem 1.25rem;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(15, 23, 42, 0.85);
+        transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+      }
+
+      .link-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(226, 232, 240, 0.45);
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.45);
+      }
+
+      .link-card span {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        letter-spacing: 0.05rem;
+        text-transform: uppercase;
+      }
+
+      .link-card a {
+        color: #f1f5f9;
+        font-size: 1.05rem;
+        text-decoration: none;
+      }
+
+      .link-card a:hover {
+        text-decoration: underline;
+      }
+
+      footer {
+        margin-top: 2.5rem;
+        font-size: 0.75rem;
+        color: rgba(148, 163, 184, 0.6);
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 600px) {
+        main {
+          padding: 2rem 1.5rem;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+
+        .narrative {
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Chronos</h1>
+      <p class="tagline">Titan of Time, Devourer of Ages</p>
+      <p class="narrative">
+        The void trembles as Chronos stirs, shrouding the hours in obsidian night.
+        Within this sanctum of timekeeping, whispers of destiny echo through the
+        constellations. Approach with reverence, mortal, for every request awakens
+        the ancient keeper of moments.
+      </p>
+      <p class="message">{{message}}</p>
+      <section class="links">
+        <div class="link-card">
+          <span>Consult the codex</span>
+          <a href="{{documentationUrl}}">Chronos API Documentation</a>
+        </div>
+        <div class="link-card">
+          <span>Prove vitality</span>
+          <a href="{{healthCheckUrl}}">Health Sentinel</a>
+        </div>
+      </section>
+      <footer>Guard your time. Chronos watches.</footer>
+    </main>
+  </body>
+</html>
