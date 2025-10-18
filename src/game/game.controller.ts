@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ChooseAttributeDto } from './dto/choose-attribute.dto';
 import { ChooseCardDto } from './dto/choose-card.dto';
 import { PlayCardDto } from './dto/play-card.dto';
@@ -18,6 +19,13 @@ import { BOT_ID, GameState } from './game.types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    sub?: string;
+    id?: string;
+  };
+}
 
 @Controller('game')
 export class GameController {
@@ -137,16 +145,16 @@ export class GameController {
   /** My actives */
   @UseGuards(JwtAuthGuard)
   @Get('active/mine')
-  getActiveGamesOfMine(@Req() req: any) {
-    const userId = req.user?.sub ?? req.user?.id;
+  getActiveGamesOfMine(@Req() request: AuthenticatedRequest) {
+    const userId = request.user?.sub ?? request.user?.id;
     return this.gameService.listActiveForPlayer(userId);
   }
 
   /** Me: stats (games played / wins) */
   @UseGuards(JwtAuthGuard)
   @Get('stats/me')
-  getMyStats(@Req() req: any) {
-    const userId = req.user?.sub ?? req.user?.id;
+  getMyStats(@Req() request: AuthenticatedRequest) {
+    const userId = request.user?.sub ?? request.user?.id;
     return this.gameService.getUserStats(userId);
   }
 }

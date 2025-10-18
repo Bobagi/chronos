@@ -11,6 +11,14 @@
 
 ---
 
+## ▶️ Run Locally (without Docker)
+
+1. Create a `.env` file using the variables listed in the Docker section.
+2. Install dependencies with your preferred package manager, for example `npm install`.
+3. Start the development server with `npm run start:dev` and access the API at `http://localhost:3053`.
+
+---
+
 ## 📦 Features
 
 - Create and manage a match between 2 players

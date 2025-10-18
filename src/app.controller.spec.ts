@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppService, ApplicationHomeSummary } from './app.service';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -15,8 +15,14 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should describe the API entry point', () => {
+      const expectedSummary: ApplicationHomeSummary = {
+        message: 'Chronos API is ready to accept requests.',
+        documentationUrl: '/api',
+        healthCheckUrl: '/game/test',
+      };
+
+      expect(appController.getApplicationHome()).toEqual(expectedSummary);
     });
   });
 });
