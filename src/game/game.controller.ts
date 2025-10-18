@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
@@ -147,6 +148,9 @@ export class GameController {
   @Get('active/mine')
   getActiveGamesOfMine(@Req() request: AuthenticatedRequest) {
     const userId = request.user?.sub ?? request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Missing authenticated user identifier');
+    }
     return this.gameService.listActiveForPlayer(userId);
   }
 
@@ -155,6 +159,9 @@ export class GameController {
   @Get('stats/me')
   getMyStats(@Req() request: AuthenticatedRequest) {
     const userId = request.user?.sub ?? request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Missing authenticated user identifier');
+    }
     return this.gameService.getUserStats(userId);
   }
 }

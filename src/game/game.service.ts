@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import {
   DuelStage,
   Card as PrismaCard,
@@ -104,7 +105,7 @@ export class GameService {
               id: playerAId,
               username: playerAId,
               passwordHash: placeholderHash,
-            },
+            } as unknown as Prisma.PlayerCreateWithoutGamesAsAInput,
           },
         },
         playerB: {
@@ -114,7 +115,7 @@ export class GameService {
               id: playerBId,
               username: playerBId === BOT_ID ? 'Bot Opponent' : playerBId,
               passwordHash: placeholderHash,
-            },
+            } as unknown as Prisma.PlayerCreateWithoutGamesAsBInput,
           },
         },
       },
