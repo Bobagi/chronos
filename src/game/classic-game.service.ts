@@ -112,10 +112,8 @@ export class ClassicGameService {
         hands: state.hands,
         decks: state.decks,
         log: state.log,
-        turnDeadline: state.turnDeadline
-          ? new Date(state.turnDeadline)
-          : null,
       },
+      select: { id: true },
     });
 
     if (completed || state.winner !== null) {

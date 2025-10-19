@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   BOT_ID,
   GameState,
+  asCenter,
   jsonInputOrDbNull,
   removeOneCardFromHand,
   takeOneRandomFromDeck,
@@ -118,20 +119,31 @@ export class DuelGameService {
     );
 
     const updatedGame = await this.prisma.$transaction(async (tx) => {
-      const game = await tx.game.findUnique({ where: { id: gameId } });
+      const game = await tx.game.findUnique({
+        where: { id: gameId },
+        select: {
+          id: true,
+          playerAId: true,
+          playerBId: true,
+          mode: true,
+          duelStage: true,
+          hands: true,
+          duelCenter: true,
+        },
+      });
       if (!game) return null;
       if (game.mode !== 'ATTRIBUTE_DUEL') return game;
 
       const hands = (game.hands as Record<string, string[]>) ?? {};
-      const center =
-        (game.duelCenter as NonNullable<GameState['duelCenter']>) ??
-        ({} as any);
+      const center = asCenter(game.duelCenter);
       let stage: DuelStage = game.duelStage ?? 'PICK_CARD';
 
       if (stage !== 'PICK_CARD') return game;
 
       const now = Date.now();
-      if (game.turnDeadline && now > game.turnDeadline.getTime()) {
+      const deadlineMs =
+        typeof center.deadlineAt === 'number' ? center.deadlineAt : null;
+      if (deadlineMs && now > deadlineMs) {
         if (!center.aCardCode) {
           const autoCard = this.pickRandomCardFromHand(
             game.playerAId,
@@ -181,14 +193,16 @@ export class DuelGameService {
         center,
       );
 
-      let deadlineToSet: Date | null = null;
+      let deadlineToSet: number | null = null;
       if (center.aCardCode && center.bCardCode) {
         stage = 'PICK_ATTRIBUTE';
         center.chooserId = center.chooserId ?? game.playerAId;
-        deadlineToSet = new Date(Date.now() + TURN_DURATION_MS);
+        deadlineToSet = Date.now() + TURN_DURATION_MS;
       } else {
-        deadlineToSet = new Date(Date.now() + TURN_DURATION_MS);
+        deadlineToSet = Date.now() + TURN_DURATION_MS;
       }
+
+      center.deadlineAt = deadlineToSet;
 
       const result = await tx.game.update({
         where: { id: gameId },
@@ -196,7 +210,23 @@ export class DuelGameService {
           hands,
           duelCenter: jsonInputOrDbNull(center),
           duelStage: stage,
-          turnDeadline: deadlineToSet,
+        },
+        select: {
+          id: true,
+          playerAId: true,
+          playerBId: true,
+          turn: true,
+          hp: true,
+          winner: true,
+          hands: true,
+          decks: true,
+          log: true,
+          mode: true,
+          duelStage: true,
+          duelCenter: true,
+          discardPiles: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
 
@@ -234,7 +264,20 @@ export class DuelGameService {
     );
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
-      include: {
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        hands: true,
+        decks: true,
+        log: true,
+        winner: true,
+        mode: true,
+        duelStage: true,
+        duelCenter: true,
+        discardPiles: true,
+        createdAt: true,
+        updatedAt: true,
         playerA: { select: { username: true } },
         playerB: { select: { username: true } },
       },
@@ -243,12 +286,13 @@ export class DuelGameService {
     if (game.mode !== 'ATTRIBUTE_DUEL') return game;
     if (game.duelStage !== 'PICK_ATTRIBUTE') return game;
 
-    const center =
-      (game.duelCenter as NonNullable<GameState['duelCenter']>) ?? ({} as any);
+    const center = asCenter(game.duelCenter);
     const chooserId = center.chooserId ?? game.playerAId;
     const now = Date.now();
 
-    if (game.turnDeadline && now > game.turnDeadline.getTime()) {
+    const deadlineMs =
+      typeof center.deadlineAt === 'number' ? center.deadlineAt : null;
+    if (deadlineMs && now > deadlineMs) {
       const autoAttribute = this.randomAttribute();
       this.logger.log(
         `[chooseAttributeForDuel] timeout auto-picked attribute=${autoAttribute} for ${chooserId}`,
@@ -284,13 +328,30 @@ export class DuelGameService {
     (center as any).aVal = playerAValue;
     (center as any).bVal = playerBValue;
     (center as any).roundWinner = roundWinner;
+    center.deadlineAt = null;
 
     const result = await this.prisma.game.update({
       where: { id: gameId },
       data: {
         duelCenter: jsonInputOrDbNull(center),
         duelStage: 'REVEAL',
-        turnDeadline: null,
+      },
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        hands: true,
+        decks: true,
+        log: true,
+        winner: true,
+        mode: true,
+        duelStage: true,
+        duelCenter: true,
+        discardPiles: true,
+        createdAt: true,
+        updatedAt: true,
+        playerA: { select: { username: true } },
+        playerB: { select: { username: true } },
       },
     });
 
@@ -304,7 +365,20 @@ export class DuelGameService {
     this.logger.log(`[advanceDuelRound] game=${gameId}`);
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
-      include: {
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        hands: true,
+        decks: true,
+        log: true,
+        winner: true,
+        mode: true,
+        duelStage: true,
+        duelCenter: true,
+        discardPiles: true,
+        createdAt: true,
+        updatedAt: true,
         playerA: { select: { username: true } },
         playerB: { select: { username: true } },
       },
@@ -358,7 +432,10 @@ export class DuelGameService {
 
     let gameWinner: string | null = null;
     let nextStage: DuelStage = 'PICK_CARD';
-    let nextCenter: GameState['duelCenter'] = { chooserId: nextChooser };
+    let nextCenter: GameState['duelCenter'] = {
+      chooserId: nextChooser,
+      deadlineAt: Date.now() + TURN_DURATION_MS,
+    };
 
     if (playerAHasNoCards || playerBHasNoCards) {
       const playerAScore = (discardPiles[game.playerAId] ?? []).length;
@@ -418,10 +495,23 @@ export class DuelGameService {
           ...(playerADraw ? [`${playerAName} draws`] : []),
           ...(playerBDraw ? [`${playerBName} draws`] : []),
         ],
-        turnDeadline:
-          nextStage === 'PICK_CARD'
-            ? new Date(Date.now() + TURN_DURATION_MS)
-            : null,
+      },
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        hands: true,
+        decks: true,
+        log: true,
+        winner: true,
+        mode: true,
+        duelStage: true,
+        duelCenter: true,
+        discardPiles: true,
+        createdAt: true,
+        updatedAt: true,
+        playerA: { select: { username: true } },
+        playerB: { select: { username: true } },
       },
     });
 
@@ -433,16 +523,25 @@ export class DuelGameService {
 
   async unchooseCardForDuel(gameId: string, dto: { playerId: string }) {
     return this.prisma.$transaction(async (tx) => {
-      const game = await tx.game.findUnique({ where: { id: gameId } });
+      const game = await tx.game.findUnique({
+        where: { id: gameId },
+        select: {
+          id: true,
+          playerAId: true,
+          playerBId: true,
+          mode: true,
+          duelStage: true,
+          hands: true,
+          duelCenter: true,
+        },
+      });
       if (!game) return null;
       if (game.mode !== 'ATTRIBUTE_DUEL') return game;
       if (game.duelStage === 'REVEAL' || game.duelStage === 'RESOLVED')
         return game;
 
       const hands = (game.hands as Record<string, string[]>) ?? {};
-      const center =
-        (game.duelCenter as NonNullable<GameState['duelCenter']>) ??
-        ({} as any);
+      const center = asCenter(game.duelCenter);
 
       const isPlayerA = dto.playerId === game.playerAId;
       const mySideKey = isPlayerA ? 'aCardCode' : 'bCardCode';
@@ -473,13 +572,31 @@ export class DuelGameService {
       const nextStage: DuelStage = 'PICK_CARD';
       center.chooserId = dto.playerId;
 
+      center.deadlineAt = Date.now() + TURN_DURATION_MS;
+
       const updated = await tx.game.update({
         where: { id: gameId },
         data: {
           hands,
           duelCenter: jsonInputOrDbNull(center),
           duelStage: nextStage,
-          turnDeadline: new Date(Date.now() + TURN_DURATION_MS),
+        },
+        select: {
+          id: true,
+          playerAId: true,
+          playerBId: true,
+          turn: true,
+          hp: true,
+          winner: true,
+          hands: true,
+          decks: true,
+          log: true,
+          mode: true,
+          duelStage: true,
+          duelCenter: true,
+          discardPiles: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
 

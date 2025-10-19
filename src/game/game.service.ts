@@ -6,7 +6,6 @@ import {
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
   FriendshipStatus,
-  Game as PrismaGame,
   GameMode as PrismaGameMode,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -17,6 +16,7 @@ import { DuelGameService } from './duel-game.service';
 import {
   BOT_ID,
   GameState,
+  asCenter,
   drawRandomCardsFromDeck,
   jsonInputOrDbNull,
 } from './game.types';
@@ -84,7 +84,10 @@ export class GameService {
       turnDeadline: now + TURN_DURATION_MS,
       mode,
       duelStage: mode === 'ATTRIBUTE_DUEL' ? 'PICK_CARD' : null,
-      duelCenter: mode === 'ATTRIBUTE_DUEL' ? { chooserId: playerAId } : null,
+      duelCenter:
+        mode === 'ATTRIBUTE_DUEL'
+          ? { chooserId: playerAId, deadlineAt: now + TURN_DURATION_MS }
+          : null,
       discardPiles:
         mode === 'ATTRIBUTE_DUEL' ? { [playerAId]: [], [playerBId]: [] } : null,
     };
@@ -98,7 +101,6 @@ export class GameService {
         hands: initialState.hands,
         decks: initialState.decks,
         log: initialState.log,
-        turnDeadline: new Date(initialState.turnDeadline ?? now),
         mode,
         duelStage: initialState.duelStage ?? null,
         duelCenter: jsonInputOrDbNull(initialState.duelCenter),
@@ -124,6 +126,7 @@ export class GameService {
           },
         },
       },
+      select: { id: true },
     });
 
     if (mode === 'CLASSIC') this.classic.setActiveState(gameId, initialState);
@@ -185,12 +188,31 @@ export class GameService {
 
     const dbGame = await this.prisma.game.findUnique({
       where: { id: gameId },
-      include: {
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        turn: true,
+        hp: true,
+        winner: true,
+        hands: true,
+        decks: true,
+        log: true,
+        mode: true,
+        duelStage: true,
+        duelCenter: true,
+        discardPiles: true,
+        updatedAt: true,
         playerA: { select: { username: true } },
         playerB: { select: { username: true } },
       },
     });
     if (!dbGame) return null;
+
+    const duelCenter =
+      dbGame.duelCenter === null
+        ? null
+        : (asCenter(dbGame.duelCenter) as GameState['duelCenter']);
 
     const mappedState: GameState = {
       players: [dbGame.playerAId, dbGame.playerBId],
@@ -201,13 +223,13 @@ export class GameService {
       hands: dbGame.hands as Record<string, string[]>,
       decks: dbGame.decks as Record<string, string[]>,
       lastActivity: new Date(dbGame.updatedAt).getTime(),
-      turnDeadline: dbGame.turnDeadline
-        ? dbGame.turnDeadline.getTime()
-        : null,
+      turnDeadline:
+        duelCenter && typeof duelCenter.deadlineAt === 'number'
+          ? duelCenter.deadlineAt
+          : null,
       mode: dbGame.mode,
       duelStage: dbGame.duelStage ?? null,
-      duelCenter:
-        (dbGame.duelCenter as Record<string, string[]> | null) ?? null,
+      duelCenter,
       discardPiles:
         (dbGame.discardPiles as Record<string, string[]> | null) ?? null,
       playerUsernames: {
@@ -223,7 +245,10 @@ export class GameService {
     if (mem && mem.winner !== undefined)
       return { winner: mem.winner, log: mem.log };
 
-    const db = await this.prisma.game.findUnique({ where: { id: gameId } });
+    const db = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      select: { winner: true, log: true },
+    });
     if (!db) throw new Error('Game not found');
     return { winner: db.winner, log: db.log as string[] };
   }
@@ -249,14 +274,22 @@ export class GameService {
           turn: memState.turn,
           hands: memState.hands,
           decks: memState.decks,
-          turnDeadline: null,
         },
+        select: { id: true },
       });
       this.classic.removeActiveState(gameId);
       return { winner: opponentId };
     }
 
-    const dbGame = await this.prisma.game.findUnique({ where: { id: gameId } });
+    const dbGame = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      select: {
+        playerAId: true,
+        playerBId: true,
+        winner: true,
+        log: true,
+      },
+    });
     if (!dbGame) throw new Error('Game not found');
     if (![dbGame.playerAId, dbGame.playerBId].includes(playerId))
       throw new Error('Player is not part of this game.');
@@ -269,14 +302,15 @@ export class GameService {
     existingLog.push(`Player ${playerId} surrendered.`);
     const updated = await this.prisma.game.update({
       where: { id: gameId },
-      data: { winner: opponentId, log: existingLog, turnDeadline: null },
+      data: { winner: opponentId, log: existingLog },
+      select: { winner: true },
     });
     return { winner: updated.winner, log: existingLog };
   }
 
   /* ---------- Active list ---------- */
   private async listActiveDuelFromDb() {
-    const rows: PrismaGame[] = await this.prisma.game.findMany({
+    const rows = await this.prisma.game.findMany({
       where: {
         mode: 'ATTRIBUTE_DUEL',
         winner: null,
@@ -284,6 +318,15 @@ export class GameService {
       },
       orderBy: { updatedAt: 'desc' },
       take: 50,
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        mode: true,
+        turn: true,
+        updatedAt: true,
+        winner: true,
+      },
     });
     return rows.map((g) => ({
       gameId: g.id,
@@ -347,6 +390,15 @@ export class GameService {
       },
       orderBy: { updatedAt: 'desc' },
       take: 50,
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        mode: true,
+        turn: true,
+        updatedAt: true,
+        winner: true,
+      },
     });
     const duel = rows.map((g) => ({
       gameId: g.id,

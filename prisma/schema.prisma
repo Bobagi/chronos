@@ -56,7 +56,6 @@ model Game {
   hands     Json
   decks     Json
   log       Json
-  turnDeadline DateTime?
 
   mode        GameMode   @default(CLASSIC)
   duelStage   DuelStage?

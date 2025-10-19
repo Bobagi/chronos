@@ -28,6 +28,7 @@ export interface GameState {
     aVal?: number;
     bVal?: number;
     roundWinner?: string | null;
+    deadlineAt?: number | null;
   } | null;
   discardPiles?: Record<string, string[]> | null;
 }
