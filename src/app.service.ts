@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 export interface ApplicationHomeMetadata {
@@ -14,17 +14,24 @@ export const APPLICATION_HOME_METADATA: ApplicationHomeMetadata = {
   healthCheckUrl: '/game/test',
 };
 
-const APPLICATION_HOME_TEMPLATE_PATH = join(
-  __dirname,
-  'assets',
-  'application-home.html',
-);
+const APPLICATION_HOME_TEMPLATE_LOCATIONS = [
+  join(__dirname, 'assets', 'application-home.html'),
+  join(__dirname, '..', 'assets', 'application-home.html'),
+];
 
 let cachedTemplate: string | null = null;
 
 function loadHomeTemplate(): string {
   if (cachedTemplate === null) {
-    cachedTemplate = readFileSync(APPLICATION_HOME_TEMPLATE_PATH, 'utf8');
+    const resolvedPath = APPLICATION_HOME_TEMPLATE_LOCATIONS.find((candidate) =>
+      existsSync(candidate),
+    );
+
+    if (!resolvedPath) {
+      throw new Error('Chronos homepage template asset could not be located.');
+    }
+
+    cachedTemplate = readFileSync(resolvedPath, 'utf8');
   }
 
   return cachedTemplate;
