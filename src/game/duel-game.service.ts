@@ -9,6 +9,8 @@ import {
   takeOneRandomFromDeck,
 } from './game.types';
 
+const TURN_DURATION_MS = 10 * 1000;
+
 @Injectable()
 export class DuelGameService {
   private readonly logger = new Logger(DuelGameService.name);
@@ -44,6 +46,27 @@ export class DuelGameService {
         );
       }
     }
+  }
+
+  private pickRandomCardFromHand(
+    playerId: string,
+    hands: Record<string, string[]>,
+  ): string | undefined {
+    const hand = hands[playerId] ?? [];
+    if (!hand.length) return undefined;
+    const randomIndex = Math.floor(Math.random() * hand.length);
+    const selectedCard = hand[randomIndex];
+    removeOneCardFromHand(hands, playerId, selectedCard);
+    return selectedCard;
+  }
+
+  private randomAttribute(): 'magic' | 'might' | 'fire' {
+    const attributes: Array<'magic' | 'might' | 'fire'> = [
+      'magic',
+      'might',
+      'fire',
+    ];
+    return attributes[Math.floor(Math.random() * attributes.length)];
   }
 
   private async determineBestAttributeForBot(
@@ -107,21 +130,50 @@ export class DuelGameService {
 
       if (stage !== 'PICK_CARD') return game;
 
-      const isPlayerA = playerAction.playerId === game.playerAId;
-      if ((isPlayerA && center.aCardCode) || (!isPlayerA && center.bCardCode))
-        return game;
+      const now = Date.now();
+      if (game.turnDeadline && now > game.turnDeadline.getTime()) {
+        if (!center.aCardCode) {
+          const autoCard = this.pickRandomCardFromHand(
+            game.playerAId,
+            hands,
+          );
+          if (autoCard) {
+            center.aCardCode = autoCard;
+            this.logger.log(
+              `[chooseCardForDuel] timeout auto-picked card=${autoCard} for ${game.playerAId}`,
+            );
+          }
+        }
+        if (!center.bCardCode) {
+          const autoCard = this.pickRandomCardFromHand(
+            game.playerBId,
+            hands,
+          );
+          if (autoCard) {
+            center.bCardCode = autoCard;
+            this.logger.log(
+              `[chooseCardForDuel] timeout auto-picked card=${autoCard} for ${game.playerBId}`,
+            );
+          }
+        }
+      }
 
-      if (
-        !removeOneCardFromHand(
-          hands,
-          playerAction.playerId,
-          playerAction.cardCode,
-        )
-      )
-        return game;
+      if (!center.aCardCode || !center.bCardCode) {
+        const isPlayerA = playerAction.playerId === game.playerAId;
+        if (!((isPlayerA && center.aCardCode) || (!isPlayerA && center.bCardCode))) {
+          if (
+            !removeOneCardFromHand(
+              hands,
+              playerAction.playerId,
+              playerAction.cardCode,
+            )
+          )
+            return game;
 
-      if (isPlayerA) center.aCardCode = playerAction.cardCode;
-      else center.bCardCode = playerAction.cardCode;
+          if (isPlayerA) center.aCardCode = playerAction.cardCode;
+          else center.bCardCode = playerAction.cardCode;
+        }
+      }
 
       this.autoPickBotCardIfNeeded(
         { playerAId: game.playerAId, playerBId: game.playerBId },
@@ -129,9 +181,13 @@ export class DuelGameService {
         center,
       );
 
+      let deadlineToSet: Date | null = null;
       if (center.aCardCode && center.bCardCode) {
         stage = 'PICK_ATTRIBUTE';
         center.chooserId = center.chooserId ?? game.playerAId;
+        deadlineToSet = new Date(Date.now() + TURN_DURATION_MS);
+      } else {
+        deadlineToSet = new Date(Date.now() + TURN_DURATION_MS);
       }
 
       const result = await tx.game.update({
@@ -140,6 +196,7 @@ export class DuelGameService {
           hands,
           duelCenter: jsonInputOrDbNull(center),
           duelStage: stage,
+          turnDeadline: deadlineToSet,
         },
       });
 
@@ -188,8 +245,18 @@ export class DuelGameService {
 
     const center =
       (game.duelCenter as NonNullable<GameState['duelCenter']>) ?? ({} as any);
-    if (center.chooserId && playerAction.playerId !== center.chooserId)
+    const chooserId = center.chooserId ?? game.playerAId;
+    const now = Date.now();
+
+    if (game.turnDeadline && now > game.turnDeadline.getTime()) {
+      const autoAttribute = this.randomAttribute();
+      this.logger.log(
+        `[chooseAttributeForDuel] timeout auto-picked attribute=${autoAttribute} for ${chooserId}`,
+      );
+      playerAction = { playerId: chooserId, attribute: autoAttribute };
+    } else if (playerAction.playerId !== chooserId) {
       return game;
+    }
 
     const playerACardCode = center.aCardCode;
     const playerBCardCode = center.bCardCode;
@@ -223,6 +290,7 @@ export class DuelGameService {
       data: {
         duelCenter: jsonInputOrDbNull(center),
         duelStage: 'REVEAL',
+        turnDeadline: null,
       },
     });
 
@@ -350,6 +418,10 @@ export class DuelGameService {
           ...(playerADraw ? [`${playerAName} draws`] : []),
           ...(playerBDraw ? [`${playerBName} draws`] : []),
         ],
+        turnDeadline:
+          nextStage === 'PICK_CARD'
+            ? new Date(Date.now() + TURN_DURATION_MS)
+            : null,
       },
     });
 
@@ -407,6 +479,7 @@ export class DuelGameService {
           hands,
           duelCenter: jsonInputOrDbNull(center),
           duelStage: nextStage,
+          turnDeadline: new Date(Date.now() + TURN_DURATION_MS),
         },
       });
 

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppService, APPLICATION_HOME_METADATA } from './app.service';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -15,8 +15,13 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should render an informative HTML page', () => {
+      const html = appController.getApplicationHomePage();
+
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain(APPLICATION_HOME_METADATA.message);
+      expect(html).toContain(`href="${APPLICATION_HOME_METADATA.documentationUrl}`);
+      expect(html).toContain(`href="${APPLICATION_HOME_METADATA.healthCheckUrl}`);
     });
   });
 });

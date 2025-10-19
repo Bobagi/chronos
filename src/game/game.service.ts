@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import {
   DuelStage,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
+  FriendshipStatus,
   Game as PrismaGame,
   GameMode as PrismaGameMode,
 } from '@prisma/client';
@@ -20,6 +22,7 @@ import {
 } from './game.types';
 
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
+const TURN_DURATION_MS = 10 * 1000;
 
 @Injectable()
 export class GameService {
@@ -68,6 +71,7 @@ export class GameService {
     const handA = drawRandomCardsFromDeck(deckA, 4);
     const handB = drawRandomCardsFromDeck(deckB, 4);
 
+    const now = Date.now();
     const initialState: GameState = {
       players: [playerAId, playerBId],
       turn: 0,
@@ -76,7 +80,8 @@ export class GameService {
       winner: null,
       hands: { [playerAId]: handA, [playerBId]: handB },
       decks: { [playerAId]: deckA, [playerBId]: deckB },
-      lastActivity: Date.now(),
+      lastActivity: now,
+      turnDeadline: now + TURN_DURATION_MS,
       mode,
       duelStage: mode === 'ATTRIBUTE_DUEL' ? 'PICK_CARD' : null,
       duelCenter: mode === 'ATTRIBUTE_DUEL' ? { chooserId: playerAId } : null,
@@ -93,6 +98,7 @@ export class GameService {
         hands: initialState.hands,
         decks: initialState.decks,
         log: initialState.log,
+        turnDeadline: new Date(initialState.turnDeadline ?? now),
         mode,
         duelStage: initialState.duelStage ?? null,
         duelCenter: jsonInputOrDbNull(initialState.duelCenter),
@@ -104,7 +110,7 @@ export class GameService {
               id: playerAId,
               username: playerAId,
               passwordHash: placeholderHash,
-            },
+            } as unknown as Prisma.PlayerCreateWithoutGamesAsAInput,
           },
         },
         playerB: {
@@ -114,7 +120,7 @@ export class GameService {
               id: playerBId,
               username: playerBId === BOT_ID ? 'Bot Opponent' : playerBId,
               passwordHash: placeholderHash,
-            },
+            } as unknown as Prisma.PlayerCreateWithoutGamesAsBInput,
           },
         },
       },
@@ -122,6 +128,29 @@ export class GameService {
 
     if (mode === 'CLASSIC') this.classic.setActiveState(gameId, initialState);
     return { gameId, state: initialState };
+  }
+
+  async createGameWithFriend(
+    requesterId: string,
+    friendId: string,
+    mode: PrismaGameMode = 'CLASSIC',
+  ) {
+    if (requesterId === friendId)
+      throw new Error('Cannot start a game against yourself.');
+    const friendship = await this.prisma.friendship.findFirst({
+      where: {
+        status: FriendshipStatus.ACCEPTED,
+        blockedById: null,
+        OR: [
+          { requesterId: requesterId, addresseeId: friendId },
+          { requesterId: friendId, addresseeId: requesterId },
+        ],
+      },
+    });
+    if (!friendship)
+      throw new Error('Players must be friends before starting a match.');
+
+    return this.createGame(requesterId, friendId, mode);
   }
 
   /* ---------- Classic actions ---------- */
@@ -172,6 +201,9 @@ export class GameService {
       hands: dbGame.hands as Record<string, string[]>,
       decks: dbGame.decks as Record<string, string[]>,
       lastActivity: new Date(dbGame.updatedAt).getTime(),
+      turnDeadline: dbGame.turnDeadline
+        ? dbGame.turnDeadline.getTime()
+        : null,
       mode: dbGame.mode,
       duelStage: dbGame.duelStage ?? null,
       duelCenter:
@@ -194,6 +226,52 @@ export class GameService {
     const db = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!db) throw new Error('Game not found');
     return { winner: db.winner, log: db.log as string[] };
+  }
+
+  async surrenderGame(gameId: string, playerId: string) {
+    const memState = this.classic.getActiveState(gameId);
+    if (memState) {
+      if (!memState.players.includes(playerId))
+        throw new Error('Player is not part of this game.');
+      const opponentId =
+        memState.players.find((p) => p !== playerId) ?? memState.players[0];
+      memState.winner = opponentId;
+      memState.turnDeadline = null;
+      memState.log.push(`Player ${playerId} surrendered.`);
+      memState.lastActivity = Date.now();
+
+      await this.prisma.game.update({
+        where: { id: gameId },
+        data: {
+          winner: opponentId,
+          log: memState.log,
+          hp: memState.hp,
+          turn: memState.turn,
+          hands: memState.hands,
+          decks: memState.decks,
+          turnDeadline: null,
+        },
+      });
+      this.classic.removeActiveState(gameId);
+      return { winner: opponentId };
+    }
+
+    const dbGame = await this.prisma.game.findUnique({ where: { id: gameId } });
+    if (!dbGame) throw new Error('Game not found');
+    if (![dbGame.playerAId, dbGame.playerBId].includes(playerId))
+      throw new Error('Player is not part of this game.');
+    if (dbGame.winner)
+      return { winner: dbGame.winner, log: dbGame.log as string[] };
+
+    const opponentId =
+      dbGame.playerAId === playerId ? dbGame.playerBId : dbGame.playerAId;
+    const existingLog = (dbGame.log as string[]) ?? [];
+    existingLog.push(`Player ${playerId} surrendered.`);
+    const updated = await this.prisma.game.update({
+      where: { id: gameId },
+      data: { winner: opponentId, log: existingLog, turnDeadline: null },
+    });
+    return { winner: updated.winner, log: existingLog };
   }
 
   /* ---------- Active list ---------- */

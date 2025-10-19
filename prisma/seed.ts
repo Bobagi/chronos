@@ -3,9 +3,20 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+type PlayerRole = 'ADMIN' | 'USER';
+
+const asPlayerCreateInput = (
+  data: Record<string, unknown>,
+): Prisma.PlayerCreateInput => data as unknown as Prisma.PlayerCreateInput;
+
+const asPlayerUpdateInput = (
+  data: Record<string, unknown>,
+): Prisma.PlayerUpdateInput => data as unknown as Prisma.PlayerUpdateInput;
 
 async function main() {
   // ---------- Senhas (podem vir do ambiente) ----------
@@ -21,30 +32,29 @@ async function main() {
   // Admin padrão (username: admin)
   await prisma.player.upsert({
     where: { username: 'admin' },
-    update: {
+    update: asPlayerUpdateInput({
       passwordHash: adminHash,
-      // Ajuste o nome do enum/campo caso seu schema use outro (ex.: PlayerRole)
-      role: 'ADMIN' as any,
-    },
-    create: {
+      role: 'ADMIN' as PlayerRole,
+    }),
+    create: asPlayerCreateInput({
       username: 'admin',
       passwordHash: adminHash,
-      role: 'ADMIN' as any,
-    },
+      role: 'ADMIN' as PlayerRole,
+    }),
   });
 
   // Usuário de exemplo (id e username: alice) para bater com sua UI
   await prisma.player.upsert({
     where: { username: 'alice' },
-    update: {
+    update: asPlayerUpdateInput({
       passwordHash: aliceHash,
-      role: 'USER' as any,
-    },
-    create: {
+      role: 'USER' as PlayerRole,
+    }),
+    create: asPlayerCreateInput({
       username: 'alice',
       passwordHash: aliceHash,
-      role: 'USER' as any,
-    },
+      role: 'USER' as PlayerRole,
+    }),
   });
 
   console.log('✅ Users seeded: admin, alice');

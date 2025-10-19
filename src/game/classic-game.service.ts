@@ -6,6 +6,7 @@ import { BOT_ID, GameState, drawRandomCardsFromDeck } from './game.types';
 export class ClassicGameService {
   private activeClassicStates: Record<string, GameState> = {};
   private static readonly classicExpiryMs = 5 * 60 * 1000;
+  private static readonly turnDurationMs = 10 * 1000;
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -14,6 +15,9 @@ export class ClassicGameService {
   }
 
   setActiveState(gameId: string, state: GameState) {
+    if (!state.turnDeadline) {
+      state.turnDeadline = Date.now() + ClassicGameService.turnDurationMs;
+    }
     this.activeClassicStates[gameId] = state;
   }
 
@@ -29,6 +33,7 @@ export class ClassicGameService {
       turn: s.turn,
       lastActivity: s.lastActivity,
       winner: s.winner,
+      turnDeadline: s.turnDeadline ?? null,
     }));
   }
 
@@ -42,6 +47,102 @@ export class ClassicGameService {
       }
     }
     return expiredGameIds;
+  }
+
+  private currentPlayerId(state: GameState) {
+    return state.players[state.turn % 2];
+  }
+
+  private setNextDeadline(state: GameState) {
+    if (state.winner !== null) {
+      state.turnDeadline = null;
+      return;
+    }
+    state.turnDeadline = Date.now() + ClassicGameService.turnDurationMs;
+  }
+
+  private forceSkip(state: GameState, skipperId: string, reason?: string) {
+    if (reason) state.log.push(reason);
+    const hasCards = (state.hands[skipperId] ?? []).length > 0;
+    state.log.push(
+      hasCards
+        ? `Player ${skipperId} skips`
+        : `Player ${skipperId} has no cards — skip`,
+    );
+
+    state.turn++;
+    state.lastActivity = Date.now();
+
+    const currentPlayerId = this.currentPlayerId(state);
+    const drawnCard = drawRandomCardsFromDeck(
+      state.decks[currentPlayerId] ?? [],
+      1,
+    )[0];
+    if (drawnCard) {
+      (state.hands[currentPlayerId] ??= []).push(drawnCard);
+      state.log.push(`${currentPlayerId} draws`);
+    } else {
+      state.log.push(`${currentPlayerId} cannot draw (deck empty)`);
+    }
+
+    const otherPlayerId = state.players[(state.turn + 1) % 2];
+    const currentHand = state.hands[currentPlayerId] ?? [];
+    const otherHand = state.hands[otherPlayerId] ?? [];
+    if (currentHand.length === 0 && otherHand.length === 0) {
+      state.winner = null;
+      state.log.push('Both out of cards — tie');
+      state.turnDeadline = null;
+      return true;
+    }
+
+    return false;
+  }
+
+  private async persistState(
+    gameId: string,
+    state: GameState,
+    completed = false,
+  ) {
+    await this.prisma.game.update({
+      where: { id: gameId },
+      data: {
+        turn: state.turn,
+        hp: state.hp,
+        winner: state.winner,
+        hands: state.hands,
+        decks: state.decks,
+        log: state.log,
+        turnDeadline: state.turnDeadline
+          ? new Date(state.turnDeadline)
+          : null,
+      },
+    });
+
+    if (completed || state.winner !== null) {
+      delete this.activeClassicStates[gameId];
+    }
+  }
+
+  private async handleBotIfNeeded(state: GameState) {
+    let completed = false;
+    while (!state.winner && this.currentPlayerId(state) === BOT_ID) {
+      const botHand = state.hands[BOT_ID] ?? [];
+      if (botHand.length > 0) {
+        const pickedBotCard =
+          botHand[Math.floor(Math.random() * botHand.length)];
+        await this.resolveClassicPlay(state, BOT_ID, pickedBotCard, 'Bot');
+        if (state.winner !== null) {
+          completed = true;
+          this.setNextDeadline(state);
+          break;
+        }
+      } else {
+        completed = this.forceSkip(state, BOT_ID, 'Bot has no cards — skip');
+        if (completed) break;
+      }
+      this.setNextDeadline(state);
+    }
+    return completed;
   }
 
   private async resolveClassicPlay(
@@ -83,7 +184,7 @@ export class ClassicGameService {
     state.turn++;
     state.lastActivity = Date.now();
 
-    const nextPlayerId = state.players[state.turn % 2];
+    const nextPlayerId = this.currentPlayerId(state);
     if (!state.winner) {
       const drawnCard = drawRandomCardsFromDeck(
         state.decks[nextPlayerId],
@@ -98,42 +199,79 @@ export class ClassicGameService {
     }
   }
 
+  private async enforceTurnDeadline(gameId: string, state: GameState) {
+    if (!state.turnDeadline) {
+      this.setNextDeadline(state);
+      await this.persistState(gameId, state);
+      return false;
+    }
+    if (Date.now() <= state.turnDeadline) return false;
+
+    let completed = false;
+    while (
+      !state.winner &&
+      state.turnDeadline &&
+      Date.now() > state.turnDeadline
+    ) {
+      const currentPlayerId = this.currentPlayerId(state);
+      const hand = state.hands[currentPlayerId] ?? [];
+      if (hand.length > 0) {
+        state.log.push(
+          `Timer expired for ${currentPlayerId} — card chosen automatically`,
+        );
+        const randomCard = hand[Math.floor(Math.random() * hand.length)];
+        await this.resolveClassicPlay(
+          state,
+          currentPlayerId,
+          randomCard,
+          `Auto (${currentPlayerId})`,
+        );
+        if (state.winner !== null) {
+          completed = true;
+          this.setNextDeadline(state);
+          break;
+        }
+      } else {
+        completed = this.forceSkip(
+          state,
+          currentPlayerId,
+          `Timer expired for ${currentPlayerId} — skip`,
+        );
+        if (completed) break;
+      }
+      this.setNextDeadline(state);
+      const botFinished = await this.handleBotIfNeeded(state);
+      if (botFinished) {
+        completed = true;
+        break;
+      }
+    }
+
+    await this.persistState(gameId, state, completed);
+    return completed;
+  }
+
   async playCard(gameId: string, actorId: string, cardCode: string) {
     const state = this.activeClassicStates[gameId];
     if (!state) throw new Error('Game not found or finished (CLASSIC)');
     if (state.mode !== 'CLASSIC') throw new Error('playCard is CLASSIC-only');
 
-    await this.resolveClassicPlay(
-      state,
-      actorId,
-      cardCode,
-      `Player ${actorId}`,
-    );
-    const nextPlayerId = state.players[state.turn % 2];
+    const timedOut = await this.enforceTurnDeadline(gameId, state);
+    if (timedOut) return state;
 
-    if (nextPlayerId === BOT_ID && !state.winner) {
-      const botHand = state.hands[BOT_ID];
-      if (botHand.length) {
-        const pickedBotCard =
-          botHand[Math.floor(Math.random() * botHand.length)];
-        await this.resolveClassicPlay(state, BOT_ID, pickedBotCard, 'Bot');
-      }
-    }
+    if (this.currentPlayerId(state) !== actorId)
+      throw new Error('It is not this player turn.');
 
+    await this.resolveClassicPlay(state, actorId, cardCode, `Player ${actorId}`);
     if (state.winner !== null) {
-      await this.prisma.game.update({
-        where: { id: gameId },
-        data: {
-          turn: state.turn,
-          hp: state.hp,
-          winner: state.winner,
-          hands: state.hands,
-          decks: state.decks,
-          log: state.log,
-        },
-      });
-      delete this.activeClassicStates[gameId];
+      this.setNextDeadline(state);
+      await this.persistState(gameId, state, true);
+      return state;
     }
+
+    this.setNextDeadline(state);
+    const botFinished = await this.handleBotIfNeeded(state);
+    await this.persistState(gameId, state, botFinished);
     return state;
   }
 
@@ -142,76 +280,21 @@ export class ClassicGameService {
     if (!state) throw new Error('Game not found or finished (CLASSIC)');
     if (state.mode !== 'CLASSIC') throw new Error('skipTurn is CLASSIC-only');
 
-    const hasCards = (state.hands[skipperId] ?? []).length > 0;
-    state.log.push(
-      hasCards
-        ? `Player ${skipperId} skips`
-        : `Player ${skipperId} has no cards — skip`,
-    );
+    const timedOut = await this.enforceTurnDeadline(gameId, state);
+    if (timedOut) return state;
 
-    state.turn++;
-    state.lastActivity = Date.now();
+    if (this.currentPlayerId(state) !== skipperId)
+      throw new Error('It is not this player turn.');
 
-    const currentPlayerId = state.players[state.turn % 2];
-    const drawnCard = drawRandomCardsFromDeck(
-      state.decks[currentPlayerId] ?? [],
-      1,
-    )[0];
-    if (drawnCard) {
-      (state.hands[currentPlayerId] ??= []).push(drawnCard);
-      state.log.push(`${currentPlayerId} draws`);
-    } else {
-      state.log.push(`${currentPlayerId} cannot draw (deck empty)`);
-    }
-
-    const otherPlayerId = state.players[(state.turn + 1) % 2];
-    if (
-      (state.hands[currentPlayerId] ?? []).length === 0 &&
-      (state.hands[otherPlayerId] ?? []).length === 0
-    ) {
-      state.winner = null;
-      state.log.push('Both out of cards — tie');
-      await this.prisma.game.update({
-        where: { id: gameId },
-        data: {
-          turn: state.turn,
-          hp: state.hp,
-          winner: state.winner,
-          hands: state.hands,
-          decks: state.decks,
-          log: state.log,
-        },
-      });
-      delete this.activeClassicStates[gameId];
+    const completed = this.forceSkip(state, skipperId);
+    if (completed) {
+      await this.persistState(gameId, state, true);
       return state;
     }
 
-    if (
-      currentPlayerId === BOT_ID &&
-      (state.hands[BOT_ID] ?? []).length > 0 &&
-      !state.winner
-    ) {
-      const pickedBotCard =
-        state.hands[BOT_ID][
-          Math.floor(Math.random() * state.hands[BOT_ID].length)
-        ];
-      await this.resolveClassicPlay(state, BOT_ID, pickedBotCard, 'Bot');
-
-      if (state.winner !== null) {
-        await this.prisma.game.update({
-          where: { id: gameId },
-          data: {
-            turn: state.turn,
-            hp: state.hp,
-            winner: state.winner,
-            hands: state.hands,
-            decks: state.decks,
-            log: state.log,
-          },
-        });
-        delete this.activeClassicStates[gameId];
-      }
-    }
+    this.setNextDeadline(state);
+    const botFinished = await this.handleBotIfNeeded(state);
+    await this.persistState(gameId, state, botFinished);
     return state;
   }
 }
