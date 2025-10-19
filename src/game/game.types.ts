@@ -16,6 +16,7 @@ export interface GameState {
   hands: Record<string, string[]>;
   decks: Record<string, string[]>;
   lastActivity: number;
+  turnDeadline?: number | null;
   mode: PrismaGameMode;
   duelStage?: PrismaDuelStage | null;
   duelCenter?: {
@@ -27,6 +28,7 @@ export interface GameState {
     aVal?: number;
     bVal?: number;
     roundWinner?: string | null;
+    deadlineAt?: number | null;
   } | null;
   discardPiles?: Record<string, string[]> | null;
 }

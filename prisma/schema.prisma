@@ -35,6 +35,11 @@ model Player {
   updatedAt    DateTime  @updatedAt
   gamesAsA     Game[]    @relation("PlayerA")
   gamesAsB     Game[]    @relation("PlayerB")
+  sentFriendships     Friendship[]        @relation("FriendshipRequester")
+  receivedFriendships Friendship[]        @relation("FriendshipAddressee")
+  blockedFriendships  Friendship[]        @relation("FriendshipBlocker")
+  sentMessages        FriendChatMessage[] @relation("ChatSender")
+  receivedMessages    FriendChatMessage[] @relation("ChatRecipient")
 }
 
 model Game {
@@ -59,6 +64,44 @@ model Game {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+model Friendship {
+  id           String            @id @default(uuid())
+  requesterId  String
+  addresseeId  String
+  status       FriendshipStatus  @default(PENDING)
+  blockedById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  requester    Player            @relation("FriendshipRequester", fields: [requesterId], references: [id])
+  addressee    Player            @relation("FriendshipAddressee", fields: [addresseeId], references: [id])
+  blockedBy    Player?           @relation("FriendshipBlocker", fields: [blockedById], references: [id])
+  messages     FriendChatMessage[]
+
+  @@unique([requesterId, addresseeId])
+}
+
+model FriendChatMessage {
+  id           String   @id @default(uuid())
+  friendshipId String
+  senderId     String
+  recipientId  String
+  body         String
+  createdAt    DateTime @default(now())
+
+  friendship   Friendship @relation(fields: [friendshipId], references: [id])
+  sender       Player     @relation("ChatSender", fields: [senderId], references: [id])
+  recipient    Player     @relation("ChatRecipient", fields: [recipientId], references: [id])
+
+  @@index([friendshipId, createdAt])
 }
 
 model Card {

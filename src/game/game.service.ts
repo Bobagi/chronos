@@ -5,7 +5,7 @@ import {
   DuelStage,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
-  Game as PrismaGame,
+  FriendshipStatus,
   GameMode as PrismaGameMode,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -16,11 +16,13 @@ import { DuelGameService } from './duel-game.service';
 import {
   BOT_ID,
   GameState,
+  asCenter,
   drawRandomCardsFromDeck,
   jsonInputOrDbNull,
 } from './game.types';
 
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
+const TURN_DURATION_MS = 10 * 1000;
 
 @Injectable()
 export class GameService {
@@ -69,6 +71,7 @@ export class GameService {
     const handA = drawRandomCardsFromDeck(deckA, 4);
     const handB = drawRandomCardsFromDeck(deckB, 4);
 
+    const now = Date.now();
     const initialState: GameState = {
       players: [playerAId, playerBId],
       turn: 0,
@@ -77,10 +80,14 @@ export class GameService {
       winner: null,
       hands: { [playerAId]: handA, [playerBId]: handB },
       decks: { [playerAId]: deckA, [playerBId]: deckB },
-      lastActivity: Date.now(),
+      lastActivity: now,
+      turnDeadline: now + TURN_DURATION_MS,
       mode,
       duelStage: mode === 'ATTRIBUTE_DUEL' ? 'PICK_CARD' : null,
-      duelCenter: mode === 'ATTRIBUTE_DUEL' ? { chooserId: playerAId } : null,
+      duelCenter:
+        mode === 'ATTRIBUTE_DUEL'
+          ? { chooserId: playerAId, deadlineAt: now + TURN_DURATION_MS }
+          : null,
       discardPiles:
         mode === 'ATTRIBUTE_DUEL' ? { [playerAId]: [], [playerBId]: [] } : null,
     };
@@ -119,10 +126,34 @@ export class GameService {
           },
         },
       },
+      select: { id: true },
     });
 
     if (mode === 'CLASSIC') this.classic.setActiveState(gameId, initialState);
     return { gameId, state: initialState };
+  }
+
+  async createGameWithFriend(
+    requesterId: string,
+    friendId: string,
+    mode: PrismaGameMode = 'CLASSIC',
+  ) {
+    if (requesterId === friendId)
+      throw new Error('Cannot start a game against yourself.');
+    const friendship = await this.prisma.friendship.findFirst({
+      where: {
+        status: FriendshipStatus.ACCEPTED,
+        blockedById: null,
+        OR: [
+          { requesterId: requesterId, addresseeId: friendId },
+          { requesterId: friendId, addresseeId: requesterId },
+        ],
+      },
+    });
+    if (!friendship)
+      throw new Error('Players must be friends before starting a match.');
+
+    return this.createGame(requesterId, friendId, mode);
   }
 
   /* ---------- Classic actions ---------- */
@@ -157,12 +188,31 @@ export class GameService {
 
     const dbGame = await this.prisma.game.findUnique({
       where: { id: gameId },
-      include: {
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        turn: true,
+        hp: true,
+        winner: true,
+        hands: true,
+        decks: true,
+        log: true,
+        mode: true,
+        duelStage: true,
+        duelCenter: true,
+        discardPiles: true,
+        updatedAt: true,
         playerA: { select: { username: true } },
         playerB: { select: { username: true } },
       },
     });
     if (!dbGame) return null;
+
+    const duelCenter =
+      dbGame.duelCenter === null
+        ? null
+        : (asCenter(dbGame.duelCenter) as GameState['duelCenter']);
 
     const mappedState: GameState = {
       players: [dbGame.playerAId, dbGame.playerBId],
@@ -173,10 +223,13 @@ export class GameService {
       hands: dbGame.hands as Record<string, string[]>,
       decks: dbGame.decks as Record<string, string[]>,
       lastActivity: new Date(dbGame.updatedAt).getTime(),
+      turnDeadline:
+        duelCenter && typeof duelCenter.deadlineAt === 'number'
+          ? duelCenter.deadlineAt
+          : null,
       mode: dbGame.mode,
       duelStage: dbGame.duelStage ?? null,
-      duelCenter:
-        (dbGame.duelCenter as Record<string, string[]> | null) ?? null,
+      duelCenter,
       discardPiles:
         (dbGame.discardPiles as Record<string, string[]> | null) ?? null,
       playerUsernames: {
@@ -192,14 +245,72 @@ export class GameService {
     if (mem && mem.winner !== undefined)
       return { winner: mem.winner, log: mem.log };
 
-    const db = await this.prisma.game.findUnique({ where: { id: gameId } });
+    const db = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      select: { winner: true, log: true },
+    });
     if (!db) throw new Error('Game not found');
     return { winner: db.winner, log: db.log as string[] };
   }
 
+  async surrenderGame(gameId: string, playerId: string) {
+    const memState = this.classic.getActiveState(gameId);
+    if (memState) {
+      if (!memState.players.includes(playerId))
+        throw new Error('Player is not part of this game.');
+      const opponentId =
+        memState.players.find((p) => p !== playerId) ?? memState.players[0];
+      memState.winner = opponentId;
+      memState.turnDeadline = null;
+      memState.log.push(`Player ${playerId} surrendered.`);
+      memState.lastActivity = Date.now();
+
+      await this.prisma.game.update({
+        where: { id: gameId },
+        data: {
+          winner: opponentId,
+          log: memState.log,
+          hp: memState.hp,
+          turn: memState.turn,
+          hands: memState.hands,
+          decks: memState.decks,
+        },
+        select: { id: true },
+      });
+      this.classic.removeActiveState(gameId);
+      return { winner: opponentId };
+    }
+
+    const dbGame = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      select: {
+        playerAId: true,
+        playerBId: true,
+        winner: true,
+        log: true,
+      },
+    });
+    if (!dbGame) throw new Error('Game not found');
+    if (![dbGame.playerAId, dbGame.playerBId].includes(playerId))
+      throw new Error('Player is not part of this game.');
+    if (dbGame.winner)
+      return { winner: dbGame.winner, log: dbGame.log as string[] };
+
+    const opponentId =
+      dbGame.playerAId === playerId ? dbGame.playerBId : dbGame.playerAId;
+    const existingLog = (dbGame.log as string[]) ?? [];
+    existingLog.push(`Player ${playerId} surrendered.`);
+    const updated = await this.prisma.game.update({
+      where: { id: gameId },
+      data: { winner: opponentId, log: existingLog },
+      select: { winner: true },
+    });
+    return { winner: updated.winner, log: existingLog };
+  }
+
   /* ---------- Active list ---------- */
   private async listActiveDuelFromDb() {
-    const rows: PrismaGame[] = await this.prisma.game.findMany({
+    const rows = await this.prisma.game.findMany({
       where: {
         mode: 'ATTRIBUTE_DUEL',
         winner: null,
@@ -207,6 +318,15 @@ export class GameService {
       },
       orderBy: { updatedAt: 'desc' },
       take: 50,
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        mode: true,
+        turn: true,
+        updatedAt: true,
+        winner: true,
+      },
     });
     return rows.map((g) => ({
       gameId: g.id,
@@ -270,6 +390,15 @@ export class GameService {
       },
       orderBy: { updatedAt: 'desc' },
       take: 50,
+      select: {
+        id: true,
+        playerAId: true,
+        playerBId: true,
+        mode: true,
+        turn: true,
+        updatedAt: true,
+        winner: true,
+      },
     });
     const duel = rows.map((g) => ({
       gameId: g.id,

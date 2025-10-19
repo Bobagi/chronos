@@ -71,6 +71,37 @@ export class GameController {
     return this.gameService.skipTurn(body.gameId, body.player);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('start-with-friend')
+  async startWithFriend(
+    @Req() request: AuthenticatedRequest,
+    @Body('friendId') friendId: string,
+    @Body('mode') mode?: 'CLASSIC' | 'ATTRIBUTE_DUEL',
+  ) {
+    const userId = request.user?.sub ?? request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Missing authenticated user identifier');
+    }
+    return this.gameService.createGameWithFriend(
+      userId,
+      friendId,
+      mode ?? 'CLASSIC',
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('surrender')
+  async surrender(
+    @Req() request: AuthenticatedRequest,
+    @Body('gameId') gameId: string,
+  ) {
+    const userId = request.user?.sub ?? request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Missing authenticated user identifier');
+    }
+    return this.gameService.surrenderGame(gameId, userId);
+  }
+
   /** Duel actions */
   @Post(':id/duel/choose-card')
   chooseCard(@Param('id') id: string, @Body() dto: ChooseCardDto) {
