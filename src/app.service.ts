@@ -17,6 +17,7 @@ export const APPLICATION_HOME_METADATA: ApplicationHomeMetadata = {
 const APPLICATION_HOME_TEMPLATE_LOCATIONS = [
   join(__dirname, 'assets', 'application-home.html'),
   join(__dirname, '..', 'assets', 'application-home.html'),
+  join(process.cwd(), 'src', 'assets', 'application-home.html'),
 ];
 
 let cachedTemplate: string | null = null;
