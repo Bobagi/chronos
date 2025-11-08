@@ -63,24 +63,5 @@ services:
       - ./prisma:/app/prisma
     restart: always
 
-  prisma:
-    image: node:20
-    container_name: chronos-prisma
-    working_dir: /app
-    depends_on:
-      db:
-        condition: service_healthy
-      db-collation-fix:
-        condition: service_completed_successfully
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-    volumes:
-      - .:/app
-    command: tail -f /dev/null
-    logging:
-      driver: 'none'
-
 volumes:
   pgdata:
