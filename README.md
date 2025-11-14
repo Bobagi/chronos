@@ -94,10 +94,10 @@ Open: `http://localhost:5555`
 
 ## 🧪 Quick API Checks
 
-**Health/test**
+**Health**
 
 ```bash
-curl -k http://localhost:3053/game/test
+curl -k http://localhost:3053/health
 ```
 
 **Start a new game**
