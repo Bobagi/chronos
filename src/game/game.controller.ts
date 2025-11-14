@@ -154,12 +154,6 @@ export class GameController {
     return this.gameService.getCardByCode(code);
   }
 
-  /** Health */
-  @Get('test')
-  test(): string {
-    return 'Online';
-  }
-
   /** Undo pick */
   @Post(':id/duel/unchoose-card')
   unchooseCard(@Param('id') id: string, @Body() body: { playerId: string }) {
