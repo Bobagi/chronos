@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import {
   DuelStage,
+  FriendshipStatus,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
-  FriendshipStatus,
   GameMode as PrismaGameMode,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -24,6 +23,20 @@ import {
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
 const TURN_DURATION_MS = 10 * 1000;
 
+const CARD_IMAGE_BASE_URL = (
+  process.env.CARD_IMAGE_BASE_URL ?? 'https://bobagi.space'
+).replace(/\/+$/, '');
+
+function applyCardImageBase(item: PrismaCard): PrismaCard {
+  const imageUrl = item.imageUrl;
+  if (!imageUrl || !CARD_IMAGE_BASE_URL) return item;
+
+  return {
+    ...item,
+    imageUrl: `${CARD_IMAGE_BASE_URL}${imageUrl}`,
+  } as PrismaCard;
+}
+
 @Injectable()
 export class GameService {
   constructor(
@@ -34,10 +47,12 @@ export class GameService {
 
   /* ---------- Catalog ---------- */
   async getAllCards(): Promise<PrismaCard[]> {
-    return this.prisma.card.findMany();
+    const cards = await this.prisma.card.findMany();
+    return cards.map((card) => applyCardImageBase(card));
   }
   async getCardByCode(code: string): Promise<PrismaCard | null> {
-    return this.prisma.card.findUnique({ where: { code } });
+    const card = await this.prisma.card.findUnique({ where: { code } });
+    return card ? applyCardImageBase(card) : null;
   }
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
     return this.prisma.cardTemplate.findMany();
@@ -112,7 +127,7 @@ export class GameService {
               id: playerAId,
               username: playerAId,
               passwordHash: placeholderHash,
-            } as unknown as Prisma.PlayerCreateWithoutGamesAsAInput,
+            } as Prisma.PlayerCreateWithoutGamesAsAInput,
           },
         },
         playerB: {
@@ -122,7 +137,7 @@ export class GameService {
               id: playerBId,
               username: playerBId === BOT_ID ? 'Bot Opponent' : playerBId,
               passwordHash: placeholderHash,
-            } as unknown as Prisma.PlayerCreateWithoutGamesAsBInput,
+            } as Prisma.PlayerCreateWithoutGamesAsBInput,
           },
         },
       },
