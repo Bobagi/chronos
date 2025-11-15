@@ -10,6 +10,8 @@ const prisma = new PrismaClient();
 
 type PlayerRole = 'ADMIN' | 'USER';
 
+type CardSeedInput = Omit<Prisma.CardCreateManyInput, 'collectionId'>;
+
 const asPlayerCreateInput = (
   data: Record<string, unknown>,
 ): Prisma.PlayerCreateInput => data as unknown as Prisma.PlayerCreateInput;
@@ -59,9 +61,32 @@ async function main() {
 
   console.log('✅ Users seeded: admin, alice');
 
+  // ---------- Coleções ----------
+  const dracomaniaCollection = await prisma.collection.upsert({
+    where: { slug: 'dracomania' },
+    update: {
+      name: 'Dracomania',
+      description: 'Coleção Dracomania da Elma Chips.',
+      manufacturer: 'Elma Chips',
+      releaseDate: new Date('1996-01-01'),
+      totalCards: 32,
+      imageUrl: 'https://bobagi.space/images/cards/dracomania.png',
+    },
+    create: {
+      slug: 'dracomania',
+      name: 'Dracomania',
+      description: 'Coleção Dracomania da Elma Chips.',
+      manufacturer: 'Elma Chips',
+      releaseDate: new Date('1996-01-01'),
+      totalCards: 32,
+      imageUrl: 'https://bobagi.space/images/cards/dracomania.png',
+    },
+  });
+
+  console.log('✅ Collections seeded: Dracomania');
+
   // ---------- Cartas ----------
-  await prisma.card.createMany({
-    data: [
+  const dracomaniaCards: CardSeedInput[] = [
       // {
       //   code: 'fireball',
       //   name: 'Fireball',
@@ -412,7 +437,13 @@ async function main() {
         might: 13,
         fire: 7,
       },
-    ],
+    ];
+
+  await prisma.card.createMany({
+    data: dracomaniaCards.map((card) => ({
+      ...card,
+      collectionId: dracomaniaCollection.id,
+    })),
     skipDuplicates: true,
   });
 
