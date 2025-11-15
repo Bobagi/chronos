@@ -5,6 +5,7 @@ import {
   FriendshipStatus,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
+  Collection as PrismaCollection,
   GameMode as PrismaGameMode,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -63,14 +64,38 @@ export class GameService {
   ) {}
 
   /* ---------- Catalog ---------- */
-  async getAllCards(): Promise<PrismaCard[]> {
-    const cards = await this.prisma.card.findMany();
+  private async findCards(where?: Prisma.CardWhereInput): Promise<PrismaCard[]> {
+    const cards = await this.prisma.card.findMany({ where });
     return cards.map((card) => applyCardImageBase(card));
   }
+
+  async getAllCards(): Promise<PrismaCard[]> {
+    return this.findCards();
+  }
+
+  async getCardsByCollectionId(collectionId: string): Promise<PrismaCard[]> {
+    return this.findCards({ collectionId });
+  }
+
   async getCardByCode(code: string): Promise<PrismaCard | null> {
     const card = await this.prisma.card.findUnique({ where: { code } });
     return card ? applyCardImageBase(card) : null;
   }
+
+  async getCollections(): Promise<PrismaCollection[]> {
+    return this.prisma.collection.findMany({ orderBy: { name: 'asc' } });
+  }
+
+  async getCollectionByIdentifier(
+    identifier: string,
+  ): Promise<PrismaCollection | null> {
+    return this.prisma.collection.findFirst({
+      where: {
+        OR: [{ id: identifier }, { slug: identifier }],
+      },
+    });
+  }
+
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
     return this.prisma.cardTemplate.findMany();
   }

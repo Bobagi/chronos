@@ -4,8 +4,10 @@ import {
   Delete,
   Get,
   Logger,
+  NotFoundException,
   Param,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -144,14 +146,54 @@ export class GameController {
 
   /** Card catalog */
   @Get('cards')
-  getCards() {
-    return this.gameService.getAllCards();
+  async getCards(@Query('collection') collection?: string) {
+    if (!collection) {
+      return this.gameService.getAllCards();
+    }
+
+    const targetCollection = await this.gameService.getCollectionByIdentifier(
+      collection,
+    );
+    if (!targetCollection) {
+      throw new NotFoundException(
+        `Collection with id or slug "${collection}" was not found`,
+      );
+    }
+    return this.gameService.getCardsByCollectionId(targetCollection.id);
   }
 
   /** Single card by code */
   @Get('cards/:code')
   getCardByCode(@Param('code') code: string) {
     return this.gameService.getCardByCode(code);
+  }
+
+  /** Collections */
+  @Get('collections')
+  getCollections() {
+    return this.gameService.getCollections();
+  }
+
+  @Get('collections/:identifier')
+  async getCollection(@Param('identifier') identifier: string) {
+    const collection = await this.gameService.getCollectionByIdentifier(identifier);
+    if (!collection) {
+      throw new NotFoundException(
+        `Collection with id or slug "${identifier}" was not found`,
+      );
+    }
+    return collection;
+  }
+
+  @Get('collections/:identifier/cards')
+  async getCollectionCards(@Param('identifier') identifier: string) {
+    const collection = await this.gameService.getCollectionByIdentifier(identifier);
+    if (!collection) {
+      throw new NotFoundException(
+        `Collection with id or slug "${identifier}" was not found`,
+      );
+    }
+    return this.gameService.getCardsByCollectionId(collection.id);
   }
 
   /** Undo pick */
