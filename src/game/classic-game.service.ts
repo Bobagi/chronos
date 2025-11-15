@@ -4,7 +4,7 @@ import { BOT_ID, GameState, drawRandomCardsFromDeck } from './game.types';
 
 @Injectable()
 export class ClassicGameService {
-  private activeClassicStates: Record<string, GameState> = {};
+  private activeClassicStates: { [gameId: string]: GameState } = {};
   private static readonly classicExpiryMs = 5 * 60 * 1000;
   private static readonly turnDurationMs = 10 * 1000;
 
@@ -63,7 +63,8 @@ export class ClassicGameService {
 
   private forceSkip(state: GameState, skipperId: string, reason?: string) {
     if (reason) state.log.push(reason);
-    const hasCards = (state.hands[skipperId] ?? []).length > 0;
+    state.hands[skipperId] ??= [];
+    const hasCards = state.hands[skipperId].length > 0;
     state.log.push(
       hasCards
         ? `Player ${skipperId} skips`
@@ -74,20 +75,21 @@ export class ClassicGameService {
     state.lastActivity = Date.now();
 
     const currentPlayerId = this.currentPlayerId(state);
-    const drawnCard = drawRandomCardsFromDeck(
-      state.decks[currentPlayerId] ?? [],
-      1,
-    )[0];
+    state.decks[currentPlayerId] ??= [];
+    const drawnCard = drawRandomCardsFromDeck(state.decks[currentPlayerId], 1)[0];
     if (drawnCard) {
-      (state.hands[currentPlayerId] ??= []).push(drawnCard);
+      state.hands[currentPlayerId] ??= [];
+      state.hands[currentPlayerId].push(drawnCard);
       state.log.push(`${currentPlayerId} draws`);
     } else {
       state.log.push(`${currentPlayerId} cannot draw (deck empty)`);
     }
 
     const otherPlayerId = state.players[(state.turn + 1) % 2];
-    const currentHand = state.hands[currentPlayerId] ?? [];
-    const otherHand = state.hands[otherPlayerId] ?? [];
+    state.hands[currentPlayerId] ??= [];
+    state.hands[otherPlayerId] ??= [];
+    const currentHand = state.hands[currentPlayerId];
+    const otherHand = state.hands[otherPlayerId];
     if (currentHand.length === 0 && otherHand.length === 0) {
       state.winner = null;
       state.log.push('Both out of cards — tie');
@@ -124,7 +126,8 @@ export class ClassicGameService {
   private async handleBotIfNeeded(state: GameState) {
     let completed = false;
     while (!state.winner && this.currentPlayerId(state) === BOT_ID) {
-      const botHand = state.hands[BOT_ID] ?? [];
+      state.hands[BOT_ID] ??= [];
+      const botHand = state.hands[BOT_ID];
       if (botHand.length > 0) {
         const pickedBotCard =
           botHand[Math.floor(Math.random() * botHand.length)];
@@ -157,6 +160,7 @@ export class ClassicGameService {
     const [playerAId, playerBId] = state.players;
     const opponentId = playerAId === actorId ? playerBId : playerAId;
 
+    state.hands[actorId] ??= [];
     const playerHand = state.hands[actorId];
     const handIndex = playerHand.indexOf(cardCode);
     if (handIndex < 0)
@@ -184,11 +188,13 @@ export class ClassicGameService {
 
     const nextPlayerId = this.currentPlayerId(state);
     if (!state.winner) {
+      state.decks[nextPlayerId] ??= [];
       const drawnCard = drawRandomCardsFromDeck(
         state.decks[nextPlayerId],
         1,
       )[0];
       if (drawnCard) {
+        state.hands[nextPlayerId] ??= [];
         state.hands[nextPlayerId].push(drawnCard);
         state.log.push(`${nextPlayerId} draws a card`);
       } else {
@@ -212,7 +218,8 @@ export class ClassicGameService {
       Date.now() > state.turnDeadline
     ) {
       const currentPlayerId = this.currentPlayerId(state);
-      const hand = state.hands[currentPlayerId] ?? [];
+      state.hands[currentPlayerId] ??= [];
+      const hand = state.hands[currentPlayerId];
       if (hand.length > 0) {
         state.log.push(
           `Timer expired for ${currentPlayerId} — card chosen automatically`,

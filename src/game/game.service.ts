@@ -15,9 +15,14 @@ import { DuelGameService } from './duel-game.service';
 import {
   BOT_ID,
   GameState,
-  asCenter,
+  PlayerCardCollection,
+  PlayerHealthCollection,
+  convertCardCollectionToPrismaInput,
+  deserializeDuelCenter,
   drawRandomCardsFromDeck,
-  jsonInputOrDbNull,
+  initializeDuelCenterState,
+  prepareNullableJsonField,
+  serializeDuelCenter,
 } from './game.types';
 
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
@@ -27,14 +32,26 @@ const CARD_IMAGE_BASE_URL = (
   process.env.CARD_IMAGE_BASE_URL ?? 'https://bobagi.space'
 ).replace(/\/+$/, '');
 
-function applyCardImageBase(item: PrismaCard): PrismaCard {
-  const imageUrl = item.imageUrl;
-  if (!imageUrl || !CARD_IMAGE_BASE_URL) return item;
+function applyCardImageBase(card: PrismaCard): PrismaCard {
+  const imageUrl = card.imageUrl;
+  if (!imageUrl || !CARD_IMAGE_BASE_URL) return card;
 
-  return {
-    ...item,
+  const updatedCard: PrismaCard = {
+    ...card,
     imageUrl: `${CARD_IMAGE_BASE_URL}${imageUrl}`,
-  } as PrismaCard;
+  };
+  return updatedCard;
+}
+
+function createShuffledDeck(cardCodes: string[]): string[] {
+  const shuffledDeck = [...cardCodes];
+  for (let index = shuffledDeck.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const temporaryValue = shuffledDeck[index];
+    shuffledDeck[index] = shuffledDeck[swapIndex];
+    shuffledDeck[swapIndex] = temporaryValue;
+  }
+  return shuffledDeck;
 }
 
 @Injectable()
@@ -68,27 +85,31 @@ export class GameService {
     const placeholderHash = await bcrypt.hash(randomUUID(), 10);
 
     const allCards = await this.getAllCards();
-    const poolCodes = allCards.length
-      ? Array.from(new Set(allCards.map((c) => c.code)))
+    const availableCardCodes = allCards.length
+      ? Array.from(new Set(allCards.map((card) => card.code)))
       : ['fireball', 'lightning', 'heal'];
 
-    function shuffleArray<T>(arr: T[]): T[] {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-
-    const deckA = shuffleArray(poolCodes);
-    const deckB = shuffleArray(poolCodes);
+    const deckA = createShuffledDeck(availableCardCodes);
+    const deckB = createShuffledDeck(availableCardCodes);
     const handA = drawRandomCardsFromDeck(deckA, 4);
     const handB = drawRandomCardsFromDeck(deckB, 4);
 
     const now = Date.now();
+    const duelCenterState =
+      mode === 'ATTRIBUTE_DUEL' ? initializeDuelCenterState() : null;
+    if (duelCenterState) {
+      duelCenterState.chooserId = playerAId;
+      duelCenterState.deadlineAt = now + TURN_DURATION_MS;
+    }
+
+    const playerBUsername =
+      playerBId === BOT_ID ? 'Bot Opponent' : playerBId;
     const initialState: GameState = {
       players: [playerAId, playerBId],
+      playerUsernames: {
+        [playerAId]: playerAId,
+        [playerBId]: playerBUsername,
+      },
       turn: 0,
       log: ['Game created'],
       hp: { [playerAId]: 20, [playerBId]: 20 },
@@ -99,12 +120,20 @@ export class GameService {
       turnDeadline: now + TURN_DURATION_MS,
       mode,
       duelStage: mode === 'ATTRIBUTE_DUEL' ? 'PICK_CARD' : null,
-      duelCenter:
-        mode === 'ATTRIBUTE_DUEL'
-          ? { chooserId: playerAId, deadlineAt: now + TURN_DURATION_MS }
-          : null,
+      duelCenter: duelCenterState,
       discardPiles:
         mode === 'ATTRIBUTE_DUEL' ? { [playerAId]: [], [playerBId]: [] } : null,
+    };
+
+    const createPlayerAInput: Prisma.PlayerCreateWithoutGamesAsAInput = {
+      id: playerAId,
+      username: playerAId,
+      passwordHash: placeholderHash,
+    };
+    const createPlayerBInput: Prisma.PlayerCreateWithoutGamesAsBInput = {
+      id: playerBId,
+      username: playerBUsername,
+      passwordHash: placeholderHash,
     };
 
     await this.prisma.game.create({
@@ -117,27 +146,23 @@ export class GameService {
         decks: initialState.decks,
         log: initialState.log,
         mode,
-        duelStage: initialState.duelStage ?? null,
-        duelCenter: jsonInputOrDbNull(initialState.duelCenter),
-        discardPiles: jsonInputOrDbNull(initialState.discardPiles),
+        duelStage: initialState.duelStage,
+        duelCenter: prepareNullableJsonField(
+          serializeDuelCenter(initialState.duelCenter),
+        ),
+        discardPiles: prepareNullableJsonField(
+          convertCardCollectionToPrismaInput(initialState.discardPiles),
+        ),
         playerA: {
           connectOrCreate: {
             where: { id: playerAId },
-            create: {
-              id: playerAId,
-              username: playerAId,
-              passwordHash: placeholderHash,
-            } as Prisma.PlayerCreateWithoutGamesAsAInput,
+            create: createPlayerAInput,
           },
         },
         playerB: {
           connectOrCreate: {
             where: { id: playerBId },
-            create: {
-              id: playerBId,
-              username: playerBId === BOT_ID ? 'Bot Opponent' : playerBId,
-              passwordHash: placeholderHash,
-            } as Prisma.PlayerCreateWithoutGamesAsBInput,
+            create: createPlayerBInput,
           },
         },
       },
@@ -227,30 +252,30 @@ export class GameService {
     const duelCenter =
       dbGame.duelCenter === null
         ? null
-        : (asCenter(dbGame.duelCenter) as GameState['duelCenter']);
+        : deserializeDuelCenter(dbGame.duelCenter);
+
+    const playerAUsername = dbGame.playerA?.username ?? dbGame.playerAId;
+    const playerBUsername = dbGame.playerB?.username ?? dbGame.playerBId;
 
     const mappedState: GameState = {
       players: [dbGame.playerAId, dbGame.playerBId],
+      playerUsernames: {
+        [dbGame.playerAId]: playerAUsername,
+        [dbGame.playerBId]: playerBUsername,
+      },
       turn: dbGame.turn,
       log: (dbGame.log as string[]) ?? [],
-      hp: dbGame.hp as Record<string, number>,
+      hp: dbGame.hp as PlayerHealthCollection,
       winner: dbGame.winner ?? null,
-      hands: dbGame.hands as Record<string, string[]>,
-      decks: dbGame.decks as Record<string, string[]>,
+      hands: dbGame.hands as PlayerCardCollection,
+      decks: dbGame.decks as PlayerCardCollection,
       lastActivity: new Date(dbGame.updatedAt).getTime(),
-      turnDeadline:
-        duelCenter && typeof duelCenter.deadlineAt === 'number'
-          ? duelCenter.deadlineAt
-          : null,
+      turnDeadline: duelCenter?.deadlineAt ?? null,
       mode: dbGame.mode,
       duelStage: dbGame.duelStage ?? null,
       duelCenter,
       discardPiles:
-        (dbGame.discardPiles as Record<string, string[]> | null) ?? null,
-      playerUsernames: {
-        [dbGame.playerAId]: dbGame.playerA?.username ?? dbGame.playerAId,
-        [dbGame.playerBId]: dbGame.playerB?.username ?? dbGame.playerBId,
-      },
+        (dbGame.discardPiles as PlayerCardCollection | null) ?? null,
     };
     return mappedState;
   }
