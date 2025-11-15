@@ -13,9 +13,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { Card as PrismaCard } from '@prisma/client';
 import { ChooseAttributeDto } from './dto/choose-attribute.dto';
 import { ChooseCardDto } from './dto/choose-card.dto';
 import { PlayCardDto } from './dto/play-card.dto';
+import { CardCollectionRecord } from './game-collection.repository';
 import { GameService } from './game.service';
 import { BOT_ID, GameState } from './game.types';
 
@@ -146,7 +148,9 @@ export class GameController {
 
   /** Card catalog */
   @Get('cards')
-  async getCards(@Query('collection') collection?: string) {
+  async getCards(
+    @Query('collection') collection?: string,
+  ): Promise<PrismaCard[]> {
     if (!collection) {
       return this.gameService.getAllCards();
     }
@@ -170,12 +174,14 @@ export class GameController {
 
   /** Collections */
   @Get('collections')
-  getCollections() {
+  getCollections(): Promise<CardCollectionRecord[]> {
     return this.gameService.getCollections();
   }
 
   @Get('collections/:identifier')
-  async getCollection(@Param('identifier') identifier: string) {
+  async getCollection(
+    @Param('identifier') identifier: string,
+  ): Promise<CardCollectionRecord> {
     const collection = await this.gameService.getCollectionByIdentifier(identifier);
     if (!collection) {
       throw new NotFoundException(
@@ -186,7 +192,9 @@ export class GameController {
   }
 
   @Get('collections/:identifier/cards')
-  async getCollectionCards(@Param('identifier') identifier: string) {
+  async getCollectionCards(
+    @Param('identifier') identifier: string,
+  ): Promise<PrismaCard[]> {
     const collection = await this.gameService.getCollectionByIdentifier(identifier);
     if (!collection) {
       throw new NotFoundException(

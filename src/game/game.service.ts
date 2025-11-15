@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
 import {
+  Prisma,
   DuelStage,
   FriendshipStatus,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
-  Collection as PrismaCollection,
   GameMode as PrismaGameMode,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -13,6 +12,10 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassicGameService } from './classic-game.service';
 import { DuelGameService } from './duel-game.service';
+import {
+  CardCollectionRecord,
+  GameCollectionRepository,
+} from './game-collection.repository';
 import {
   BOT_ID,
   GameState,
@@ -61,6 +64,7 @@ export class GameService {
     private readonly prisma: PrismaService,
     private readonly classic: ClassicGameService,
     private readonly duel: DuelGameService,
+    private readonly collectionRepository: GameCollectionRepository,
   ) {}
 
   /* ---------- Catalog ---------- */
@@ -74,7 +78,13 @@ export class GameService {
   }
 
   async getCardsByCollectionId(collectionId: string): Promise<PrismaCard[]> {
-    return this.findCards({ collectionId });
+    const cards = await this.prisma.$queryRaw<PrismaCard[]>(Prisma.sql`
+      SELECT *
+      FROM "Card"
+      WHERE "collectionId" = ${collectionId}
+      ORDER BY "number" ASC
+    `);
+    return cards.map((card) => applyCardImageBase(card));
   }
 
   async getCardByCode(code: string): Promise<PrismaCard | null> {
@@ -82,18 +92,14 @@ export class GameService {
     return card ? applyCardImageBase(card) : null;
   }
 
-  async getCollections(): Promise<PrismaCollection[]> {
-    return this.prisma.collection.findMany({ orderBy: { name: 'asc' } });
+  getCollections(): Promise<CardCollectionRecord[]> {
+    return this.collectionRepository.listCollections();
   }
 
-  async getCollectionByIdentifier(
+  getCollectionByIdentifier(
     identifier: string,
-  ): Promise<PrismaCollection | null> {
-    return this.prisma.collection.findFirst({
-      where: {
-        OR: [{ id: identifier }, { slug: identifier }],
-      },
-    });
+  ): Promise<CardCollectionRecord | null> {
+    return this.collectionRepository.findByIdentifier(identifier);
   }
 
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
