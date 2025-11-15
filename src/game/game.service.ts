@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import {
   DuelStage,
+  FriendshipStatus,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
-  FriendshipStatus,
   GameMode as PrismaGameMode,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -24,20 +23,18 @@ import {
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
 const TURN_DURATION_MS = 10 * 1000;
 
-const CARD_IMAGE_BASE_URL = (process.env.CARD_IMAGE_BASE_URL ?? 'https://bobagi.space')
-  .replace(/\/+$/, '');
+const CARD_IMAGE_BASE_URL = (
+  process.env.CARD_IMAGE_BASE_URL ?? 'https://bobagi.space'
+).replace(/\/+$/, '');
 
-function applyCardImageBase<T extends { imageUrl: string | null }>(item: T): T {
+function applyCardImageBase(item: PrismaCard): PrismaCard {
   const imageUrl = item.imageUrl;
-  if (!imageUrl) return item;
-  if (/^https?:\/\//i.test(imageUrl)) return item;
-  if (!CARD_IMAGE_BASE_URL) return item;
+  if (!imageUrl || !CARD_IMAGE_BASE_URL) return item;
 
-  const normalizedPath = imageUrl.replace(/^\/+/, '');
   return {
     ...item,
-    imageUrl: `${CARD_IMAGE_BASE_URL}/${normalizedPath}`,
-  } as T;
+    imageUrl: `${CARD_IMAGE_BASE_URL}${imageUrl}`,
+  } as PrismaCard;
 }
 
 @Injectable()
@@ -130,7 +127,7 @@ export class GameService {
               id: playerAId,
               username: playerAId,
               passwordHash: placeholderHash,
-            } as unknown as Prisma.PlayerCreateWithoutGamesAsAInput,
+            } as Prisma.PlayerCreateWithoutGamesAsAInput,
           },
         },
         playerB: {
@@ -140,7 +137,7 @@ export class GameService {
               id: playerBId,
               username: playerBId === BOT_ID ? 'Bot Opponent' : playerBId,
               passwordHash: placeholderHash,
-            } as unknown as Prisma.PlayerCreateWithoutGamesAsBInput,
+            } as Prisma.PlayerCreateWithoutGamesAsBInput,
           },
         },
       },
