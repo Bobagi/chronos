@@ -34,7 +34,7 @@ INSERT INTO "public"."Collection" (
     'Elma Chips',
     '1996-01-01T00:00:00.000Z'::timestamp(3),
     32,
-    'https://bobagi.space/images/cards/dracomania.png'
+    'images/cards/dracomania.png'
 )
 ON CONFLICT ("slug") DO UPDATE
 SET
@@ -45,6 +45,14 @@ SET
     "totalCards" = EXCLUDED."totalCards",
     "imageUrl" = EXCLUDED."imageUrl",
     "updatedAt" = CURRENT_TIMESTAMP;
+
+UPDATE "public"."Collection"
+SET "imageUrl" = regexp_replace("imageUrl", '^https://bobagi\\.space/', '')
+WHERE "imageUrl" LIKE 'https://bobagi.space/%';
+
+UPDATE "public"."Card"
+SET "imageUrl" = regexp_replace("imageUrl", '^https://bobagi\\.space/', '')
+WHERE "imageUrl" LIKE 'https://bobagi.space/%';
 
 -- AlterTable
 ALTER TABLE "public"."Card" ADD COLUMN     "collectionId" TEXT;
