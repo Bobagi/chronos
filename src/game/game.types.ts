@@ -175,10 +175,11 @@ export function convertCardCollectionToPrismaInput(
   collection: PlayerCardCollection | null,
 ): Prisma.InputJsonObject | null {
   if (collection === null) return null;
-  const playerEntries: [string, Prisma.InputJsonValue][] = Object.entries(collection).map(
-    ([playerId, cardCodes]) => [playerId, cardCodes as Prisma.InputJsonValue],
-  );
-  return Object.fromEntries(playerEntries) as Prisma.InputJsonObject;
+  const serializableCollection: Record<string, Prisma.InputJsonValue> = {};
+  for (const [playerId, playerCardCodes] of Object.entries(collection)) {
+    serializableCollection[playerId] = playerCardCodes;
+  }
+  return serializableCollection as Prisma.InputJsonObject;
 }
 
 export function prepareNullableJsonField(
