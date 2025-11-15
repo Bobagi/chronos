@@ -1,13 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DuelStage } from '@prisma/client';
+import { DuelStage, Card as PrismaCard } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  AttributeKey,
   BOT_ID,
+  DuelCenterState,
   GameState,
-  asCenter,
-  jsonInputOrDbNull,
-  removeOneCardFromHand,
-  takeOneRandomFromDeck,
+  PlayerCardCollection,
+  convertCardCollectionToPrismaInput,
+  deserializeDuelCenter,
+  initializeDuelCenterState,
+  prepareNullableJsonField,
+  removeCardFromHand,
+  serializeDuelCenter,
+  takeOneRandomCardFromDeck,
 } from './game.types';
 
 const TURN_DURATION_MS = 10 * 1000;
@@ -20,28 +26,30 @@ export class DuelGameService {
 
   private autoPickBotCardIfNeeded(
     gameData: { playerAId: string; playerBId: string },
-    playerHands: Record<string, string[]>,
-    duelCenter: NonNullable<GameState['duelCenter']>,
-  ) {
-    if (!duelCenter.aCardCode && gameData.playerAId === BOT_ID) {
-      const botHand = playerHands[gameData.playerAId] ?? [];
-      if (botHand.length) {
+    playerHands: PlayerCardCollection,
+    duelCenter: DuelCenterState,
+  ): void {
+    if (!duelCenter.playerACardCode && gameData.playerAId === BOT_ID) {
+      playerHands[gameData.playerAId] ??= [];
+      const botHand = playerHands[gameData.playerAId];
+      if (botHand.length > 0) {
         const randomIndex = Math.floor(Math.random() * botHand.length);
         const selectedCard = botHand[randomIndex];
-        removeOneCardFromHand(playerHands, gameData.playerAId, selectedCard);
-        duelCenter.aCardCode = selectedCard;
+        removeCardFromHand(playerHands, gameData.playerAId, selectedCard);
+        duelCenter.playerACardCode = selectedCard;
         this.logger.log(
           `[autoPickBotCardIfNeeded] BOT (A) selected card=${selectedCard}`,
         );
       }
     }
-    if (!duelCenter.bCardCode && gameData.playerBId === BOT_ID) {
-      const botHand = playerHands[gameData.playerBId] ?? [];
-      if (botHand.length) {
+    if (!duelCenter.playerBCardCode && gameData.playerBId === BOT_ID) {
+      playerHands[gameData.playerBId] ??= [];
+      const botHand = playerHands[gameData.playerBId];
+      if (botHand.length > 0) {
         const randomIndex = Math.floor(Math.random() * botHand.length);
         const selectedCard = botHand[randomIndex];
-        removeOneCardFromHand(playerHands, gameData.playerBId, selectedCard);
-        duelCenter.bCardCode = selectedCard;
+        removeCardFromHand(playerHands, gameData.playerBId, selectedCard);
+        duelCenter.playerBCardCode = selectedCard;
         this.logger.log(
           `[autoPickBotCardIfNeeded] BOT (B) selected card=${selectedCard}`,
         );
@@ -51,50 +59,65 @@ export class DuelGameService {
 
   private pickRandomCardFromHand(
     playerId: string,
-    hands: Record<string, string[]>,
-  ): string | undefined {
-    const hand = hands[playerId] ?? [];
-    if (!hand.length) return undefined;
+    hands: PlayerCardCollection,
+  ): string | null {
+    hands[playerId] ??= [];
+    const hand = hands[playerId];
+    if (hand.length === 0) return null;
     const randomIndex = Math.floor(Math.random() * hand.length);
     const selectedCard = hand[randomIndex];
-    removeOneCardFromHand(hands, playerId, selectedCard);
+    removeCardFromHand(hands, playerId, selectedCard);
     return selectedCard;
   }
 
-  private randomAttribute(): 'magic' | 'might' | 'fire' {
-    const attributes: Array<'magic' | 'might' | 'fire'> = [
-      'magic',
-      'might',
-      'fire',
-    ];
+  private randomAttribute(): AttributeKey {
+    const attributes: AttributeKey[] = ['magic', 'might', 'fire'];
     return attributes[Math.floor(Math.random() * attributes.length)];
+  }
+
+type AttributeValueMap = {
+  magic: number;
+  might: number;
+  fire: number;
+};
+
+  private buildAttributeValues(card: PrismaCard): AttributeValueMap {
+    const values: AttributeValueMap = {
+      magic: card.magic ?? 0,
+      might: card.might ?? 0,
+      fire: card.fire ?? 0,
+    };
+    return values;
   }
 
   private async determineBestAttributeForBot(
     gameData: { playerAId: string; playerBId: string },
-    duelCenter: NonNullable<GameState['duelCenter']>,
-  ): Promise<'magic' | 'might' | 'fire'> {
-    const playerACardCode = duelCenter.aCardCode!;
-    const playerBCardCode = duelCenter.bCardCode!;
+    duelCenter: DuelCenterState,
+  ): Promise<AttributeKey> {
+    const playerACardCode = duelCenter.playerACardCode;
+    const playerBCardCode = duelCenter.playerBCardCode;
+    if (!playerACardCode || !playerBCardCode) {
+      return 'magic';
+    }
+
     const cards = await this.prisma.card.findMany({
       where: { code: { in: [playerACardCode, playerBCardCode] } },
     });
-    const findCard = (code: string) => cards.find((c) => c.code === code)!;
+    const findCard = (code: string) => cards.find((card) => card.code === code);
     const playerACard = findCard(playerACardCode);
     const playerBCard = findCard(playerBCardCode);
-    const isBotPlayerA = gameData.playerAId === BOT_ID;
-    const attributes: Array<'magic' | 'might' | 'fire'> = [
-      'magic',
-      'might',
-      'fire',
-    ];
+    if (!playerACard || !playerBCard) return 'magic';
 
-    let bestAttribute: 'magic' | 'might' | 'fire' = 'magic';
+    const playerAAttributes = this.buildAttributeValues(playerACard);
+    const playerBAttributes = this.buildAttributeValues(playerBCard);
+    const isBotPlayerA = gameData.playerAId === BOT_ID;
+
+    let bestAttribute: AttributeKey = 'magic';
     let bestValueDifference = -Infinity;
 
-    for (const attribute of attributes) {
-      const playerAValue = Number((playerACard as any)[attribute] ?? 0);
-      const playerBValue = Number((playerBCard as any)[attribute] ?? 0);
+    for (const attribute of ['magic', 'might', 'fire'] as AttributeKey[]) {
+      const playerAValue = playerAAttributes[attribute];
+      const playerBValue = playerBAttributes[attribute];
       const valueDifference = isBotPlayerA
         ? playerAValue - playerBValue
         : playerBValue - playerAValue;
@@ -134,35 +157,37 @@ export class DuelGameService {
       if (!game) return null;
       if (game.mode !== 'ATTRIBUTE_DUEL') return game;
 
-      const hands = (game.hands as Record<string, string[]>) ?? {};
-      const center = asCenter(game.duelCenter);
+      const hands = (game.hands as PlayerCardCollection) ?? {};
+      const center =
+        game.duelCenter === null
+          ? initializeDuelCenterState()
+          : deserializeDuelCenter(game.duelCenter);
       let stage: DuelStage = game.duelStage ?? 'PICK_CARD';
 
       if (stage !== 'PICK_CARD') return game;
 
       const now = Date.now();
-      const deadlineMs =
-        typeof center.deadlineAt === 'number' ? center.deadlineAt : null;
+      const deadlineMs = center.deadlineAt;
       if (deadlineMs && now > deadlineMs) {
-        if (!center.aCardCode) {
+        if (!center.playerACardCode) {
           const autoCard = this.pickRandomCardFromHand(
             game.playerAId,
             hands,
           );
           if (autoCard) {
-            center.aCardCode = autoCard;
+            center.playerACardCode = autoCard;
             this.logger.log(
               `[chooseCardForDuel] timeout auto-picked card=${autoCard} for ${game.playerAId}`,
             );
           }
         }
-        if (!center.bCardCode) {
+        if (!center.playerBCardCode) {
           const autoCard = this.pickRandomCardFromHand(
             game.playerBId,
             hands,
           );
           if (autoCard) {
-            center.bCardCode = autoCard;
+            center.playerBCardCode = autoCard;
             this.logger.log(
               `[chooseCardForDuel] timeout auto-picked card=${autoCard} for ${game.playerBId}`,
             );
@@ -170,20 +195,22 @@ export class DuelGameService {
         }
       }
 
-      if (!center.aCardCode || !center.bCardCode) {
+      if (!center.playerACardCode || !center.playerBCardCode) {
         const isPlayerA = playerAction.playerId === game.playerAId;
-        if (!((isPlayerA && center.aCardCode) || (!isPlayerA && center.bCardCode))) {
-          if (
-            !removeOneCardFromHand(
-              hands,
-              playerAction.playerId,
-              playerAction.cardCode,
-            )
-          )
-            return game;
+        const hasCardAlready = isPlayerA
+          ? center.playerACardCode !== null
+          : center.playerBCardCode !== null;
+        if (!hasCardAlready) {
+          hands[playerAction.playerId] ??= [];
+          const removed = removeCardFromHand(
+            hands,
+            playerAction.playerId,
+            playerAction.cardCode,
+          );
+          if (!removed) return game;
 
-          if (isPlayerA) center.aCardCode = playerAction.cardCode;
-          else center.bCardCode = playerAction.cardCode;
+          if (isPlayerA) center.playerACardCode = playerAction.cardCode;
+          else center.playerBCardCode = playerAction.cardCode;
         }
       }
 
@@ -194,7 +221,7 @@ export class DuelGameService {
       );
 
       let deadlineToSet: number | null = null;
-      if (center.aCardCode && center.bCardCode) {
+      if (center.playerACardCode && center.playerBCardCode) {
         stage = 'PICK_ATTRIBUTE';
         center.chooserId = center.chooserId ?? game.playerAId;
         deadlineToSet = Date.now() + TURN_DURATION_MS;
@@ -208,7 +235,7 @@ export class DuelGameService {
         where: { id: gameId },
         data: {
           hands,
-          duelCenter: jsonInputOrDbNull(center),
+          duelCenter: prepareNullableJsonField(serializeDuelCenter(center)),
           duelStage: stage,
         },
         select: {
@@ -236,8 +263,9 @@ export class DuelGameService {
     if (!updatedGame) return null;
 
     const centerAfterUpdate =
-      (updatedGame.duelCenter as NonNullable<GameState['duelCenter']>) ??
-      ({} as any);
+      updatedGame.duelCenter === null
+        ? initializeDuelCenterState()
+        : deserializeDuelCenter(updatedGame.duelCenter);
     const chooserId = centerAfterUpdate.chooserId ?? updatedGame.playerAId;
 
     if (updatedGame.duelStage === 'PICK_ATTRIBUTE' && chooserId === BOT_ID) {
@@ -286,54 +314,56 @@ export class DuelGameService {
     if (game.mode !== 'ATTRIBUTE_DUEL') return game;
     if (game.duelStage !== 'PICK_ATTRIBUTE') return game;
 
-    const center = asCenter(game.duelCenter);
+    const center =
+      game.duelCenter === null
+        ? initializeDuelCenterState()
+        : deserializeDuelCenter(game.duelCenter);
     const chooserId = center.chooserId ?? game.playerAId;
     const now = Date.now();
 
-    const deadlineMs =
-      typeof center.deadlineAt === 'number' ? center.deadlineAt : null;
+    const deadlineMs = center.deadlineAt;
+    let effectiveAction = playerAction;
     if (deadlineMs && now > deadlineMs) {
       const autoAttribute = this.randomAttribute();
       this.logger.log(
         `[chooseAttributeForDuel] timeout auto-picked attribute=${autoAttribute} for ${chooserId}`,
       );
-      playerAction = { playerId: chooserId, attribute: autoAttribute };
+      effectiveAction = { playerId: chooserId, attribute: autoAttribute };
     } else if (playerAction.playerId !== chooserId) {
       return game;
     }
 
-    const playerACardCode = center.aCardCode;
-    const playerBCardCode = center.bCardCode;
+    const playerACardCode = center.playerACardCode;
+    const playerBCardCode = center.playerBCardCode;
     if (!playerACardCode || !playerBCardCode) return game;
 
     const cards = await this.prisma.card.findMany({
       where: { code: { in: [playerACardCode, playerBCardCode] } },
     });
-    const getCard = (code: string) => cards.find((c) => c.code === code)!;
-    const attributeKey = playerAction.attribute;
+    const getCard = (code: string) => cards.find((card) => card.code === code);
+    const playerACard = getCard(playerACardCode);
+    const playerBCard = getCard(playerBCardCode);
+    if (!playerACard || !playerBCard) return game;
 
-    const playerAValue = Number(
-      (getCard(playerACardCode) as any)[attributeKey] ?? 0,
-    );
-    const playerBValue = Number(
-      (getCard(playerBCardCode) as any)[attributeKey] ?? 0,
-    );
+    const attributeKey = effectiveAction.attribute as AttributeKey;
+    const playerAValue = this.buildAttributeValues(playerACard)[attributeKey];
+    const playerBValue = this.buildAttributeValues(playerBCard)[attributeKey];
 
     let roundWinner: string | null = null;
     if (playerAValue > playerBValue) roundWinner = game.playerAId;
     else if (playerBValue > playerAValue) roundWinner = game.playerBId;
 
-    center.chosenAttribute = playerAction.attribute;
-    center.revealed = true;
-    (center as any).aVal = playerAValue;
-    (center as any).bVal = playerBValue;
-    (center as any).roundWinner = roundWinner;
+    center.chosenAttribute = attributeKey;
+    center.isRevealed = true;
+    center.playerAAttributeValue = playerAValue;
+    center.playerBAttributeValue = playerBValue;
+    center.roundWinnerId = roundWinner;
     center.deadlineAt = null;
 
     const result = await this.prisma.game.update({
       where: { id: gameId },
       data: {
-        duelCenter: jsonInputOrDbNull(center),
+        duelCenter: prepareNullableJsonField(serializeDuelCenter(center)),
         duelStage: 'REVEAL',
       },
       select: {
@@ -387,18 +417,18 @@ export class DuelGameService {
     if (game.mode !== 'ATTRIBUTE_DUEL' || game.duelStage !== 'REVEAL')
       return game;
 
-    const center = game.duelCenter as any as NonNullable<
-      GameState['duelCenter']
-    >;
-    const playerACardCode = center.aCardCode;
-    const playerBCardCode = center.bCardCode;
-    const attribute =
-      (center.chosenAttribute as 'magic' | 'might' | 'fire') ?? 'magic';
-    const playerAValue = Number(center.aVal ?? 0);
-    const playerBValue = Number(center.bVal ?? 0);
-    const roundWinner = (center.roundWinner as string | null) ?? null;
+    const center =
+      game.duelCenter === null
+        ? initializeDuelCenterState()
+        : deserializeDuelCenter(game.duelCenter);
+    const playerACardCode = center.playerACardCode;
+    const playerBCardCode = center.playerBCardCode;
+    const attribute = center.chosenAttribute ?? 'magic';
+    const playerAValue = center.playerAAttributeValue ?? 0;
+    const playerBValue = center.playerBAttributeValue ?? 0;
+    const roundWinner = center.roundWinnerId;
 
-    const discardPiles = (game.discardPiles as Record<string, string[]>) ?? {
+    const discardPiles = (game.discardPiles as PlayerCardCollection) ?? {
       [game.playerAId]: [],
       [game.playerBId]: [],
     };
@@ -410,32 +440,43 @@ export class DuelGameService {
       ];
     }
 
-    const hands = (game.hands as Record<string, string[]>) ?? {
+    const hands = (game.hands as PlayerCardCollection) ?? {
       [game.playerAId]: [],
       [game.playerBId]: [],
     };
-    const decks = (game.decks as Record<string, string[]>) ?? {
+    const decks = (game.decks as PlayerCardCollection) ?? {
       [game.playerAId]: [],
       [game.playerBId]: [],
     };
 
-    const playerADraw = takeOneRandomFromDeck(decks[game.playerAId]);
-    const playerBDraw = takeOneRandomFromDeck(decks[game.playerBId]);
-    if (playerADraw) (hands[game.playerAId] ??= []).push(playerADraw);
-    if (playerBDraw) (hands[game.playerBId] ??= []).push(playerBDraw);
+    decks[game.playerAId] ??= [];
+    decks[game.playerBId] ??= [];
+    const playerADraw = takeOneRandomCardFromDeck(decks[game.playerAId]);
+    const playerBDraw = takeOneRandomCardFromDeck(decks[game.playerBId]);
+    if (playerADraw) {
+      hands[game.playerAId] ??= [];
+      hands[game.playerAId].push(playerADraw);
+    }
+    if (playerBDraw) {
+      hands[game.playerBId] ??= [];
+      hands[game.playerBId].push(playerBDraw);
+    }
 
     const nextChooser =
       center.chooserId === game.playerAId ? game.playerBId : game.playerAId;
 
-    const playerAHasNoCards = (hands[game.playerAId] ?? []).length === 0;
-    const playerBHasNoCards = (hands[game.playerBId] ?? []).length === 0;
+    hands[game.playerAId] ??= [];
+    hands[game.playerBId] ??= [];
+    const playerAHasNoCards = hands[game.playerAId].length === 0;
+    const playerBHasNoCards = hands[game.playerBId].length === 0;
 
     let gameWinner: string | null = null;
     let nextStage: DuelStage = 'PICK_CARD';
-    let nextCenter: GameState['duelCenter'] = {
-      chooserId: nextChooser,
-      deadlineAt: Date.now() + TURN_DURATION_MS,
-    };
+    let nextCenter: DuelCenterState | null = initializeDuelCenterState();
+    if (nextCenter) {
+      nextCenter.chooserId = nextChooser;
+      nextCenter.deadlineAt = Date.now() + TURN_DURATION_MS;
+    }
 
     if (playerAHasNoCards || playerBHasNoCards) {
       const playerAScore = (discardPiles[game.playerAId] ?? []).length;
@@ -451,7 +492,7 @@ export class DuelGameService {
     }
 
     const cards = await this.prisma.card.findMany({
-      where: { code: { in: [playerACardCode!, playerBCardCode!] } },
+      where: { code: { in: [playerACardCode ?? '', playerBCardCode ?? ''] } },
     });
     const playerAName = game.playerA?.username ?? game.playerAId;
     const playerBName = game.playerB?.username ?? game.playerBId;
@@ -459,8 +500,8 @@ export class DuelGameService {
       (center.chooserId ?? game.playerAId) === game.playerAId
         ? playerAName
         : playerBName;
-    const getCardName = (code?: string) =>
-      cards.find((c) => c.code === code)?.name ?? code ?? 'unknown';
+    const getCardName = (code?: string | null) =>
+      cards.find((card) => card.code === code)?.name ?? code ?? 'Unknown card';
 
     const winnerLabel =
       gameWinner && gameWinner !== 'DRAW'
@@ -485,9 +526,13 @@ export class DuelGameService {
       data: {
         hands,
         decks,
-        duelCenter: jsonInputOrDbNull(nextCenter),
+        duelCenter: prepareNullableJsonField(
+          serializeDuelCenter(nextCenter),
+        ),
         duelStage: nextStage,
-        discardPiles: jsonInputOrDbNull(discardPiles),
+        discardPiles: prepareNullableJsonField(
+          convertCardCollectionToPrismaInput(discardPiles),
+        ),
         winner: nextStage === 'RESOLVED' ? gameWinner : game.winner,
         log: [
           ...(game.log as string[]),
@@ -540,46 +585,41 @@ export class DuelGameService {
       if (game.duelStage === 'REVEAL' || game.duelStage === 'RESOLVED')
         return game;
 
-      const hands = (game.hands as Record<string, string[]>) ?? {};
-      const center = asCenter(game.duelCenter);
+      const hands = (game.hands as PlayerCardCollection) ?? {};
+      const center =
+        game.duelCenter === null
+          ? initializeDuelCenterState()
+          : deserializeDuelCenter(game.duelCenter);
 
       const isPlayerA = dto.playerId === game.playerAId;
-      const mySideKey = isPlayerA ? 'aCardCode' : 'bCardCode';
-      const oppSideKey = isPlayerA ? 'bCardCode' : 'aCardCode';
+      const playerId = dto.playerId;
+      const opponentId = isPlayerA ? game.playerBId : game.playerAId;
+      const myCardCode = isPlayerA
+        ? center.playerACardCode
+        : center.playerBCardCode;
+      if (!myCardCode) return game;
 
-      const myCode: string | undefined = (center as any)[mySideKey];
-      if (!myCode) return game;
+      hands[playerId] ??= [];
+      hands[playerId].push(myCardCode);
 
-      (hands[dto.playerId] ??= []).push(myCode);
-      delete (center as any)[mySideKey];
-
-      const oppId = isPlayerA ? game.playerBId : game.playerAId;
-      const oppCode: string | undefined = (center as any)[oppSideKey];
-      if (oppCode) {
-        (hands[oppId] ??= []).push(oppCode);
-        delete (center as any)[oppSideKey];
+      const opponentCardCode = isPlayerA
+        ? center.playerBCardCode
+        : center.playerACardCode;
+      if (opponentCardCode) {
+        hands[opponentId] ??= [];
+        hands[opponentId].push(opponentCardCode);
       }
 
-      delete (center as any).chosenAttribute;
-      delete (center as any).attribute;
-      delete (center as any).attr;
-      delete (center as any).attributeName;
-      delete (center as any).revealed;
-      delete (center as any).aVal;
-      delete (center as any).bVal;
-      delete (center as any).roundWinner;
-
-      const nextStage: DuelStage = 'PICK_CARD';
-      center.chooserId = dto.playerId;
-
-      center.deadlineAt = Date.now() + TURN_DURATION_MS;
+      const resetCenter = initializeDuelCenterState();
+      resetCenter.chooserId = playerId;
+      resetCenter.deadlineAt = Date.now() + TURN_DURATION_MS;
 
       const updated = await tx.game.update({
         where: { id: gameId },
         data: {
           hands,
-          duelCenter: jsonInputOrDbNull(center),
-          duelStage: nextStage,
+          duelCenter: prepareNullableJsonField(serializeDuelCenter(resetCenter)),
+          duelStage: 'PICK_CARD',
         },
         select: {
           id: true,
