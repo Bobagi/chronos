@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassicGameService } from './classic-game.service';
 import { DuelGameService } from './duel-game.service';
+import { CardCatalogEntry } from './card.types';
 import {
   BOT_ID,
   GameState,
@@ -19,6 +20,11 @@ import {
   drawRandomCardsFromDeck,
   jsonInputOrDbNull,
 } from './game.types';
+import {
+  normalizeLocalizedTextContent,
+  selectLocalizedText,
+} from '../localization/localization.helpers';
+import { SupportedLanguage } from '../localization/localization.types';
 
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
 const TURN_DURATION_MS = 10 * 1000;
@@ -27,14 +33,58 @@ const CARD_IMAGE_BASE_URL = (
   process.env.CARD_IMAGE_BASE_URL ?? 'https://bobagi.space'
 ).replace(/\/+$/, '');
 
-function applyCardImageBase(item: PrismaCard): PrismaCard {
-  const imageUrl = item.imageUrl;
-  if (!imageUrl || !CARD_IMAGE_BASE_URL) return item;
+function buildCompleteImageUrl(relativeImageUrl: string): string {
+  if (!relativeImageUrl) {
+    return relativeImageUrl;
+  }
+  return `${CARD_IMAGE_BASE_URL}${relativeImageUrl}`;
+}
 
+function mapPrismaCardToCatalogEntry(
+  prismaCard: PrismaCard,
+  language: SupportedLanguage,
+): CardCatalogEntry {
+  const localizedName = normalizeLocalizedTextContent(
+    prismaCard.localizedName,
+    prismaCard.code,
+  );
+  const localizedDescription = normalizeLocalizedTextContent(
+    prismaCard.localizedDescription,
+    '',
+  );
   return {
-    ...item,
-    imageUrl: `${CARD_IMAGE_BASE_URL}${imageUrl}`,
-  } as PrismaCard;
+    id: prismaCard.id,
+    code: prismaCard.code,
+    localizedName,
+    localizedDescription,
+    displayName: selectLocalizedText(localizedName, language),
+    displayDescription: selectLocalizedText(localizedDescription, language),
+    number: prismaCard.number,
+    damage: prismaCard.damage ?? null,
+    heal: prismaCard.heal ?? null,
+    imageUrl: buildCompleteImageUrl(prismaCard.imageUrl),
+    might: prismaCard.might,
+    fire: prismaCard.fire,
+    magic: prismaCard.magic,
+    collectionId: prismaCard.collectionId,
+    createdAt: prismaCard.createdAt,
+    updatedAt: prismaCard.updatedAt,
+  };
+}
+
+function shuffleStringArray(inputArray: string[]): string[] {
+  const shuffledArray = [...inputArray];
+  for (
+    let currentIndex = shuffledArray.length - 1;
+    currentIndex > 0;
+    currentIndex -= 1
+  ) {
+    const randomIndex = Math.floor(Math.random() * (currentIndex + 1));
+    const currentValue = shuffledArray[currentIndex];
+    shuffledArray[currentIndex] = shuffledArray[randomIndex];
+    shuffledArray[randomIndex] = currentValue;
+  }
+  return shuffledArray;
 }
 
 @Injectable()
@@ -46,13 +96,21 @@ export class GameService {
   ) {}
 
   /* ---------- Catalog ---------- */
-  async getAllCards(): Promise<PrismaCard[]> {
+  async getAllCards(
+    language: SupportedLanguage = SupportedLanguage.English,
+  ): Promise<CardCatalogEntry[]> {
     const cards = await this.prisma.card.findMany();
-    return cards.map((card) => applyCardImageBase(card));
+    return cards.map((card) => mapPrismaCardToCatalogEntry(card, language));
   }
-  async getCardByCode(code: string): Promise<PrismaCard | null> {
+  async getCardByCode(
+    code: string,
+    language: SupportedLanguage = SupportedLanguage.English,
+  ): Promise<CardCatalogEntry | null> {
     const card = await this.prisma.card.findUnique({ where: { code } });
-    return card ? applyCardImageBase(card) : null;
+    if (!card) {
+      return null;
+    }
+    return mapPrismaCardToCatalogEntry(card, language);
   }
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
     return this.prisma.cardTemplate.findMany();
@@ -67,22 +125,13 @@ export class GameService {
     const gameId = randomUUID();
     const placeholderHash = await bcrypt.hash(randomUUID(), 10);
 
-    const allCards = await this.getAllCards();
+    const allCards = await this.getAllCards(SupportedLanguage.English);
     const poolCodes = allCards.length
       ? Array.from(new Set(allCards.map((c) => c.code)))
       : ['fireball', 'lightning', 'heal'];
 
-    function shuffleArray<T>(arr: T[]): T[] {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-
-    const deckA = shuffleArray(poolCodes);
-    const deckB = shuffleArray(poolCodes);
+    const deckA = shuffleStringArray(poolCodes);
+    const deckB = shuffleStringArray(poolCodes);
     const handA = drawRandomCardsFromDeck(deckA, 4);
     const handB = drawRandomCardsFromDeck(deckB, 4);
 

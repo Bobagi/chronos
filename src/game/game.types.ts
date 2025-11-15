@@ -68,7 +68,7 @@ export function asCenter(value: Prisma.JsonValue | null | undefined) {
 }
 
 export function jsonInputOrDbNull(
-  value: unknown,
+  value: Prisma.JsonValue | null,
 ): Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue {
   return value === null || value === undefined
     ? Prisma.DbNull

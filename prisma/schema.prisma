@@ -105,21 +105,21 @@ model FriendChatMessage {
 }
 
 model Card {
-  id          String   @id @default(uuid())
-  code        String   @unique
-  name        String
-  description String
-  number      Int      @default(0)
-  damage      Int?
-  heal        Int?
-  imageUrl    String
-  might       Int      @default(0)
-  fire        Int      @default(0)
-  magic       Int      @default(0)
-  collectionId String
-  collection   Collection @relation(fields: [collectionId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  code                 String   @unique
+  localizedName        Json
+  localizedDescription Json
+  number               Int      @default(0)
+  damage               Int?
+  heal                 Int?
+  imageUrl             String
+  might                Int      @default(0)
+  fire                 Int      @default(0)
+  magic                Int      @default(0)
+  collectionId         String
+  collection           Collection @relation(fields: [collectionId], references: [id])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model CardTemplate {
@@ -133,15 +133,15 @@ model CardTemplate {
 }
 
 model Collection {
-  id           String   @id @default(uuid())
-  slug         String   @unique
-  name         String
-  description  String?
-  manufacturer String?
-  releaseDate  DateTime?
-  totalCards   Int?
-  imageUrl     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  cards        Card[]
+  id                    String   @id @default(uuid())
+  slug                  String   @unique
+  localizedName         Json
+  localizedDescription  Json
+  manufacturer          String?
+  releaseDate           DateTime?
+  totalCards            Int?
+  imageUrl              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  cards                 Card[]
 }

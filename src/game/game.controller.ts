@@ -9,6 +9,7 @@ import {
   Req,
   UnauthorizedException,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { ChooseAttributeDto } from './dto/choose-attribute.dto';
@@ -16,6 +17,7 @@ import { ChooseCardDto } from './dto/choose-card.dto';
 import { PlayCardDto } from './dto/play-card.dto';
 import { GameService } from './game.service';
 import { BOT_ID, GameState } from './game.types';
+import { parseSupportedLanguageCode } from '../localization/localization.helpers';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -144,14 +146,19 @@ export class GameController {
 
   /** Card catalog */
   @Get('cards')
-  getCards() {
-    return this.gameService.getAllCards();
+  getCards(@Query('language') languageCode?: string) {
+    const language = parseSupportedLanguageCode(languageCode);
+    return this.gameService.getAllCards(language);
   }
 
   /** Single card by code */
   @Get('cards/:code')
-  getCardByCode(@Param('code') code: string) {
-    return this.gameService.getCardByCode(code);
+  getCardByCode(
+    @Param('code') code: string,
+    @Query('language') languageCode?: string,
+  ) {
+    const language = parseSupportedLanguageCode(languageCode);
+    return this.gameService.getCardByCode(code, language);
   }
 
   /** Undo pick */

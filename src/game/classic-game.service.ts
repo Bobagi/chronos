@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BOT_ID, GameState, drawRandomCardsFromDeck } from './game.types';
+import {
+  normalizeLocalizedTextContent,
+  selectLocalizedText,
+} from '../localization/localization.helpers';
+import { SupportedLanguage } from '../localization/localization.types';
 
 @Injectable()
 export class ClassicGameService {
@@ -163,7 +168,16 @@ export class ClassicGameService {
       throw new Error(`${actorLabel} does not have "${cardCode}"`);
     playerHand.splice(handIndex, 1);
 
-    let playLog = `${actorLabel} played ${card.name}`;
+    const localizedCardName = normalizeLocalizedTextContent(
+      card.localizedName,
+      card.code,
+    );
+    const cardNameForLog = selectLocalizedText(
+      localizedCardName,
+      SupportedLanguage.English,
+    );
+
+    let playLog = `${actorLabel} played ${cardNameForLog}`;
     if (card.damage) {
       state.hp[opponentId] = Math.max(0, state.hp[opponentId] - card.damage);
       playLog += ` → ${card.damage} dmg`;

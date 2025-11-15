@@ -9,6 +9,11 @@ import {
   removeOneCardFromHand,
   takeOneRandomFromDeck,
 } from './game.types';
+import {
+  normalizeLocalizedTextContent,
+  selectLocalizedText,
+} from '../localization/localization.helpers';
+import { SupportedLanguage } from '../localization/localization.types';
 
 const TURN_DURATION_MS = 10 * 1000;
 
@@ -459,8 +464,20 @@ export class DuelGameService {
       (center.chooserId ?? game.playerAId) === game.playerAId
         ? playerAName
         : playerBName;
-    const getCardName = (code?: string) =>
-      cards.find((c) => c.code === code)?.name ?? code ?? 'unknown';
+    const getCardName = (code?: string) => {
+      const matchedCard = cards.find((card) => card.code === code);
+      if (!matchedCard) {
+        return code ?? 'unknown';
+      }
+      const localizedCardName = normalizeLocalizedTextContent(
+        matchedCard.localizedName,
+        matchedCard.code,
+      );
+      return selectLocalizedText(
+        localizedCardName,
+        SupportedLanguage.English,
+      );
+    };
 
     const winnerLabel =
       gameWinner && gameWinner !== 'DRAW'
