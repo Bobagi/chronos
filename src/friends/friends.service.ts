@@ -18,7 +18,9 @@ export interface FriendshipSummary {
 export class FriendsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private playerSummary(player: Pick<Player, 'id' | 'username'>): BasicPlayerSummary {
+  private playerSummary(
+    player: Pick<Player, 'id' | 'username'>,
+  ): BasicPlayerSummary {
     return { id: player.id, username: player.username };
   }
 
@@ -222,11 +224,7 @@ export class FriendsService {
     return friendship;
   }
 
-  async sendChatMessage(
-    senderId: string,
-    recipientId: string,
-    body: string,
-  ) {
+  async sendChatMessage(senderId: string, recipientId: string, body: string) {
     const trimmed = body.trim();
     if (!trimmed) throw new Error('Message body is required.');
 

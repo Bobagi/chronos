@@ -4,16 +4,20 @@ import {
   Delete,
   Get,
   Logger,
+  NotFoundException,
   Param,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { Card as PrismaCard } from '@prisma/client';
 import { Request } from 'express';
 import { ChooseAttributeDto } from './dto/choose-attribute.dto';
 import { ChooseCardDto } from './dto/choose-card.dto';
 import { PlayCardDto } from './dto/play-card.dto';
+import { CardCollectionRecord } from './game-collection.repository';
 import { GameService } from './game.service';
 import { BOT_ID, GameState } from './game.types';
 
@@ -144,14 +148,61 @@ export class GameController {
 
   /** Card catalog */
   @Get('cards')
-  getCards() {
-    return this.gameService.getAllCards();
+  async getCards(
+    @Query('collection') collection?: string,
+  ): Promise<PrismaCard[]> {
+    if (!collection) {
+      return this.gameService.getAllCards();
+    }
+
+    const targetCollection =
+      await this.gameService.getCollectionByIdentifier(collection);
+    if (!targetCollection) {
+      throw new NotFoundException(
+        `Collection with id or slug "${collection}" was not found`,
+      );
+    }
+    return this.gameService.getCardsByCollectionId(targetCollection.id);
   }
 
   /** Single card by code */
   @Get('cards/:code')
   getCardByCode(@Param('code') code: string) {
     return this.gameService.getCardByCode(code);
+  }
+
+  /** Collections */
+  @Get('collections')
+  getCollections(): Promise<CardCollectionRecord[]> {
+    return this.gameService.getCollections();
+  }
+
+  @Get('collections/:identifier')
+  async getCollection(
+    @Param('identifier') identifier: string,
+  ): Promise<CardCollectionRecord> {
+    const collection =
+      await this.gameService.getCollectionByIdentifier(identifier);
+    if (!collection) {
+      throw new NotFoundException(
+        `Collection with id or slug "${identifier}" was not found`,
+      );
+    }
+    return collection;
+  }
+
+  @Get('collections/:identifier/cards')
+  async getCollectionCards(
+    @Param('identifier') identifier: string,
+  ): Promise<PrismaCard[]> {
+    const collection =
+      await this.gameService.getCollectionByIdentifier(identifier);
+    if (!collection) {
+      throw new NotFoundException(
+        `Collection with id or slug "${identifier}" was not found`,
+      );
+    }
+    return this.gameService.getCardsByCollectionId(collection.id);
   }
 
   /** Undo pick */

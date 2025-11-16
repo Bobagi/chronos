@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
 import {
   DuelStage,
   FriendshipStatus,
+  Prisma,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
   GameMode as PrismaGameMode,
@@ -12,6 +12,10 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClassicGameService } from './classic-game.service';
 import { DuelGameService } from './duel-game.service';
+import {
+  CardCollectionRecord,
+  GameCollectionRepository,
+} from './game-collection.repository';
 import {
   BOT_ID,
   GameState,
@@ -38,7 +42,7 @@ function applyCardImageBase(card: PrismaCard): PrismaCard {
 
   const updatedCard: PrismaCard = {
     ...card,
-    imageUrl: `${CARD_IMAGE_BASE_URL}${imageUrl}`,
+    imageUrl: `${CARD_IMAGE_BASE_URL}/${imageUrl}`,
   };
   return updatedCard;
 }
@@ -60,17 +64,46 @@ export class GameService {
     private readonly prisma: PrismaService,
     private readonly classic: ClassicGameService,
     private readonly duel: DuelGameService,
+    private readonly collectionRepository: GameCollectionRepository,
   ) {}
 
   /* ---------- Catalog ---------- */
-  async getAllCards(): Promise<PrismaCard[]> {
-    const cards = await this.prisma.card.findMany();
+  private async findCards(
+    where?: Prisma.CardWhereInput,
+  ): Promise<PrismaCard[]> {
+    const cards = await this.prisma.card.findMany({ where });
     return cards.map((card) => applyCardImageBase(card));
   }
+
+  async getAllCards(): Promise<PrismaCard[]> {
+    return this.findCards();
+  }
+
+  async getCardsByCollectionId(collectionId: string): Promise<PrismaCard[]> {
+    const cards = await this.prisma.$queryRaw<PrismaCard[]>(Prisma.sql`
+      SELECT *
+      FROM "Card"
+      WHERE "collectionId" = ${collectionId}::uuid
+      ORDER BY "number" ASC
+    `);
+    return cards.map((card) => applyCardImageBase(card));
+  }
+
   async getCardByCode(code: string): Promise<PrismaCard | null> {
     const card = await this.prisma.card.findUnique({ where: { code } });
     return card ? applyCardImageBase(card) : null;
   }
+
+  getCollections(): Promise<CardCollectionRecord[]> {
+    return this.collectionRepository.listCollections();
+  }
+
+  getCollectionByIdentifier(
+    identifier: string,
+  ): Promise<CardCollectionRecord | null> {
+    return this.collectionRepository.findByIdentifier(identifier);
+  }
+
   async getAllTemplates(): Promise<PrismaCardTemplate[]> {
     return this.prisma.cardTemplate.findMany();
   }
@@ -102,8 +135,7 @@ export class GameService {
       duelCenterState.deadlineAt = now + TURN_DURATION_MS;
     }
 
-    const playerBUsername =
-      playerBId === BOT_ID ? 'Bot Opponent' : playerBId;
+    const playerBUsername = playerBId === BOT_ID ? 'Bot Opponent' : playerBId;
     const initialState: GameState = {
       players: [playerAId, playerBId],
       playerUsernames: {

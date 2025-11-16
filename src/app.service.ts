@@ -11,7 +11,7 @@ export interface ApplicationHomeMetadata {
 export const APPLICATION_HOME_METADATA: ApplicationHomeMetadata = {
   message: 'Chronos API is ready to accept requests.',
   documentationUrl: '/api',
-  healthCheckUrl: '/game/test',
+  healthCheckUrl: '/health',
 };
 
 const APPLICATION_HOME_TEMPLATE_LOCATIONS = [
