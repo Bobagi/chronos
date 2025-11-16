@@ -32,6 +32,12 @@ interface PlayerActionAttributeSelection {
   attribute: AttributeKey;
 }
 
+interface PickPhaseTimeoutOutcome {
+  timeoutOccurred: boolean;
+  playerACardAutoPicked: boolean;
+  playerBCardAutoPicked: boolean;
+}
+
 @Injectable()
 export class DuelGameService {
   private readonly logger = new Logger(DuelGameService.name);
@@ -42,6 +48,8 @@ export class DuelGameService {
     this.logger.log(
       `[chooseCardForDuel] game=${gameId} player=${action.playerId} card=${action.cardCode}`,
     );
+
+    let shouldAutoResolveAttributeAfterTimeout = false;
 
     const updatedGame = await this.prisma.$transaction(
       async (transactionClient) => {
@@ -81,7 +89,7 @@ export class DuelGameService {
           playerBId: existingGame.playerBId,
         };
 
-        this.handlePickPhaseTimeout(
+        const pickTimeoutOutcome = this.handlePickPhaseTimeout(
           playerHands,
           duelCenterState,
           duelParticipants,
@@ -111,6 +119,13 @@ export class DuelGameService {
         duelCenterState.chooserId =
           duelCenterState.chooserId ?? existingGame.playerAId;
         duelCenterState.deadlineAt = Date.now() + TURN_DURATION_MS;
+
+        if (
+          shouldAdvanceToAttributePick &&
+          pickTimeoutOutcome.timeoutOccurred
+        ) {
+          shouldAutoResolveAttributeAfterTimeout = true;
+        }
 
         const persistedGame = await transactionClient.game.update({
           where: { id: gameId },
@@ -150,6 +165,27 @@ export class DuelGameService {
 
     const duelCenterState = this.normalizeDuelCenter(updatedGame.duelCenter);
     const chooserId = duelCenterState.chooserId ?? updatedGame.playerAId;
+
+    if (
+      shouldAutoResolveAttributeAfterTimeout &&
+      updatedGame.duelStage === 'PICK_ATTRIBUTE'
+    ) {
+      const autoAttribute = await this.determineStrongestAttributeForChooser(
+        updatedGame,
+        duelCenterState,
+        chooserId,
+      );
+
+      if (autoAttribute) {
+        this.logger.log(
+          `[chooseCardForDuel] timeout auto-selected attribute=${autoAttribute} for chooser=${chooserId}`,
+        );
+        return this.chooseAttributeForDuel(gameId, {
+          playerId: chooserId,
+          attribute: autoAttribute,
+        });
+      }
+    }
 
     if (updatedGame.duelStage === 'PICK_ATTRIBUTE' && chooserId === BOT_ID) {
       const bestAttribute = await this.determineBestAttributeForBot(
@@ -613,11 +649,19 @@ export class DuelGameService {
     playerHands: PlayerCardCollection,
     duelCenterState: DuelCenterState,
     participants: DuelParticipants,
-  ): void {
+  ): PickPhaseTimeoutOutcome {
     const deadline = duelCenterState.deadlineAt;
+    const timeoutOutcome: PickPhaseTimeoutOutcome = {
+      timeoutOccurred: false,
+      playerACardAutoPicked: false,
+      playerBCardAutoPicked: false,
+    };
+
     if (!deadline || Date.now() <= deadline) {
-      return;
+      return timeoutOutcome;
     }
+
+    timeoutOutcome.timeoutOccurred = true;
 
     if (duelCenterState.playerACardCode === null) {
       const autoSelectedCardA = this.selectRandomCardFromHand(
@@ -626,6 +670,7 @@ export class DuelGameService {
       );
       if (autoSelectedCardA) {
         duelCenterState.playerACardCode = autoSelectedCardA;
+        timeoutOutcome.playerACardAutoPicked = true;
         this.logger.log(
           `[handlePickPhaseTimeout] auto-selected card=${autoSelectedCardA} for player=${participants.playerAId}`,
         );
@@ -639,11 +684,14 @@ export class DuelGameService {
       );
       if (autoSelectedCardB) {
         duelCenterState.playerBCardCode = autoSelectedCardB;
+        timeoutOutcome.playerBCardAutoPicked = true;
         this.logger.log(
           `[handlePickPhaseTimeout] auto-selected card=${autoSelectedCardB} for player=${participants.playerBId}`,
         );
       }
     }
+
+    return timeoutOutcome;
   }
 
   private applyManualCardSelection(
@@ -787,6 +835,31 @@ export class DuelGameService {
     return bestAttribute;
   }
 
+  private async determineStrongestAttributeForChooser(
+    game: DuelParticipants,
+    duelCenterState: DuelCenterState,
+    chooserId: string,
+  ): Promise<AttributeKey | null> {
+    const chooserCardCode =
+      chooserId === game.playerAId
+        ? duelCenterState.playerACardCode
+        : duelCenterState.playerBCardCode;
+
+    if (chooserCardCode === null) {
+      return null;
+    }
+
+    const chooserCard = await this.prisma.card.findUnique({
+      where: { code: chooserCardCode },
+    });
+
+    if (!chooserCard) {
+      return null;
+    }
+
+    return this.selectStrongestAttributeFromCard(chooserCard);
+  }
+
   private resolveAttributeSelection(
     action: PlayerActionAttributeSelection,
     chooserId: string,
@@ -857,6 +930,22 @@ export class DuelGameService {
     const attributes: AttributeKey[] = ['magic', 'might', 'fire'];
     const randomIndex = Math.floor(Math.random() * attributes.length);
     return attributes[randomIndex];
+  }
+
+  private selectStrongestAttributeFromCard(card: PrismaCard): AttributeKey {
+    const attributes: AttributeKey[] = ['magic', 'might', 'fire'];
+    let selectedAttribute: AttributeKey = 'magic';
+    let highestValue = Number.NEGATIVE_INFINITY;
+
+    for (const attribute of attributes) {
+      const attributeValue = this.readAttributeValue(card, attribute);
+      if (attributeValue > highestValue) {
+        highestValue = attributeValue;
+        selectedAttribute = attribute;
+      }
+    }
+
+    return selectedAttribute;
   }
 
   private resolveCardName(cards: PrismaCard[], code: string | null): string {
