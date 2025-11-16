@@ -120,7 +120,10 @@ export class DuelGameService {
           duelCenterState.chooserId ?? existingGame.playerAId;
         duelCenterState.deadlineAt = Date.now() + TURN_DURATION_MS;
 
-        if (shouldAdvanceToAttributePick && pickTimeoutOutcome.timeoutOccurred) {
+        if (
+          shouldAdvanceToAttributePick &&
+          pickTimeoutOutcome.timeoutOccurred
+        ) {
           shouldAutoResolveAttributeAfterTimeout = true;
         }
 
