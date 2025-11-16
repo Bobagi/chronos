@@ -4,7 +4,7 @@ import {
   GameMode as PrismaGameMode,
 } from '@prisma/client';
 
-export const BOT_ID = 'BOT';
+export const BOT_ID = '70dc2eb8-b3a5-4c21-9e2b-c6cf901078b0';
 
 export type AttributeKey = 'magic' | 'might' | 'fire';
 
