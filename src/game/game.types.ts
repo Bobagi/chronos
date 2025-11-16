@@ -80,7 +80,9 @@ export function drawRandomCardsFromDeck(
   return drawnCardCodes;
 }
 
-export function takeOneRandomCardFromDeck(deckCardCodes: string[]): string | null {
+export function takeOneRandomCardFromDeck(
+  deckCardCodes: string[],
+): string | null {
   if (deckCardCodes.length === 0) return null;
   const randomIndex = Math.floor(Math.random() * deckCardCodes.length);
   const [selectedCardCode] = deckCardCodes.splice(randomIndex, 1);
@@ -139,11 +141,8 @@ export function deserializeDuelCenter(
     playerBCardCode:
       extractString('playerBCardCode') ?? extractString('bCardCode'),
     chosenAttribute:
-      candidateAttribute === null
-        ? null
-        : (candidateAttribute as AttributeKey),
-    isRevealed:
-      extractBoolean('isRevealed') || extractBoolean('revealed'),
+      candidateAttribute === null ? null : (candidateAttribute as AttributeKey),
+    isRevealed: extractBoolean('isRevealed') || extractBoolean('revealed'),
     chooserId: extractString('chooserId'),
     playerAAttributeValue:
       extractNumber('playerAAttributeValue') ?? extractNumber('aVal'),

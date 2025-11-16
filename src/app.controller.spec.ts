@@ -20,8 +20,12 @@ describe('AppController', () => {
 
       expect(html).toContain('<!DOCTYPE html>');
       expect(html).toContain(APPLICATION_HOME_METADATA.message);
-      expect(html).toContain(`href="${APPLICATION_HOME_METADATA.documentationUrl}`);
-      expect(html).toContain(`href="${APPLICATION_HOME_METADATA.healthCheckUrl}`);
+      expect(html).toContain(
+        `href="${APPLICATION_HOME_METADATA.documentationUrl}`,
+      );
+      expect(html).toContain(
+        `href="${APPLICATION_HOME_METADATA.healthCheckUrl}`,
+      );
     });
   });
 });

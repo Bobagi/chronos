@@ -12,8 +12,8 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { Card as PrismaCard } from '@prisma/client';
+import { Request } from 'express';
 import { ChooseAttributeDto } from './dto/choose-attribute.dto';
 import { ChooseCardDto } from './dto/choose-card.dto';
 import { PlayCardDto } from './dto/play-card.dto';
@@ -155,9 +155,8 @@ export class GameController {
       return this.gameService.getAllCards();
     }
 
-    const targetCollection = await this.gameService.getCollectionByIdentifier(
-      collection,
-    );
+    const targetCollection =
+      await this.gameService.getCollectionByIdentifier(collection);
     if (!targetCollection) {
       throw new NotFoundException(
         `Collection with id or slug "${collection}" was not found`,
@@ -182,7 +181,8 @@ export class GameController {
   async getCollection(
     @Param('identifier') identifier: string,
   ): Promise<CardCollectionRecord> {
-    const collection = await this.gameService.getCollectionByIdentifier(identifier);
+    const collection =
+      await this.gameService.getCollectionByIdentifier(identifier);
     if (!collection) {
       throw new NotFoundException(
         `Collection with id or slug "${identifier}" was not found`,
@@ -195,7 +195,8 @@ export class GameController {
   async getCollectionCards(
     @Param('identifier') identifier: string,
   ): Promise<PrismaCard[]> {
-    const collection = await this.gameService.getCollectionByIdentifier(identifier);
+    const collection =
+      await this.gameService.getCollectionByIdentifier(identifier);
     if (!collection) {
       throw new NotFoundException(
         `Collection with id or slug "${identifier}" was not found`,

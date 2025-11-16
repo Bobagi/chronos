@@ -76,7 +76,10 @@ export class ClassicGameService {
 
     const currentPlayerId = this.currentPlayerId(state);
     state.decks[currentPlayerId] ??= [];
-    const drawnCard = drawRandomCardsFromDeck(state.decks[currentPlayerId], 1)[0];
+    const drawnCard = drawRandomCardsFromDeck(
+      state.decks[currentPlayerId],
+      1,
+    )[0];
     if (drawnCard) {
       state.hands[currentPlayerId] ??= [];
       state.hands[currentPlayerId].push(drawnCard);
@@ -267,7 +270,12 @@ export class ClassicGameService {
     if (this.currentPlayerId(state) !== actorId)
       throw new Error('It is not this player turn.');
 
-    await this.resolveClassicPlay(state, actorId, cardCode, `Player ${actorId}`);
+    await this.resolveClassicPlay(
+      state,
+      actorId,
+      cardCode,
+      `Player ${actorId}`,
+    );
     if (state.winner !== null) {
       this.setNextDeadline(state);
       await this.persistState(gameId, state, true);

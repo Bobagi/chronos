@@ -43,87 +43,106 @@ export class DuelGameService {
       `[chooseCardForDuel] game=${gameId} player=${action.playerId} card=${action.cardCode}`,
     );
 
-    const updatedGame = await this.prisma.$transaction(async (transactionClient) => {
-      const existingGame = await transactionClient.game.findUnique({
-        where: { id: gameId },
-        select: {
-          id: true,
-          playerAId: true,
-          playerBId: true,
-          mode: true,
-          duelStage: true,
-          hands: true,
-          duelCenter: true,
-        },
-      });
+    const updatedGame = await this.prisma.$transaction(
+      async (transactionClient) => {
+        const existingGame = await transactionClient.game.findUnique({
+          where: { id: gameId },
+          select: {
+            id: true,
+            playerAId: true,
+            playerBId: true,
+            mode: true,
+            duelStage: true,
+            hands: true,
+            duelCenter: true,
+          },
+        });
 
-      if (existingGame === null) {
-        return null;
-      }
-      if (existingGame.mode !== 'ATTRIBUTE_DUEL') {
-        return existingGame;
-      }
-      if (existingGame.duelStage !== 'PICK_CARD') {
-        return existingGame;
-      }
+        if (existingGame === null) {
+          return null;
+        }
+        if (existingGame.mode !== 'ATTRIBUTE_DUEL') {
+          return existingGame;
+        }
+        if (existingGame.duelStage !== 'PICK_CARD') {
+          return existingGame;
+        }
 
-      const playerHands = this.normalizeCardCollection(
-        existingGame.hands as PlayerCardCollection | null,
-        existingGame.playerAId,
-        existingGame.playerBId,
-      );
-      const duelCenterState = this.normalizeDuelCenter(existingGame.duelCenter);
-      const duelParticipants: DuelParticipants = {
-        playerAId: existingGame.playerAId,
-        playerBId: existingGame.playerBId,
-      };
+        const playerHands = this.normalizeCardCollection(
+          existingGame.hands as PlayerCardCollection | null,
+          existingGame.playerAId,
+          existingGame.playerBId,
+        );
+        const duelCenterState = this.normalizeDuelCenter(
+          existingGame.duelCenter,
+        );
+        const duelParticipants: DuelParticipants = {
+          playerAId: existingGame.playerAId,
+          playerBId: existingGame.playerBId,
+        };
 
-      this.handlePickPhaseTimeout(playerHands, duelCenterState, duelParticipants);
+        this.handlePickPhaseTimeout(
+          playerHands,
+          duelCenterState,
+          duelParticipants,
+        );
 
-      if (!duelCenterState.playerACardCode || !duelCenterState.playerBCardCode) {
-        this.applyManualCardSelection(playerHands, duelCenterState, action, duelParticipants);
-      }
+        if (
+          !duelCenterState.playerACardCode ||
+          !duelCenterState.playerBCardCode
+        ) {
+          this.applyManualCardSelection(
+            playerHands,
+            duelCenterState,
+            action,
+            duelParticipants,
+          );
+        }
 
-      this.autoPickBotCards(playerHands, duelCenterState, duelParticipants);
+        this.autoPickBotCards(playerHands, duelCenterState, duelParticipants);
 
-      const shouldAdvanceToAttributePick =
-        duelCenterState.playerACardCode !== null &&
-        duelCenterState.playerBCardCode !== null;
+        const shouldAdvanceToAttributePick =
+          duelCenterState.playerACardCode !== null &&
+          duelCenterState.playerBCardCode !== null;
 
-      const nextStage: DuelStage = shouldAdvanceToAttributePick
-        ? 'PICK_ATTRIBUTE'
-        : 'PICK_CARD';
-      duelCenterState.chooserId = duelCenterState.chooserId ?? existingGame.playerAId;
-      duelCenterState.deadlineAt = Date.now() + TURN_DURATION_MS;
+        const nextStage: DuelStage = shouldAdvanceToAttributePick
+          ? 'PICK_ATTRIBUTE'
+          : 'PICK_CARD';
+        duelCenterState.chooserId =
+          duelCenterState.chooserId ?? existingGame.playerAId;
+        duelCenterState.deadlineAt = Date.now() + TURN_DURATION_MS;
 
-      const persistedGame = await transactionClient.game.update({
-        where: { id: gameId },
-        data: {
-          hands: playerHands,
-          duelCenter: prepareNullableJsonField(serializeDuelCenter(duelCenterState)),
-          duelStage: nextStage,
-        },
-        select: {
-          id: true,
-          playerAId: true,
-          playerBId: true,
-          turn: true,
-          hp: true,
-          winner: true,
-          hands: true,
-          decks: true,
-          log: true,
-          mode: true,
-          duelStage: true,
-          duelCenter: true,
-          discardPiles: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
+        const persistedGame = await transactionClient.game.update({
+          where: { id: gameId },
+          data: {
+            hands: playerHands,
+            duelCenter: prepareNullableJsonField(
+              serializeDuelCenter(duelCenterState),
+            ),
+            duelStage: nextStage,
+          },
+          select: {
+            id: true,
+            playerAId: true,
+            playerBId: true,
+            turn: true,
+            hp: true,
+            winner: true,
+            hands: true,
+            decks: true,
+            log: true,
+            mode: true,
+            duelStage: true,
+            duelCenter: true,
+            discardPiles: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
 
-      return persistedGame;
-    });
+        return persistedGame;
+      },
+    );
 
     if (updatedGame === null) {
       return null;
@@ -133,7 +152,10 @@ export class DuelGameService {
     const chooserId = duelCenterState.chooserId ?? updatedGame.playerAId;
 
     if (updatedGame.duelStage === 'PICK_ATTRIBUTE' && chooserId === BOT_ID) {
-      const bestAttribute = await this.determineBestAttributeForBot(updatedGame, duelCenterState);
+      const bestAttribute = await this.determineBestAttributeForBot(
+        updatedGame,
+        duelCenterState,
+      );
       return this.chooseAttributeForDuel(gameId, {
         playerId: BOT_ID,
         attribute: bestAttribute,
@@ -143,7 +165,10 @@ export class DuelGameService {
     return updatedGame;
   }
 
-  async chooseAttributeForDuel(gameId: string, action: PlayerActionAttributeSelection) {
+  async chooseAttributeForDuel(
+    gameId: string,
+    action: PlayerActionAttributeSelection,
+  ) {
     this.logger.log(
       `[chooseAttributeForDuel] game=${gameId} chooser=${action.playerId} attribute=${action.attribute}`,
     );
@@ -181,7 +206,11 @@ export class DuelGameService {
 
     const duelCenterState = this.normalizeDuelCenter(existingGame.duelCenter);
     const chooserId = duelCenterState.chooserId ?? existingGame.playerAId;
-    const finalAction = this.resolveAttributeSelection(action, chooserId, duelCenterState);
+    const finalAction = this.resolveAttributeSelection(
+      action,
+      chooserId,
+      duelCenterState,
+    );
 
     if (finalAction === null) {
       return existingGame;
@@ -196,16 +225,26 @@ export class DuelGameService {
     const involvedCards = await this.prisma.card.findMany({
       where: { code: { in: [playerACardCode, playerBCardCode] } },
     });
-    const playerACard = involvedCards.find((card) => card.code === playerACardCode);
-    const playerBCard = involvedCards.find((card) => card.code === playerBCardCode);
+    const playerACard = involvedCards.find(
+      (card) => card.code === playerACardCode,
+    );
+    const playerBCard = involvedCards.find(
+      (card) => card.code === playerBCardCode,
+    );
 
     if (!playerACard || !playerBCard) {
       return existingGame;
     }
 
     const attribute = finalAction.attribute;
-    const playerAAttributeValue = this.readAttributeValue(playerACard, attribute);
-    const playerBAttributeValue = this.readAttributeValue(playerBCard, attribute);
+    const playerAAttributeValue = this.readAttributeValue(
+      playerACard,
+      attribute,
+    );
+    const playerBAttributeValue = this.readAttributeValue(
+      playerBCard,
+      attribute,
+    );
 
     const roundWinnerId = this.resolveRoundWinner(
       playerAAttributeValue,
@@ -224,7 +263,9 @@ export class DuelGameService {
     const updatedGame = await this.prisma.game.update({
       where: { id: gameId },
       data: {
-        duelCenter: prepareNullableJsonField(serializeDuelCenter(duelCenterState)),
+        duelCenter: prepareNullableJsonField(
+          serializeDuelCenter(duelCenterState),
+        ),
         duelStage: 'REVEAL',
       },
       select: {
@@ -319,8 +360,12 @@ export class DuelGameService {
       ];
     }
 
-    const newDrawA = takeOneRandomCardFromDeck(playerDecks[existingGame.playerAId]);
-    const newDrawB = takeOneRandomCardFromDeck(playerDecks[existingGame.playerBId]);
+    const newDrawA = takeOneRandomCardFromDeck(
+      playerDecks[existingGame.playerAId],
+    );
+    const newDrawB = takeOneRandomCardFromDeck(
+      playerDecks[existingGame.playerBId],
+    );
     if (newDrawA) {
       playerHands[existingGame.playerAId].push(newDrawA);
     }
@@ -360,15 +405,24 @@ export class DuelGameService {
       where: { code: { in: [playerACardCode ?? '', playerBCardCode ?? ''] } },
     });
 
-    const playerAName = existingGame.playerA?.username ?? existingGame.playerAId;
-    const playerBName = existingGame.playerB?.username ?? existingGame.playerBId;
+    const playerAName =
+      existingGame.playerA?.username ?? existingGame.playerAId;
+    const playerBName =
+      existingGame.playerB?.username ?? existingGame.playerBId;
     const chooserName =
-      (duelCenterState.chooserId ?? existingGame.playerAId) === existingGame.playerAId
+      (duelCenterState.chooserId ?? existingGame.playerAId) ===
+      existingGame.playerAId
         ? playerAName
         : playerBName;
 
-    const playerACardName = this.resolveCardName(involvedCards, playerACardCode);
-    const playerBCardName = this.resolveCardName(involvedCards, playerBCardCode);
+    const playerACardName = this.resolveCardName(
+      involvedCards,
+      playerACardCode,
+    );
+    const playerBCardName = this.resolveCardName(
+      involvedCards,
+      playerBCardCode,
+    );
 
     const roundOutcomeLabel = this.buildRoundOutcomeLabel(
       roundWinnerId,
@@ -389,7 +443,9 @@ export class DuelGameService {
       data: {
         hands: playerHands,
         decks: playerDecks,
-        duelCenter: prepareNullableJsonField(serializeDuelCenter(nextDuelCenter)),
+        duelCenter: prepareNullableJsonField(
+          serializeDuelCenter(nextDuelCenter),
+        ),
         duelStage: nextStage,
         discardPiles: prepareNullableJsonField(
           convertCardCollectionToPrismaInput(discardPiles),
@@ -429,88 +485,99 @@ export class DuelGameService {
   }
 
   async unchooseCardForDuel(gameId: string, action: { playerId: string }) {
-    const updatedGame = await this.prisma.$transaction(async (transactionClient) => {
-      const existingGame = await transactionClient.game.findUnique({
-        where: { id: gameId },
-        select: {
-          id: true,
-          playerAId: true,
-          playerBId: true,
-          mode: true,
-          duelStage: true,
-          hands: true,
-          duelCenter: true,
-        },
-      });
+    const updatedGame = await this.prisma.$transaction(
+      async (transactionClient) => {
+        const existingGame = await transactionClient.game.findUnique({
+          where: { id: gameId },
+          select: {
+            id: true,
+            playerAId: true,
+            playerBId: true,
+            mode: true,
+            duelStage: true,
+            hands: true,
+            duelCenter: true,
+          },
+        });
 
-      if (existingGame === null) {
-        return null;
-      }
-      if (existingGame.mode !== 'ATTRIBUTE_DUEL') {
-        return existingGame;
-      }
-      if (existingGame.duelStage === 'REVEAL' || existingGame.duelStage === 'RESOLVED') {
-        return existingGame;
-      }
+        if (existingGame === null) {
+          return null;
+        }
+        if (existingGame.mode !== 'ATTRIBUTE_DUEL') {
+          return existingGame;
+        }
+        if (
+          existingGame.duelStage === 'REVEAL' ||
+          existingGame.duelStage === 'RESOLVED'
+        ) {
+          return existingGame;
+        }
 
-      const playerHands = this.normalizeCardCollection(
-        existingGame.hands as PlayerCardCollection | null,
-        existingGame.playerAId,
-        existingGame.playerBId,
-      );
-      const duelCenterState = this.normalizeDuelCenter(existingGame.duelCenter);
+        const playerHands = this.normalizeCardCollection(
+          existingGame.hands as PlayerCardCollection | null,
+          existingGame.playerAId,
+          existingGame.playerBId,
+        );
+        const duelCenterState = this.normalizeDuelCenter(
+          existingGame.duelCenter,
+        );
 
-      const isPlayerA = action.playerId === existingGame.playerAId;
-      const opponentId = isPlayerA ? existingGame.playerBId : existingGame.playerAId;
-      const selectedCardCode = isPlayerA
-        ? duelCenterState.playerACardCode
-        : duelCenterState.playerBCardCode;
+        const isPlayerA = action.playerId === existingGame.playerAId;
+        const opponentId = isPlayerA
+          ? existingGame.playerBId
+          : existingGame.playerAId;
+        const selectedCardCode = isPlayerA
+          ? duelCenterState.playerACardCode
+          : duelCenterState.playerBCardCode;
 
-      if (selectedCardCode === null) {
-        return existingGame;
-      }
+        if (selectedCardCode === null) {
+          return existingGame;
+        }
 
-      playerHands[action.playerId].push(selectedCardCode);
+        playerHands[action.playerId].push(selectedCardCode);
 
-      const opponentCardCode = isPlayerA
-        ? duelCenterState.playerBCardCode
-        : duelCenterState.playerACardCode;
-      if (opponentCardCode !== null) {
-        playerHands[opponentId].push(opponentCardCode);
-      }
+        const opponentCardCode = isPlayerA
+          ? duelCenterState.playerBCardCode
+          : duelCenterState.playerACardCode;
+        if (opponentCardCode !== null) {
+          playerHands[opponentId].push(opponentCardCode);
+        }
 
-      const resetCenter = initializeDuelCenterState();
-      resetCenter.chooserId = action.playerId;
-      resetCenter.deadlineAt = Date.now() + TURN_DURATION_MS;
+        const resetCenter = initializeDuelCenterState();
+        resetCenter.chooserId = action.playerId;
+        resetCenter.deadlineAt = Date.now() + TURN_DURATION_MS;
 
-      const persistedGame = await transactionClient.game.update({
-        where: { id: gameId },
-        data: {
-          hands: playerHands,
-          duelCenter: prepareNullableJsonField(serializeDuelCenter(resetCenter)),
-          duelStage: 'PICK_CARD',
-        },
-        select: {
-          id: true,
-          playerAId: true,
-          playerBId: true,
-          turn: true,
-          hp: true,
-          winner: true,
-          hands: true,
-          decks: true,
-          log: true,
-          mode: true,
-          duelStage: true,
-          duelCenter: true,
-          discardPiles: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
+        const persistedGame = await transactionClient.game.update({
+          where: { id: gameId },
+          data: {
+            hands: playerHands,
+            duelCenter: prepareNullableJsonField(
+              serializeDuelCenter(resetCenter),
+            ),
+            duelStage: 'PICK_CARD',
+          },
+          select: {
+            id: true,
+            playerAId: true,
+            playerBId: true,
+            turn: true,
+            hp: true,
+            winner: true,
+            hands: true,
+            decks: true,
+            log: true,
+            mode: true,
+            duelStage: true,
+            duelCenter: true,
+            discardPiles: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
 
-      return persistedGame;
-    });
+        return persistedGame;
+      },
+    );
 
     return updatedGame;
   }
@@ -681,8 +748,12 @@ export class DuelGameService {
     const involvedCards = await this.prisma.card.findMany({
       where: { code: { in: [playerACardCode, playerBCardCode] } },
     });
-    const playerACard = involvedCards.find((card) => card.code === playerACardCode);
-    const playerBCard = involvedCards.find((card) => card.code === playerBCardCode);
+    const playerACard = involvedCards.find(
+      (card) => card.code === playerACardCode,
+    );
+    const playerBCard = involvedCards.find(
+      (card) => card.code === playerBCardCode,
+    );
 
     if (!playerACard || !playerBCard) {
       return 'magic';
@@ -739,7 +810,10 @@ export class DuelGameService {
     return action;
   }
 
-  private readAttributeValue(card: PrismaCard, attribute: AttributeKey): number {
+  private readAttributeValue(
+    card: PrismaCard,
+    attribute: AttributeKey,
+  ): number {
     if (attribute === 'magic') {
       return card.magic ?? 0;
     }

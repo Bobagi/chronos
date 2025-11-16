@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Prisma,
   DuelStage,
   FriendshipStatus,
+  Prisma,
   Card as PrismaCard,
   CardTemplate as PrismaCardTemplate,
   GameMode as PrismaGameMode,
@@ -42,7 +42,7 @@ function applyCardImageBase(card: PrismaCard): PrismaCard {
 
   const updatedCard: PrismaCard = {
     ...card,
-    imageUrl: `${CARD_IMAGE_BASE_URL}${imageUrl}`,
+    imageUrl: `${CARD_IMAGE_BASE_URL}/${imageUrl}`,
   };
   return updatedCard;
 }
@@ -68,7 +68,9 @@ export class GameService {
   ) {}
 
   /* ---------- Catalog ---------- */
-  private async findCards(where?: Prisma.CardWhereInput): Promise<PrismaCard[]> {
+  private async findCards(
+    where?: Prisma.CardWhereInput,
+  ): Promise<PrismaCard[]> {
     const cards = await this.prisma.card.findMany({ where });
     return cards.map((card) => applyCardImageBase(card));
   }
@@ -81,7 +83,7 @@ export class GameService {
     const cards = await this.prisma.$queryRaw<PrismaCard[]>(Prisma.sql`
       SELECT *
       FROM "Card"
-      WHERE "collectionId" = ${collectionId}
+      WHERE "collectionId" = ${collectionId}::uuid
       ORDER BY "number" ASC
     `);
     return cards.map((card) => applyCardImageBase(card));
@@ -133,8 +135,7 @@ export class GameService {
       duelCenterState.deadlineAt = now + TURN_DURATION_MS;
     }
 
-    const playerBUsername =
-      playerBId === BOT_ID ? 'Bot Opponent' : playerBId;
+    const playerBUsername = playerBId === BOT_ID ? 'Bot Opponent' : playerBId;
     const initialState: GameState = {
       players: [playerAId, playerBId],
       playerUsernames: {

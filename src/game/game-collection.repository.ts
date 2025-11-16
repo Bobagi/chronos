@@ -38,7 +38,9 @@ export class GameCollectionRepository {
     return rows;
   }
 
-  async findByIdentifier(identifier: string): Promise<CardCollectionRecord | null> {
+  async findByIdentifier(
+    identifier: string,
+  ): Promise<CardCollectionRecord | null> {
     const identifierIsUuid = this.isUuid(identifier);
     const whereClause = identifierIsUuid
       ? Prisma.sql`WHERE "id" = ${identifier}::uuid OR "slug" = ${identifier}`
@@ -65,7 +67,8 @@ export class GameCollectionRepository {
   }
 
   private isUuid(value: string): boolean {
-    const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+    const uuidPattern =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
     return uuidPattern.test(value);
   }
 }
