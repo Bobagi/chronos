@@ -1,132 +1,39 @@
-# Chronos – Mythological Card Game Engine (Backend)
+# Chronos Platform Monorepo
 
-**Chronos** is the backend engine for a multiplayer online card game inspired by mythology and classic battle card mechanics (inspired by Dracomania). This service handles all game rules, player logic, turn rotation, card resolution, and battle flow.
+This repository hosts the Chronos platform as a monorepo, combining the NestJS backend (Chronos) and the SvelteKit frontend (Kairos) with a shared package for common domain types.
 
-## 🛠 Tech Stack
+## Repository layout
 
-- [NestJS](https://nestjs.com/) (TypeScript)
-- REST API + Swagger
-- PostgreSQL + Prisma ORM
-- Docker-ready
+- `apps/chronos/` – NestJS backend with Prisma and PostgreSQL integrations.
+- `apps/kairos/` – SvelteKit frontend for the online card experience.
+- `packages/shared/` – Shared domain contracts (types, enums, constants) consumed by both applications.
+- `docker-compose.yml` – Orchestration entry point for the backend and database services.
 
----
+## Environment files
 
-## ▶️ Run Locally (without Docker)
+Create environment files at the repository root:
 
-1. Create a `.env` file using the variables listed in the Docker section.
-2. Install dependencies with your preferred package manager, for example `npm install`.
-3. Start the development server with `npm run start:dev` and access the API at `http://localhost:3053`.
+- `.env.chronos` – Backend and database variables used by Docker Compose (see `apps/chronos/README.md`).
+- `.env.kairos` – Frontend-specific variables (for SSR hosting or future container builds).
 
----
+## Running the backend with Docker
 
-## 📦 Features
-
-- Create and manage a match between 2 players
-- Track game state, logs, turns, HP, and player hands
-- Each player starts with 5 random cards in hand
-- Only cards in hand can be played
-- REST endpoints for game actions
-- Swagger docs at `/api`
-
----
-
-## 🚀 Run with Docker
-
-### 1) `.env` (root)
-
-```env
-CHRONOS_PORT=3053
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=chronos
-DATABASE_URL=postgresql://postgres:postgres@db:5432/chronos
-```
-
-### 2) Start services
+Use the root-level `docker-compose.yml` to start PostgreSQL and the Chronos API:
 
 ```bash
 docker compose up -d db chronos
 ```
 
-### 3) API base URL
+The compose file builds the backend from `apps/chronos/` and mounts its Prisma schema for migrations and seeding.
 
-```
-http://localhost:3053
-```
+## Shared code
 
----
+Types, enums, and domain constants are centralized in `packages/shared`. Both the backend and frontend import from `@chronos/shared` to avoid duplication and keep contracts consistent across the platform.
 
-## 📜 Create Migration (exact commands)
+## Frontend (Kairos)
 
-```bash
-docker compose up -d db chronos
-docker compose exec chronos sh -lc 'npx prisma migrate dev --name add-new-game-mode'
-```
+The Kairos SvelteKit application lives in `apps/kairos/` with routes, components, and service clients organized under `src/`. It consumes backend contracts from `@chronos/shared` and remains ready for SSR deployment.
 
-In case of 'We found changes that cannot be executed':
+## Backend (Chronos)
 
-```bash
-docker compose exec chronos sh -lc 'npx prisma migrate dev --name add_auth_player_role --create-only'
-docker compose exec chronos sh -lc 'npx prisma migrate reset --force --skip-seed'
-```
-
-Then, generate files:
-
-```bash
-docker compose exec chronos sh -lc 'npx prisma generate'
-```
-
----
-
-## 🗄 Prisma Studio (DB UI)
-
-```bash
-docker exec -it chronos-backend npx prisma studio --port 5555 --hostname 0.0.0.0 --browser none
-```
-
-```bash
-ssh -L 5555:127.0.0.1:5555 user@host
-```
-
-Open: `http://localhost:5555`
-
----
-
-## 🧪 Quick API Checks
-
-**Health**
-
-```bash
-curl -k http://localhost:3053/health
-```
-
-**Start a new game**
-
-```bash
-curl -k -X POST http://localhost:3053/game/start
-```
-
-**Play a card**
-
-```bash
-curl -k -X POST http://localhost:3053/game/play-card \
-  -H "Content-Type: application/json" \
-  -d '{"gameId":"550e8400-e29b-41d4-a716-446655440000","player":"A","card":"fireball"}'
-```
-
----
-
-## 📘 Swagger
-
-```
-http://localhost:3053/api
-```
-
----
-
-## 🔄 Reset DB and Seed (optional)
-
-```bash
-docker compose exec chronos sh -lc 'npx prisma migrate reset --force'
-docker compose exec chronos sh -lc 'npx ts-node prisma/seed.ts'
-```
+The Chronos NestJS application lives in `apps/chronos/`. See `apps/chronos/README.md` for detailed instructions on running locally or with Docker, migrations, and API exploration.

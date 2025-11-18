@@ -1,7 +1,13 @@
 # compiled output
 /dist
-/node_modules
+**/dist
 /build
+**/build
+**/.svelte-kit
+
+# node modules
+/node_modules
+**/node_modules
 
 # Logs
 logs
@@ -37,6 +43,8 @@ lerna-debug.log*
 
 # dotenv environment variable files
 .env
+.env.chronos
+.env.kairos
 .env.development.local
 .env.test.local
 .env.production.local
@@ -52,7 +60,7 @@ pids
 *.seed
 *.pid.lock
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
+# Diagnostic reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma

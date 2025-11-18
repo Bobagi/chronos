@@ -1,5 +1,11 @@
 node_modules
+**/node_modules
 dist
+**/dist
+apps/kairos/.svelte-kit
+apps/kairos/build
 dev.db
 *.log
 .env
+.env.chronos
+.env.kairos
