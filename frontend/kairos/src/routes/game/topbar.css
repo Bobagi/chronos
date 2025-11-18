@@ -1,0 +1,47 @@
+.fixed-top-bar {
+	position: fixed;
+	top: 10px;
+	left: 10px;
+	right: 10px;
+	z-index: 1000;
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+	justify-content: space-between;
+	flex-wrap: wrap;
+}
+
+.topbar-left {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.topbar-right {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	margin-left: auto;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+.home-btn {
+	padding: 0.45rem 0.6rem;
+	border-radius: 0.5rem;
+	background: rgba(0, 0, 0, 0.65);
+	color: #fff;
+	text-decoration: none;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(4px);
+	align-content: center;
+}
+.mode-pill {
+	padding: 0.4rem 0.6rem;
+	border-radius: 0.5rem;
+	background: rgba(0, 0, 0, 0.65);
+	color: #fff;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(4px);
+	font-size: 0.85rem;
+}

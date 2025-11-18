@@ -1,0 +1,47 @@
+@font-face {
+	font-family: 'Draco';
+	src: url('/fonts/dracoFont.woff') format('woff');
+	font-weight: 400 900;
+	font-style: normal;
+	font-display: swap;
+}
+.card-font {
+	--card-font-size: 2.4cqh;
+	font-family:
+		'Draco',
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		sans-serif;
+	font-size: var(--card-font-size);
+	line-height: 1;
+	-webkit-text-stroke: 0.18cqh #000;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+.card-title-text {
+	color: #fff;
+	text-shadow: none !important;
+	letter-spacing: -0.18em !important;
+	font-size: 8cqh !important;
+}
+.card-attribute-value {
+	color: #fff;
+	text-shadow: none !important;
+	letter-spacing: -0.03em;
+	font-size: 10cqh !important;
+}
+.card-attribute-label {
+	color: #fff;
+	text-shadow: none !important;
+	letter-spacing: -0.18em !important;
+	-webkit-text-stroke: 0.25cqh #000 !important;
+	font-size: 5cqh !important;
+}
+.card-corner-number {
+	color: #fff;
+	text-shadow: none !important;
+	letter-spacing: -0.03em;
+	font-size: inherit !important;
+}

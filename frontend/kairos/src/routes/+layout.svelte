@@ -1,0 +1,70 @@
+<script lang="ts">
+	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
+	import SiteFooter from '$lib/components/SiteFooter.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
+	import {
+		SITE_DESCRIPTION,
+		SITE_NAME,
+		SITE_PREVIEW_IMAGE,
+		SITE_URL,
+		SOCIAL_LINKS
+	} from '$lib/config/siteMetadata';
+	import { authUser, clearAuthState, setAuthState } from '$lib/stores/authStore';
+	import type { AuthenticatedChronosUser } from '$lib/types/chronos';
+	import '../app.postcss';
+
+	export let data: { authUser: AuthenticatedChronosUser | null };
+
+	$: canonicalUrl = $page.url?.href ?? SITE_URL;
+
+	$: structuredData = {
+		'@context': 'https://schema.org',
+		'@type': 'Organization',
+		name: SITE_NAME,
+		url: canonicalUrl,
+		description: SITE_DESCRIPTION,
+		logo: SITE_PREVIEW_IMAGE,
+		sameAs: SOCIAL_LINKS.map((p) => p.url)
+	};
+
+	$: setAuthState(data?.authUser ?? null);
+
+	async function handleLogout() {
+		await fetch('/api/auth/logout', { method: 'POST' });
+		clearAuthState();
+		await invalidateAll();
+	}
+</script>
+
+<svelte:head>
+	<meta name="description" content={SITE_DESCRIPTION} />
+	<meta property="og:title" content={SITE_NAME} />
+	<meta property="og:description" content={SITE_DESCRIPTION} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:site_name" content={SITE_NAME} />
+	<meta property="og:image" content={SITE_PREVIEW_IMAGE} />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={SITE_NAME} />
+	<meta name="twitter:description" content={SITE_DESCRIPTION} />
+	<meta name="twitter:image" content={SITE_PREVIEW_IMAGE} />
+
+	{@html `
+		<script type="application/ld+json">
+		${JSON.stringify(structuredData).replace(/</g, '\\u003c')}
+		</script>
+	`}
+</svelte:head>
+
+<TopBar
+	isUserAuthenticated={$authUser !== null}
+	on:logout={handleLogout}
+	on:openFriends={() => {}}
+/>
+
+<slot />
+
+<SiteFooter />
+
+<style src="../app.postcss"></style>
