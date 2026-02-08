@@ -46,6 +46,7 @@ pnpm dev
 
 - The API runs on `http://localhost:3000`.
 - The Vite dev server runs on `http://localhost:3055` and proxies API calls to the API server.
+- You do NOT need to run a build before `pnpm dev`; the backend is compiled in watch mode.
 
 ### 5) Build everything
 
