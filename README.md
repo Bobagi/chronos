@@ -1,39 +1,67 @@
-# Chronos Platform Monorepo
+# Chronos Unified Card Game Platform
 
-This repository hosts the Chronos platform as a monorepo, combining the NestJS backend (Chronos) and the SvelteKit frontend (Kairos) with a shared package for common domain types.
+Chronos is a single, unified application that hosts both the game API and the SvelteKit-powered
+frontend in one deployment. The goal is to keep the original gameplay, matchmaking, and UI
+behavior intact while removing the legacy backend/frontend split.
 
 ## Repository layout
 
-- `apps/chronos/` – NestJS backend with Prisma and PostgreSQL integrations.
-- `apps/kairos/` – SvelteKit frontend for the online card experience.
-- `packages/shared/` – Shared domain contracts (types, enums, constants) consumed by both applications.
-- `docker-compose.yml` – Orchestration entry point for the backend and database services.
+- `server/` – NestJS backend (authentication, matchmaking, game sessions, real-time services).
+- `src/` – SvelteKit frontend (routes, components, UI state, and SSR hooks).
+- `shared/` – Shared domain contracts (types, enums, constants) used by both layers.
+- `prisma/` – Database schema, migrations, and seed data.
+- `static/` – Static assets for the SvelteKit frontend.
 
-## Environment files
+## Local development
 
-Create environment files at the repository root:
-
-- `.env.chronos` – Backend and database variables used by Docker Compose (see `apps/chronos/README.md`).
-- `.env.kairos` – Frontend-specific variables (for SSR hosting or future container builds).
-
-## Running the backend with Docker
-
-Use the root-level `docker-compose.yml` to start PostgreSQL and the Chronos API:
+### Start both the API and UI (watch mode)
 
 ```bash
-docker compose up -d db chronos
+npm install
+npm run dev
 ```
 
-The compose file builds the backend from `apps/chronos/` and mounts its Prisma schema for migrations and seeding.
+- The API runs on `http://localhost:3000`.
+- The Vite dev server runs on `http://localhost:3055` and proxies API calls to the API server.
 
-## Shared code
+### Build everything
 
-Types, enums, and domain constants are centralized in `packages/shared`. Both the backend and frontend import from `@chronos/shared` to avoid duplication and keep contracts consistent across the platform.
+```bash
+npm run build
+```
 
-## Frontend (Kairos)
+### Run the unified production server
 
-The Kairos SvelteKit application lives in `apps/kairos/` with routes, components, and service clients organized under `src/`. It consumes backend contracts from `@chronos/shared` and remains ready for SSR deployment.
+```bash
+npm run start
+```
 
-## Backend (Chronos)
+The production server renders the SvelteKit frontend from the same NestJS process and serves
+static assets from `dist/client`.
 
-The Chronos NestJS application lives in `apps/chronos/`. See `apps/chronos/README.md` for detailed instructions on running locally or with Docker, migrations, and API exploration.
+## Docker
+
+The Docker setup now builds a single image that includes both the backend and frontend:
+
+```bash
+docker compose up --build
+```
+
+This starts PostgreSQL plus the unified Chronos application.
+
+## Database access
+
+Prisma Studio can be run inside the container:
+
+```bash
+docker compose exec chronos bash
+npx prisma studio --port 5555 --hostname 0.0.0.0 --browser none
+```
+
+If you need remote access, open an SSH tunnel to the container IP:
+
+```bash
+ssh -N -L 5555:<container-ip>:5555 <user>@<server>
+```
+
+Then visit `http://localhost:5555` in your browser.

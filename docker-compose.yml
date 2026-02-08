@@ -46,8 +46,8 @@ services:
   chronos:
     build:
       context: .
-      dockerfile: ./apps/chronos/Dockerfile
-    container_name: chronos-backend
+      dockerfile: ./Dockerfile
+    container_name: chronos-app
     depends_on:
       db:
         condition: service_healthy
@@ -57,12 +57,12 @@ services:
       - .env.chronos
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      CHRONOS_PORT: ${CHRONOS_PORT}
+      PORT: ${CHRONOS_PORT}
     ports:
       - '${CHRONOS_PORT}:3000'
       - '5555:5555'
     volumes:
-      - ./apps/chronos/prisma:/app/prisma
+      - ./prisma:/app/prisma
     restart: always
 
 volumes:
