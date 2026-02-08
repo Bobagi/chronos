@@ -30,7 +30,13 @@ Update the file with your real credentials and secrets.
 pnpm install
 ```
 
-### 3) Start the database (local dev)
+### 3) Generate Prisma client
+
+```bash
+pnpm prisma:generate
+```
+
+### 4) Start the database (local dev)
 
 If you want to run the database via Docker:
 
@@ -38,7 +44,7 @@ If you want to run the database via Docker:
 docker compose up -d db db-collation-fix
 ```
 
-### 4) Start both the API and UI (watch mode)
+### 5) Start both the API and UI (watch mode)
 
 ```bash
 pnpm dev
@@ -48,13 +54,13 @@ pnpm dev
 - The Vite dev server runs on `http://localhost:3055` and proxies API calls to the API server.
 - You do NOT need to run a build before `pnpm dev`; the backend is compiled in watch mode.
 
-### 5) Build everything
+### 6) Build everything
 
 ```bash
 pnpm build
 ```
 
-### 6) Run the unified production server
+### 7) Run the unified production server
 
 ```bash
 pnpm start

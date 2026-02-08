@@ -5,7 +5,7 @@
   "scripts": {
     "prepare": "svelte-kit sync || echo ''",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "nest start --watch --config tsconfig.server.json --entryFile server/main",
+    "dev:server": "sh -c \"tsc -p tsconfig.server.json && concurrently \\\"tsc -p tsconfig.server.json --watch\\\" \\\"node --watch dist/server/main.js\\\"\"",
     "dev:client": "vite dev --host 0.0.0.0 --port 3055",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
