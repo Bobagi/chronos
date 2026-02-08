@@ -1,4 +1,4 @@
-import type { GameSummary } from '$lib/api/chronosTypes';
+import type { GameMode, GameSummary } from '$lib/api/chronosTypes';
 import type {
 	AuthenticatedChronosUser,
 	ChronosDashboardData,

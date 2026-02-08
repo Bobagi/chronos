@@ -14,21 +14,15 @@ behavior intact while removing the legacy backend/frontend split.
 
 ## Local development
 
-### 1) Create the environment files
+### 1) Create the environment file
 
-Create a local `.env` file for non-Docker development:
+Create a `.env` file for local and Docker development:
 
 ```bash
 cp .env.example .env
 ```
 
-Create a Docker-specific `.env.chronos` file used by `docker compose`:
-
-```bash
-cp .env.chronos.example .env.chronos
-```
-
-Update both files with your real credentials and secrets.
+Update the file with your real credentials and secrets.
 
 ### 2) Install dependencies
 
