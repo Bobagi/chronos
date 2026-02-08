@@ -1,4 +1,4 @@
-import { AttributeKey, DuelStage, GameMode } from './game-enums';
+import type { AttributeKey, DuelStage, GameMode } from './game-enums';
 
 export type PlayerCardCollection = Record<string, string[]>;
 

@@ -14,26 +14,55 @@ behavior intact while removing the legacy backend/frontend split.
 
 ## Local development
 
-### Start both the API and UI (watch mode)
+### 1) Create the environment files
+
+Create a local `.env` file for non-Docker development:
 
 ```bash
-npm install
-npm run dev
+cp .env.example .env
+```
+
+Create a Docker-specific `.env.chronos` file used by `docker compose`:
+
+```bash
+cp .env.chronos.example .env.chronos
+```
+
+Update both files with your real credentials and secrets.
+
+### 2) Install dependencies
+
+```bash
+pnpm install
+```
+
+### 3) Start the database (local dev)
+
+If you want to run the database via Docker:
+
+```bash
+docker compose up -d db db-collation-fix
+```
+
+### 4) Start both the API and UI (watch mode)
+
+```bash
+pnpm dev
 ```
 
 - The API runs on `http://localhost:3000`.
 - The Vite dev server runs on `http://localhost:3055` and proxies API calls to the API server.
 
-### Build everything
+### 5) Build everything
 
 ```bash
-npm run build
+pnpm build
 ```
 
-### Run the unified production server
+### 6) Run the unified production server
 
 ```bash
-npm run start
+pnpm start
 ```
 
 The production server renders the SvelteKit frontend from the same NestJS process and serves

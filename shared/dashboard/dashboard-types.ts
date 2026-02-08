@@ -1,5 +1,5 @@
-import { GameMode } from '../game/game-enums';
-import { GameSummary } from '../game/game-summaries.types';
+import type { GameMode } from '../game/game-enums';
+import type { GameSummary } from '../game/game-summaries.types';
 
 export interface ChronosGameStatistics {
   gamesPlayed: number;
@@ -12,7 +12,7 @@ export interface ChronosGameSummaryWithMetadata extends GameSummary {
   playerBId: string;
   players: string[];
   lastActivity: number;
-  mode: GameMode | string;
+  mode: GameMode;
 }
 
 export interface ChronosDashboardData {

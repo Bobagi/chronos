@@ -59,6 +59,13 @@ async function resolveBackendHealthStatus(
 
 type RawGameSummary = Record<string, unknown>;
 
+function parseGameMode(value: unknown): GameMode {
+	if (value === 'CLASSIC' || value === 'ATTRIBUTE_DUEL') {
+		return value;
+	}
+	return 'CLASSIC';
+}
+
 function toTimestampMillis(value: unknown): number {
 	if (value instanceof Date) return value.getTime();
 	if (typeof value === 'number') return value;
@@ -90,7 +97,7 @@ function toStringArray(value: unknown): string[] {
 }
 
 function convertApiGameSummaryToChronosMetadata(api: GameSummary): ChronosGameSummaryWithMetadata {
-	const raw = api as RawGameSummary;
+	const raw = api as unknown as RawGameSummary;
 
 	const id =
 		toOptionalString(raw.id) ??
@@ -127,7 +134,7 @@ function convertApiGameSummaryToChronosMetadata(api: GameSummary): ChronosGameSu
 		(raw as { lastActivityAt?: unknown }).lastActivityAt ??
 		(raw as { createdAt?: unknown }).createdAt;
 
-	const mode = toOptionalString(raw.mode) ?? 'UNKNOWN';
+	const mode = parseGameMode(raw.mode);
 
 	const gameId =
 		toOptionalString(raw.gameId) ??

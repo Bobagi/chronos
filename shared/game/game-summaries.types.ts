@@ -1,4 +1,4 @@
-import { GameMode } from './game-enums';
+import type { GameMode } from './game-enums';
 
 export interface GameSummaryMetadata {
   [key: string]: string | number | boolean | null | undefined;
