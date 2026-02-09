@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
-const DEFAULT_CHRONOS_BASE_URL = 'http://localhost:3053';
+const DEFAULT_CHRONOS_BASE_URL = 'http://localhost:3000';
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');

@@ -20,7 +20,7 @@ interface ChronosRuntimeEnvironment extends ImportMetaEnv {
 }
 
 const runtimeEnvironmentVariables = import.meta.env as ChronosRuntimeEnvironment;
-const DEFAULT_CHRONOS_BASE_URL = 'http://localhost:3053';
+const DEFAULT_CHRONOS_BASE_URL = 'http://localhost:3000';
 
 function resolveChronosBaseUrl(): string {
 	const configuredChronosBaseUrl = runtimeEnvironmentVariables.VITE_API_BASE_URL;

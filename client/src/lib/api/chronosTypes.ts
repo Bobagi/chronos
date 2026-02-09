@@ -11,7 +11,7 @@ import type {
   GameMode,
   GameResult,
   GameSummary,
-} from '@chronos/shared';
+} from '../../../../shared/src';
 import type { GameState } from '$lib/stores/game';
 
 export type Card = ChronosCard;

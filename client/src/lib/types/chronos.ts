@@ -4,4 +4,4 @@ export {
   ChronosGameStatistics,
   ChronosGameSummaryWithMetadata,
   ChronosUserRole,
-} from '@chronos/shared';
+} from '../../../../shared/src';

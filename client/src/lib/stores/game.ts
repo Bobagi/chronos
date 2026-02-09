@@ -1,5 +1,5 @@
-import type { AttributeKey, DuelStage, GameMode } from '@chronos/shared';
-import type { ChronosCard } from '@chronos/shared';
+import type { AttributeKey, DuelStage, GameMode } from '../../../../shared/src';
+import type { ChronosCard } from '../../../../shared/src';
 import { writable } from 'svelte/store';
 
 export type Card = ChronosCard;

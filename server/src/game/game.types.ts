@@ -6,7 +6,7 @@ import {
   PlayerCardCollection,
   PlayerHealthCollection,
   PlayerUsernameCollection,
-} from '@chronos/shared';
+} from '../../../shared/src';
 import {
   Prisma,
   DuelStage as PrismaDuelStage,

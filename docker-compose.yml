@@ -4,7 +4,7 @@ services:
     container_name: chronos-db
     restart: on-failure
     env_file:
-      - .env.chronos
+      - .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -28,7 +28,7 @@ services:
       db:
         condition: service_healthy
     env_file:
-      - .env.chronos
+      - .env
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     entrypoint: ['sh', '-lc']
@@ -46,7 +46,7 @@ services:
   chronos:
     build:
       context: .
-      dockerfile: ./apps/chronos/Dockerfile
+      dockerfile: ./server/Dockerfile
     container_name: chronos-backend
     depends_on:
       db:
@@ -54,15 +54,15 @@ services:
       db-collation-fix:
         condition: service_completed_successfully
     env_file:
-      - .env.chronos
+      - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      CHRONOS_PORT: ${CHRONOS_PORT}
+      PORT: ${PORT}
     ports:
-      - '${CHRONOS_PORT}:3000'
+      - '${PORT}:3000'
       - '5555:5555'
     volumes:
-      - ./apps/chronos/prisma:/app/prisma
+      - ./server/prisma:/app/prisma
     restart: always
 
 volumes:
