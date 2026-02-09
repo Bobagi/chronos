@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
 		test: {
 			projects: [
 				{
-					extends: './vite.config.ts',
+					extends: './vite.config.mjs',
 					test: {
 						name: 'client',
 						environment: 'browser',
@@ -63,7 +63,7 @@ export default defineConfig(({ mode }) => {
 					}
 				},
 				{
-					extends: './vite.config.ts',
+					extends: './vite.config.mjs',
 					test: {
 						name: 'server',
 						environment: 'node',
