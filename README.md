@@ -53,6 +53,8 @@ npx prisma migrate dev --schema server/prisma/schema.prisma
 npx prisma db seed --schema server/prisma/schema.prisma
 ```
 
+The seed data is defined in `server/prisma/seed.ts` (no standalone `.sql` file is required). The seed creates the Dracomania card collection and its cards, plus the default users.
+
 ### 5) Run the unified dev stack
 
 ```bash
