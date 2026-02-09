@@ -5,6 +5,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 
 const DEFAULT_CHRONOS_BASE_URL = 'http://localhost:3000';
+const isCodespacesEnvironment = process.env.CODESPACES === 'true';
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
@@ -22,10 +23,12 @@ export default defineConfig(({ mode }) => {
 		server: {
 			host: '0.0.0.0',
 			port: 3055,
-			https: {
-				key: fs.readFileSync(path.resolve(__dirname, 'certs/localhost-key.pem')),
-				cert: fs.readFileSync(path.resolve(__dirname, 'certs/localhost.pem'))
-			},
+			https: isCodespacesEnvironment
+				? false
+				: {
+						key: fs.readFileSync(path.resolve(__dirname, 'certs/localhost-key.pem')),
+						cert: fs.readFileSync(path.resolve(__dirname, 'certs/localhost.pem'))
+					},
 			proxy: {
 				'/game': {
 					target: chronosTarget,

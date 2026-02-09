@@ -62,6 +62,7 @@ npm run dev
 ### Access points
 
 - Frontend (SvelteKit dev server): `https://localhost:3055`
+  - On GitHub Codespaces, HTTPS is disabled by default; use the forwarded HTTP URL provided by Codespaces.
 - Backend REST API: `http://localhost:3000`
   - Example routes: `/auth`, `/game`, `/friends`, `/health`
 - WebSocket (Socket.IO): `ws://localhost:3000` (same origin as the API)
