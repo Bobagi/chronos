@@ -38,6 +38,13 @@ docker compose up -d db
 ```
 
 The database listens on `localhost:5432` by default (see `.env.example`).
+If you change `POSTGRES_USER` or `POSTGRES_PASSWORD` in `.env` after the first run, you must reset the database volume or the credentials will not update.
+To reset locally:
+
+```bash
+docker compose down -v
+docker compose up -d db
+```
 
 ### 4) Apply migrations and seed data
 
