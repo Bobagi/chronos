@@ -37,7 +37,7 @@ npm install
 docker compose up -d db
 ```
 
-The database listens on `localhost:5434` by default (see `.env.example`).
+The database listens on `localhost:5432` by default (see `.env.example`).
 
 ### 4) Apply migrations and seed data
 
@@ -153,7 +153,7 @@ sudo systemctl start chronos
 
 - `3000` (backend API + WebSocket)
 - `3055` (frontend)
-- `5434` only if the database is exposed externally (not required for most VPS setups)
+- `5432` only if the database is exposed externally (not required for most VPS setups)
 
 ### 7) Verify health
 
