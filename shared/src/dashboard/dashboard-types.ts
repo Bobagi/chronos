@@ -12,7 +12,7 @@ export interface ChronosGameSummaryWithMetadata extends GameSummary {
   playerBId: string;
   players: string[];
   lastActivity: number;
-  mode: GameMode | string;
+  mode: GameMode;
 }
 
 export interface ChronosDashboardData {

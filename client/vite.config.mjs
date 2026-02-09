@@ -18,7 +18,6 @@ export default defineConfig(({ mode }) => {
 	const proxySecure = chronosTarget.startsWith('https://');
 
 	return {
-		root: __dirname,
 		plugins: [tailwindcss(), sveltekit()],
 		server: {
 			host: '0.0.0.0',
