@@ -52,3 +52,14 @@ npx prisma db seed
    npm run start:dev
    ```
 3. Open the forwarded port `3000` in the browser.
+
+## Docker Compose
+
+Use the same `.env` file and run:
+
+```bash
+docker compose up --build
+```
+
+The app is exposed on `http://localhost:${CHRONOS_PORT}` (default `3000`).
+
