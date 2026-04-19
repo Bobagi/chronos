@@ -1,0 +1,29 @@
+.logbox {
+	width: min(540px, 46vw);
+	height: 200px;
+	overflow: auto;
+	padding: 8px;
+	border-radius: 10px;
+	background: rgba(0, 0, 0, 0.25);
+	color: #e7f2f3;
+	font-size: 13px;
+	line-height: 1.25;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.logline {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	padding: 2px 0;
+}
+.logline.me {
+	color: #b9f4c8;
+	font-weight: 600;
+}
+.logline.opp {
+	color: #ffb3b3;
+	font-weight: 600;
+}
+.logline.sys {
+	color: #e7f2f3;
+}

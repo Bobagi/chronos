@@ -1,0 +1,57 @@
+.hand {
+	overflow: visible;
+}
+.hand.fan {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: clamp(140px, 34vh, 260px);
+}
+.hand.fan .card-socket {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	aspect-ratio: 430/670;
+	background: transparent;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	transform-style: preserve-3d;
+	border-radius: 10px;
+	--center: calc((var(--n) - 1) / 2);
+	--offset: calc(var(--i) - var(--center));
+	--spread: var(--spread-override, clamp(12px, 2.6vw, 30px));
+	--rot: 6deg;
+	--y: 0px;
+	transform: translate(-50%, -50%) translateX(calc(var(--spread) * var(--offset)))
+		translateY(var(--y)) rotate(calc(var(--rot) * var(--offset)));
+	z-index: calc(200 + var(--i));
+	transition:
+		transform 140ms ease,
+		filter 140ms ease;
+}
+.my-hand.fan .card-socket {
+	transform-origin: bottom center;
+	--rot: 12deg;
+	--y: calc(10px * abs(var(--offset)));
+}
+.opp-hand.fan .card-socket {
+	transform-origin: top center;
+	--rot: -6deg;
+	--y: calc(10px - 4px * abs(var(--offset)));
+	z-index: calc(100 + (var(--n) - var(--i)));
+}
+.my-hand.fan .card-socket:hover,
+.my-hand.fan .card-socket:focus-visible {
+	transform: translate(-50%, -50%) translateX(calc(var(--spread) * var(--offset)))
+		translateY(calc(var(--y) - 18px)) rotate(calc(var(--rot) * var(--offset))) scale(1.06);
+	z-index: 999;
+	filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45));
+}
+.card-back-wrap {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 430/670;
+	border-radius: 10px;
+	box-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+}

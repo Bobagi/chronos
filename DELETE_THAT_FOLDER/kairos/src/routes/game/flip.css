@@ -1,0 +1,44 @@
+.flip-wrap {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 430/670;
+	perspective: 1000px;
+}
+.flipper {
+	position: absolute;
+	inset: 0;
+	transform-style: preserve-3d;
+	border-radius: 10px;
+	overflow: visible;
+	transform: rotateY(0deg);
+}
+.flipper.start-back {
+	transform: rotateY(180deg);
+}
+.face {
+	position: absolute;
+	inset: 0;
+	backface-visibility: hidden;
+}
+.front {
+	transform: rotateY(0deg);
+	z-index: 2;
+}
+.back {
+	transform: rotateY(180deg);
+	z-index: 1;
+}
+.animate {
+	animation: flipReveal var(--flip-ms, 700ms) ease forwards;
+}
+@keyframes flipReveal {
+	0% {
+		transform: rotateY(180deg);
+	}
+	50% {
+		transform: rotateY(90deg);
+	}
+	100% {
+		transform: rotateY(0deg);
+	}
+}

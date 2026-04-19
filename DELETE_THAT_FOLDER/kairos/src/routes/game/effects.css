@@ -1,0 +1,181 @@
+.fx-layer {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 3000;
+}
+.fx-card {
+	position: absolute;
+	aspect-ratio: 430/670;
+	border-radius: 10px;
+	overflow: hidden;
+	box-shadow:
+		0 10px 26px rgba(0, 0, 0, 0.42),
+		0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+	will-change: transform, opacity;
+}
+.fx-card img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+.loser-shake {
+	animation: loseShake 900ms ease-in-out infinite;
+	filter: grayscale(0.4) brightness(0.85);
+}
+.winner-glow {
+	animation: winPulse 1300ms ease-in-out infinite alternate;
+	filter: drop-shadow(0 0 12px rgba(255, 220, 120, 0.9));
+	z-index: 1;
+	border-radius: 10px;
+}
+@keyframes winPulse {
+	from {
+		transform: scale(1);
+	}
+	to {
+		transform: scale(1.05);
+	}
+}
+@keyframes loseShake {
+	0% {
+		transform: translateX(0);
+	}
+	25% {
+		transform: translateX(-2px);
+	}
+	50% {
+		transform: translateX(2px);
+	}
+	75% {
+		transform: translateX(-1px);
+	}
+	100% {
+		transform: translateX(0);
+	}
+}
+.slot-removable .result-wrap:hover {
+	animation: slotRemoveBlink 800ms linear infinite;
+}
+@keyframes slotRemoveBlink {
+	0% {
+		filter: drop-shadow(0 0 0 rgba(255, 0, 0, 0));
+	}
+	50% {
+		filter: drop-shadow(0 0 16px rgba(255, 0, 0, 0.9));
+	}
+	100% {
+		filter: drop-shadow(0 0 0 rgba(255, 0, 0, 0));
+	}
+}
+.result-wrap {
+	position: relative;
+	z-index: 2;
+	border-radius: 10px;
+}
+
+.result-wrap.defeat-active {
+	isolation: isolate;
+	overflow: visible;
+}
+
+.result-wrap.defeat-active::after {
+	content: '';
+	position: absolute;
+	inset: -18%;
+	border-radius: 18px;
+	opacity: 0;
+	pointer-events: none;
+	filter: blur(26px);
+	mix-blend-mode: screen;
+	transform: scale(0.9);
+	transition:
+		opacity 160ms ease-out,
+		transform 200ms ease-out;
+	z-index: -1;
+}
+
+.result-wrap.defeat-active.defeat-fire::after {
+	opacity: 1;
+	transform: scale(1.04);
+	background:
+		radial-gradient(circle at 50% 70%, rgba(255, 170, 80, 0.95), rgba(110, 20, 0, 0.2)),
+		radial-gradient(circle at 45% 90%, rgba(255, 230, 160, 0.85), rgba(255, 120, 20, 0));
+	box-shadow:
+		0 0 40px rgba(255, 120, 32, 0.65),
+		0 0 120px rgba(255, 70, 0, 0.5);
+	animation: defeatFireAuraPulse 780ms ease-in-out infinite;
+}
+
+.result-wrap.defeat-active.defeat-magic::after {
+	opacity: 1;
+	transform: scale(1.08);
+	background:
+		radial-gradient(circle at 50% 50%, rgba(150, 190, 255, 0.95), rgba(40, 20, 160, 0.2)),
+		radial-gradient(circle at 52% 30%, rgba(220, 240, 255, 0.9), rgba(40, 0, 120, 0));
+	box-shadow:
+		0 0 40px rgba(120, 160, 255, 0.55),
+		0 0 130px rgba(70, 120, 255, 0.45);
+	animation: defeatMagicAuraPulse 900ms ease-in-out infinite;
+}
+
+.result-wrap.defeat-active.defeat-might::after {
+	opacity: 0.92;
+	transform: scale(1.1);
+	background:
+		radial-gradient(circle at 50% 58%, rgba(255, 220, 160, 0.95), rgba(140, 90, 30, 0.25)),
+		radial-gradient(circle at 50% 40%, rgba(255, 250, 210, 0.75), rgba(60, 30, 0, 0));
+	box-shadow:
+		0 0 36px rgba(255, 210, 120, 0.6),
+		0 0 120px rgba(160, 100, 20, 0.5);
+	animation: defeatMightAuraPulse 720ms ease-in-out infinite;
+	mix-blend-mode: hard-light;
+}
+
+@keyframes defeatFireAuraPulse {
+	0% {
+		filter: blur(22px) hue-rotate(-8deg) saturate(1.15);
+		opacity: 0.82;
+	}
+	50% {
+		filter: blur(30px) hue-rotate(8deg) saturate(1.35);
+		opacity: 1;
+	}
+	100% {
+		filter: blur(22px) hue-rotate(-8deg) saturate(1.15);
+		opacity: 0.82;
+	}
+}
+
+@keyframes defeatMagicAuraPulse {
+	0% {
+		filter: blur(20px) saturate(1.2) hue-rotate(-4deg);
+		opacity: 0.82;
+	}
+	50% {
+		filter: blur(32px) saturate(1.45) hue-rotate(8deg);
+		opacity: 1;
+	}
+	100% {
+		filter: blur(20px) saturate(1.2) hue-rotate(-4deg);
+		opacity: 0.82;
+	}
+}
+
+@keyframes defeatMightAuraPulse {
+	0% {
+		filter: blur(18px) brightness(1.05) saturate(1.15);
+		opacity: 0.78;
+	}
+	50% {
+		filter: blur(28px) brightness(1.28) saturate(1.25);
+		opacity: 0.98;
+	}
+	100% {
+		filter: blur(18px) brightness(1.05) saturate(1.15);
+		opacity: 0.78;
+	}
+}
