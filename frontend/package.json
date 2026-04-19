@@ -1,0 +1,5 @@
+{
+  "name": "chronos-frontend",
+  "private": true,
+  "type": "module"
+}
