@@ -16,7 +16,7 @@
 
 ## ▶️ Run Locally (without Docker)
 
-1. Create a `.env` file from `.en.example`.
+1. Create a `.env` file from `.env.example`.
 2. Install dependencies with your preferred package manager, for example `npm install`.
 3. Start the development server with `npm run start:dev` and access the API at `http://localhost:3053`.
 
