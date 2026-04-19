@@ -139,10 +139,12 @@ docker compose exec chronos sh -lc 'npx ts-node prisma/seed.ts'
 
 ## 🖥 Frontend (Kairos)
 
+Frontend is built from `frontend/` and served by NestJS in the same container/process flow.
+
+For local development without Docker, run both together from root:
+
 ```bash
-cd frontend
-npm install
-npm run dev -- --host 0.0.0.0 --port 3055
+npm run dev
 ```
 
-Set `VITE_API_BASE_URL` in root `.env` (or `frontend/.env.local`) to your backend URL.
+With Docker, `docker compose up --build` starts the unified app.

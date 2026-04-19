@@ -13,13 +13,16 @@ COPY . .
 # 4. Gerar Prisma Client
 RUN npx prisma generate
 
-# 5. Compilar Nest (gera dist/)
+# 5. Compilar frontend
+RUN npm run frontend:build
+
+# 6. Compilar Nest (gera dist/)
 RUN npm run build
 
-# 6. Expor porta
+# 7. Expor porta
 EXPOSE 3000
 
-# 7. Comando de inicialização:
+# 8. Comando de inicialização:
 #    - aplica migrations
 #    - executa seed
 #    - sobe a aplicação
