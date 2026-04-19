@@ -1,6 +1,9 @@
-# Chronos – Mythological Card Game Engine (Backend)
+# Chronos – Mythological Card Game Project (Backend + Frontend)
 
-**Chronos** is the backend engine for a multiplayer online card game inspired by mythology and classic battle card mechanics (inspired by Dracomania). This service handles all game rules, player logic, turn rotation, card resolution, and battle flow.
+**Chronos** is a unified project for a multiplayer online card game inspired by Dracomania.
+
+- `src/`: NestJS backend (game rules, auth, matchmaking, multiplayer state).
+- `frontend/`: SvelteKit frontend (login, register, profile/dashboard, gallery, duel/classic match pages, animations, card interactions).
 
 ## 🛠 Tech Stack
 
@@ -13,7 +16,7 @@
 
 ## ▶️ Run Locally (without Docker)
 
-1. Create a `.env` file using the variables listed in the Docker section.
+1. Create a `.env` file from `.en.example`.
 2. Install dependencies with your preferred package manager, for example `npm install`.
 3. Start the development server with `npm run start:dev` and access the API at `http://localhost:3053`.
 
@@ -35,7 +38,7 @@
 ### 1) `.env` (root)
 
 ```env
-CHRONOS_PORT=3053
+PORT=3053
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 POSTGRES_DB=chronos
@@ -130,3 +133,16 @@ http://localhost:3053/api
 docker compose exec chronos sh -lc 'npx prisma migrate reset --force'
 docker compose exec chronos sh -lc 'npx ts-node prisma/seed.ts'
 ```
+
+
+---
+
+## 🖥 Frontend (Kairos)
+
+```bash
+cd frontend
+npm install
+npm run dev -- --host 0.0.0.0 --port 3055
+```
+
+Set `VITE_API_BASE_URL` in root `.env` (or `frontend/.env.local`) to your backend URL.

@@ -1,0 +1,17 @@
+# Backend
+PORT=3053
+DATABASE_URL=postgresql://postgres:postgres@localhost:5434/chronos
+JWT_SECRET=dev-secret
+CARD_IMAGE_BASE_URL=https://bobagi.space
+
+# Database container setup
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=chronos
+
+# Optional seed overrides
+ADMIN_PASSWORD=admin123
+ALICE_PASSWORD=alice123
+
+# Frontend (SvelteKit)
+VITE_API_BASE_URL=http://localhost:3053

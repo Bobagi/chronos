@@ -55,9 +55,9 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      CHRONOS_PORT: ${CHRONOS_PORT}
+      PORT: 3000
     ports:
-      - '${CHRONOS_PORT}:3000'
+      - '${PORT}:3000'
       - '5555:5555'
     volumes:
       - ./prisma:/app/prisma

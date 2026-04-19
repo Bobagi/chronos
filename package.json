@@ -21,7 +21,11 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "docker": "docker compose down -v && docker compose up --build"
+    "docker": "docker compose down -v && docker compose up --build",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:start": "npm --prefix frontend run preview",
+    "dev:full": "npm run start:dev"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
