@@ -9,9 +9,9 @@ npm install && npm run start:dev
 ```
 
 Open:
-- Web app: `http://localhost:3000/`
-- Swagger API: `http://localhost:3000/api`
-- Health check: `http://localhost:3000/health`
+- Web app: `http://localhost:3053/`
+- Swagger API: `http://localhost:3053/api`
+- Health check: `http://localhost:3053/health`
 
 ## Web app features
 
@@ -51,7 +51,7 @@ npx prisma db seed
    npm install
    npm run start:dev
    ```
-3. Open the forwarded port `3000` in the browser.
+3. Open the forwarded port `3053` in the browser.
 
 ## Docker Compose
 

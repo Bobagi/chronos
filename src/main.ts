@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { NestFactory } from '@nestjs/core';
+import { Logger, NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
@@ -26,5 +26,6 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? process.env.CHRONOS_PORT ?? 3000);
   await app.listen(port, '0.0.0.0');
+  new Logger('Bootstrap').log(`Application running at: http://localhost:${port}`);
 }
 bootstrap();
