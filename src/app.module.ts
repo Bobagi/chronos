@@ -13,7 +13,7 @@ import { PrismaModule } from './prisma/prisma.module';
   imports: [
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'frontend', 'build', 'client'),
-      exclude: ['/api*', '/auth*', '/game*', '/health*', '/friends*'],
+      exclude: ['/api', '/api/(.*)', '/auth', '/auth/(.*)', '/game', '/game/(.*)', '/health', '/health/(.*)', '/friends', '/friends/(.*)'],
     }),
     PrismaModule,
     GameModule,
