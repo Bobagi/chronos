@@ -17,15 +17,25 @@ export default defineConfig(({ mode }) => {
 	);
 	const proxySecure = chronosTarget.startsWith('https://');
 
+	// The localhost HTTPS certs are only used by `vite dev`. They are absent from
+	// production builds and from the server (nginx terminates TLS there), so load
+	// them only when both files exist — otherwise the build/server would crash.
+	const devKeyPath = path.resolve(__dirname, 'certs/localhost-key.pem');
+	const devCertPath = path.resolve(__dirname, 'certs/localhost.pem');
+	const devHttps =
+		fs.existsSync(devKeyPath) && fs.existsSync(devCertPath)
+			? {
+					key: fs.readFileSync(devKeyPath),
+					cert: fs.readFileSync(devCertPath)
+				}
+			: undefined;
+
 	return {
 		plugins: [tailwindcss(), sveltekit()],
 		server: {
 			host: '0.0.0.0',
 			port: 3055,
-			https: {
-				key: fs.readFileSync(path.resolve(__dirname, 'certs/localhost-key.pem')),
-				cert: fs.readFileSync(path.resolve(__dirname, 'certs/localhost.pem'))
-			},
+			...(devHttps ? { https: devHttps } : {}),
 			proxy: {
 				'/game': {
 					target: chronosTarget,
