@@ -8,7 +8,10 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: ['https://kairos.bobagi.space'],
+    // The SvelteKit front (web/) now calls Chronos server-side over localhost, so
+    // browser CORS is no longer load-bearing; these origins cover same-origin prod
+    // plus local dev (vite on 5173, adapter-node on 3055).
+    origin: ['https://chronos.bobagi.space', 'http://localhost:5173', 'http://localhost:3055'],
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

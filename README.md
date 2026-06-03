@@ -1,6 +1,8 @@
-# Chronos – Mythological Card Game Engine (Backend)
+# Chronos – Mythological Card Game (Backend + Web)
 
-**Chronos** is the backend engine for a multiplayer online card game inspired by mythology and classic battle card mechanics (inspired by Dracomania). This service handles all game rules, player logic, turn rotation, card resolution, and battle flow.
+**Chronos** is a multiplayer online card game inspired by mythology and classic battle-card mechanics (inspired by Dracomania). It is now a **single project**: the NestJS game engine (this repo root) plus the SvelteKit browser frontend in [`web/`](./web) — login, card library, profile and matches. The former separate `kairos` frontend was merged in here and retired.
+
+This backend handles all game rules, player logic, turn rotation, card resolution, and battle flow.
 
 ## 🛠 Tech Stack
 
@@ -8,6 +10,29 @@
 - REST API + Swagger
 - PostgreSQL + Prisma ORM
 - Docker-ready
+- SvelteKit web frontend in [`web/`](./web)
+
+---
+
+## 🌐 Web frontend (`web/`)
+
+The browser app (SvelteKit, `@sveltejs/adapter-node`) lives in [`web/`](./web). It serves the
+login page, card library/gallery, profile and matches, and talks to this backend **server-side**
+via its `/api/chronos/*` proxy (default base `http://localhost:3053`) — so the browser only ever
+hits the front's own origin.
+
+```bash
+# dev (two terminals)
+npm run start:dev                          # backend on :3053
+cd web && pnpm install && pnpm run dev     # front on :5173
+
+# production build
+cd web && pnpm install && pnpm run build   # outputs web/build (adapter-node)
+node web/build/index.js                     # serves the front (PM2: chronos-web, :3055)
+```
+
+Deploy (VPS): nginx routes `chronos.bobagi.space` → the front (`:3055`); the front proxies to the
+backend on `127.0.0.1:3053`. Set `VITE_API_BASE_URL` at build time only if the backend is not on `:3053`.
 
 ---
 
