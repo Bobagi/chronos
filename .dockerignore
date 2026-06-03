@@ -3,3 +3,4 @@ dist
 dev.db
 *.log
 .env
+web
