@@ -142,7 +142,7 @@
 	<section class="content-panel">
 		<header class="panel-header">
 			{#if !currentUser}
-				<h1 class="panel-title">Kairos Project</h1>
+				<h1 class="panel-title">Chronos</h1>
 			{/if}
 
 			<p class="health-text">

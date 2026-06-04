@@ -1,0 +1,27 @@
+/*
+ * App-shell styles loaded by the root layout so the global TopBar / footer are
+ * styled on EVERY route (previously these lived in mainpage.css and only loaded
+ * on the home page, which left game/gallery/register routes with an unstyled,
+ * full-size brand logo).
+ */
+@import '../../routes/topbar.css';
+@import '../../routes/footer.css';
+
+:root {
+	--bg-1: #ffd944;
+	--bg-2: #f7b500;
+	--panel-bg: rgba(12, 14, 18, 0.92);
+	--panel-border: #222635;
+	--panel-glow: 0 24px 48px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+	--text: #e9ecf6;
+	--muted: #9aa3b4;
+	--heading: #f4f7ff;
+	--accent: #6d5ef5;
+	--primary: #ffcc33;
+	--danger: #ef4444;
+	--neutral: #2a2f3a;
+	--ring: 0 0 0 3px rgba(255, 204, 51, 0.25);
+	--radius: 16px;
+	--radius-sm: 10px;
+	--shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}

@@ -9,11 +9,18 @@
 		fetchChronosGameResult,
 		fetchChronosGameStateById,
 		fetchMultipleChronosCardMetadata,
+		startAttributeDuelChronosGameForPlayer,
 		surrenderChronosGame,
 		unchooseChronosDuelCard
 	} from '$lib/api/GameClient';
 	import CardComposite from '$lib/components/CardComposite.svelte';
 	import DeckStack from '$lib/components/DeckStack.svelte';
+	import DuelHistory from '$lib/components/DuelHistory.svelte';
+	import type {
+		DuelHistoryCardInfo,
+		DuelHistoryItem,
+		DuelRoundOutcome
+	} from '$lib/duel/historyTypes';
 	import { authUser } from '$lib/stores/authStore';
 	import { game as gameStateStore, type GameState } from '$lib/stores/game';
 	import '$lib/styles/routes/gameDuelPage.css';
@@ -100,14 +107,9 @@
 	let playerAUsername: string = 'playerA';
 	let playerBUsername: string = 'playerB';
 
-	let historyScrollContainerElement: HTMLDivElement | null = null;
 	let lastReturnedCode: string | null = null;
-	let lastAppliedLogLength = -1;
-	let provisionalRevealHistoryEntries: string[] = [];
-	let lastProvisionalRevealCycleId: number | null = null;
-	let lastAcknowledgedOfficialLogLength = 0;
-	let officialHistoryLogEntries: string[] = [];
-	let combinedHistoryLogEntries: string[] = [];
+
+	let duelHistoryItems: DuelHistoryItem[] = [];
 
 	type LogCategory = 'player' | 'opponent' | 'neutral';
 
@@ -141,83 +143,130 @@
 		return { category: 'neutral', icon: '✨', text: safeLine };
 	}
 
-	function formatCardNameForHistory(cardCode: string | undefined | null): string | null {
-		if (!cardCode) return null;
-		const details = cardDetailsCacheByCode.get(cardCode);
-		if (details?.name) return details.name;
-		return cardCode;
+	// Backend round lines look like:
+	//   "FIRE duel(Alice): Red Dragon(12) vs Mage(7) => Alice"
+	// We parse them back into structured rounds so the timeline survives reloads,
+	// and synthesize the in-progress round straight from the duel center.
+	const DUEL_LOG_PATTERN = /^([A-Za-z]+) duel\((.*)\): (.*)\((-?\d+)\) vs (.*)\((-?\d+)\) => (.*)$/;
+
+	function attributeFromText(text: string): 'fire' | 'magic' | 'might' {
+		const normalized = (text ?? '').toLowerCase();
+		if (normalized.includes('mag')) return 'magic';
+		if (normalized.includes('fire') || normalized.includes('fog')) return 'fire';
+		return 'might';
 	}
 
-	function formatAttributeLabel(attribute: 'fire' | 'magic' | 'might'): {
-		label: string;
-		icon: string;
-	} {
-		if (attribute === 'fire') {
-			return { label: 'Fire', icon: '🔥' };
-		}
-		if (attribute === 'magic') {
-			return { label: 'Magic', icon: '🪄' };
-		}
-		return { label: 'Might', icon: '💪' };
+	function resolveCodeByName(name: string | null | undefined): string | null {
+		const trimmed = (name ?? '').trim();
+		if (!trimmed) return null;
+		return codeByLowerName.get(trimmed.toLowerCase()) ?? null;
 	}
 
-	function buildProvisionalHistoryLineForReveal(
-		center: NonNullable<GameState['duelCenter']>,
-		roundWinner: string | null
-	): string | null {
-		const attributeMode = detectChosenAttributeMode(center);
-		const { label: attributeLabel, icon: attributeIcon } = formatAttributeLabel(attributeMode);
-		const playerACardCode = center.aCardCode ?? null;
-		const playerBCardCode = center.bCardCode ?? null;
-		const playerACard = playerACardCode
-			? (cardDetailsCacheByCode.get(playerACardCode) ?? null)
-			: null;
-		const playerBCard = playerBCardCode
-			? (cardDetailsCacheByCode.get(playerBCardCode) ?? null)
-			: null;
-		const playerACardName = formatCardNameForHistory(playerACardCode);
-		const playerBCardName = formatCardNameForHistory(playerBCardCode);
-		const playerAStat = playerACard ? (playerACard[attributeMode] ?? null) : null;
-		const playerBStat = playerBCard ? (playerBCard[attributeMode] ?? null) : null;
-
-		if (!roundWinner || roundWinner === 'DRAW') {
-			const statText =
-				typeof playerAStat === 'number' && typeof playerBStat === 'number'
-					? ` (${playerAStat} vs ${playerBStat})`
-					: '';
-			const cardNamesText =
-				playerACardName && playerBCardName
-					? ` between ${playerACardName} and ${playerBCardName}`
-					: '';
-			return `${attributeIcon} ${attributeLabel} tie: ${playerAUsername} and ${playerBUsername}${cardNamesText}${statText}.`;
+	function outcomeFromValues(aVal: number | null, bVal: number | null): DuelRoundOutcome {
+		if (typeof aVal === 'number' && typeof bVal === 'number') {
+			if (aVal > bVal) return 'a';
+			if (bVal > aVal) return 'b';
 		}
+		return 'draw';
+	}
 
-		const isPlayerAWinner = roundWinner === playerA;
-		const winnerName = isPlayerAWinner
-			? playerAUsername
-			: roundWinner === playerB
-				? playerBUsername
-				: roundWinner;
-		const loserName = isPlayerAWinner ? playerBUsername : playerAUsername;
-		const winnerCardCode = isPlayerAWinner ? playerACardCode : playerBCardCode;
-		const loserCardCode = isPlayerAWinner ? playerBCardCode : playerACardCode;
-		const winnerCard = winnerCardCode ? (cardDetailsCacheByCode.get(winnerCardCode) ?? null) : null;
-		const loserCard = loserCardCode ? (cardDetailsCacheByCode.get(loserCardCode) ?? null) : null;
-		const winnerStat = winnerCard ? (winnerCard[attributeMode] ?? null) : null;
-		const loserStat = loserCard ? (loserCard[attributeMode] ?? null) : null;
-		const statSummary =
-			typeof winnerStat === 'number' && typeof loserStat === 'number'
-				? ` (${winnerStat} vs ${loserStat})`
-				: '';
-		const winnerCardName = isPlayerAWinner ? playerACardName : playerBCardName;
-		const loserCardName = isPlayerAWinner ? playerBCardName : playerACardName;
-		const cardSummary =
-			winnerCardName && loserCardName
-				? ` with ${winnerCardName} against ${loserCardName}`
-				: winnerCardName
-					? ` with ${winnerCardName}`
-					: '';
-		return `${attributeIcon} ${attributeLabel} victory: ${winnerName} defeats ${loserName}${cardSummary}${statSummary}.`;
+	function buildHistoryFromLog(logs: string[]): DuelHistoryItem[] {
+		const items: DuelHistoryItem[] = [];
+		let roundCounter = 0;
+		logs.forEach((line, index) => {
+			const raw = (line ?? '').trim();
+			if (!raw) return;
+			const match = raw.match(DUEL_LOG_PATTERN);
+			if (match) {
+				roundCounter += 1;
+				const aName = match[3].trim();
+				const bName = match[5].trim();
+				const aValParsed = Number(match[4]);
+				const bValParsed = Number(match[6]);
+				const aVal = Number.isFinite(aValParsed) ? aValParsed : null;
+				const bVal = Number.isFinite(bValParsed) ? bValParsed : null;
+				items.push({
+					kind: 'round',
+					key: `log-${index}`,
+					record: {
+						round: roundCounter,
+						attribute: attributeFromText(match[1]),
+						aCode: resolveCodeByName(aName),
+						bCode: resolveCodeByName(bName),
+						aName,
+						bName,
+						aVal,
+						bVal,
+						outcome: outcomeFromValues(aVal, bVal),
+						live: false
+					}
+				});
+				return;
+			}
+			if (/^game created$/i.test(raw)) return;
+			if (/\bdraws$/i.test(raw)) return;
+			if (/surrender/i.test(raw)) {
+				items.push({
+					kind: 'note',
+					key: `log-${index}`,
+					tone: 'neutral',
+					icon: '🏳️',
+					text: 'A player surrendered.'
+				});
+				return;
+			}
+			const presentation = getLogPresentation(raw);
+			items.push({
+				kind: 'note',
+				key: `log-${index}`,
+				tone: presentation.category,
+				icon: presentation.icon,
+				text: presentation.text
+			});
+		});
+		return items;
+	}
+
+	function buildLiveRound(roundNumber: number): DuelHistoryItem | null {
+		const center = currentDuelCenter;
+		if (!center) return null;
+		const aCode = center.aCardCode ?? null;
+		const bCode = center.bCardCode ?? null;
+		if (!aCode || !bCode) return null;
+		const attribute = detectChosenAttributeMode(center);
+		const aDetails = cardDetailsCacheByCode.get(aCode) ?? null;
+		const bDetails = cardDetailsCacheByCode.get(bCode) ?? null;
+		const aVal =
+			typeof center.aVal === 'number' ? center.aVal : (aDetails?.[attribute] ?? null);
+		const bVal =
+			typeof center.bVal === 'number' ? center.bVal : (bDetails?.[attribute] ?? null);
+		const winner = center.roundWinner ?? null;
+		let outcome: DuelRoundOutcome = outcomeFromValues(aVal, bVal);
+		if (winner === playerA) outcome = 'a';
+		else if (winner === playerB) outcome = 'b';
+		return {
+			kind: 'round',
+			key: `live-${centerRevealCycle}`,
+			record: {
+				round: roundNumber,
+				attribute,
+				aCode,
+				bCode,
+				aName: aDetails?.name ?? aCode,
+				bName: bDetails?.name ?? bCode,
+				aVal,
+				bVal,
+				outcome,
+				live: true
+			}
+		};
+	}
+
+	function resolveDuelHistoryCard(code: string | null | undefined): DuelHistoryCardInfo | null {
+		if (!code) return null;
+		const details = cardDetailsCacheByCode.get(code);
+		if (!details) return null;
+		return { name: details.name, imageUrl: details.imageUrl };
 	}
 
 	function isHighlightedAttribute(attr: 'magic' | 'might' | 'fire'): boolean {
@@ -310,6 +359,7 @@
 
 	let cardDetailsCacheByCode = new Map<string, CardDetails>();
 	let catalogNumberByCode = new Map<string, number>();
+	let codeByLowerName = new Map<string, string>();
 	let catalogLoaded = false;
 	let chooserCardDetails: CardDetails | null = null;
 
@@ -319,9 +369,35 @@
 			const catalogCollections = await fetchChronosCardCatalog();
 			for (const collection of catalogCollections) {
 				for (const catalogEntry of collection.cards) {
-					catalogNumberByCode.set(catalogEntry.code, catalogEntry.number);
+					const entry = catalogEntry as unknown as {
+						code: string;
+						name?: string;
+						description?: string;
+						imageUrl?: string;
+						image?: string;
+						might?: number;
+						fire?: number;
+						magic?: number;
+						number?: number;
+					};
+					catalogNumberByCode.set(entry.code, Number(entry.number ?? 0));
+					if (entry.name) codeByLowerName.set(entry.name.toLowerCase(), entry.code);
+					if (!cardDetailsCacheByCode.has(entry.code)) {
+						cardDetailsCacheByCode.set(entry.code, {
+							code: entry.code,
+							name: entry.name ?? entry.code,
+							description: entry.description ?? '',
+							imageUrl: entry.imageUrl ?? entry.image ?? '',
+							might: Number(entry.might ?? 0),
+							fire: Number(entry.fire ?? 0),
+							magic: Number(entry.magic ?? 0),
+							number: Number(entry.number ?? 0)
+						});
+					}
 				}
 			}
+			cardDetailsCacheByCode = new Map(cardDetailsCacheByCode);
+			codeByLowerName = new Map(codeByLowerName);
 		} finally {
 			catalogLoaded = true;
 		}
@@ -412,12 +488,54 @@
 		pendingHiddenUidSet = next;
 	}
 
+	// The backend persists the duel center with internal field names
+	// (playerACardCode, roundWinnerId, isRevealed, ...). The UI was written against
+	// the public contract (aCardCode, roundWinner, revealed, aVal/bVal). Normalize
+	// here so a single shape flows through the whole page regardless of the source.
+	function normalizeDuelCenterForView(
+		rawCenter: unknown
+	): GameState['duelCenter'] {
+		if (!rawCenter || typeof rawCenter !== 'object') return null;
+		const center = rawCenter as Record<string, unknown>;
+		const pickString = (...keys: string[]): string | undefined => {
+			for (const key of keys) {
+				const value = center[key];
+				if (typeof value === 'string' && value.length > 0) return value;
+			}
+			return undefined;
+		};
+		const pickNumber = (...keys: string[]): number | undefined => {
+			for (const key of keys) {
+				const value = center[key];
+				if (typeof value === 'number' && Number.isFinite(value)) return value;
+			}
+			return undefined;
+		};
+		const pickBool = (...keys: string[]): boolean => {
+			for (const key of keys) if (center[key] === true) return true;
+			return false;
+		};
+		const attribute = pickString('chosenAttribute', 'attribute', 'attr');
+		return {
+			aCardCode: pickString('aCardCode', 'playerACardCode'),
+			bCardCode: pickString('bCardCode', 'playerBCardCode'),
+			chosenAttribute: attribute as 'magic' | 'might' | 'fire' | undefined,
+			revealed: pickBool('revealed', 'isRevealed'),
+			chooserId: pickString('chooserId'),
+			deadlineAt: pickNumber('deadlineAt') ?? null,
+			aVal: pickNumber('aVal', 'playerAAttributeValue'),
+			bVal: pickNumber('bVal', 'playerBAttributeValue'),
+			roundWinner: pickString('roundWinner', 'roundWinnerId') ?? null
+		};
+	}
+
 	async function loadGameStateOrFinalResult() {
 		errorMessageText = null;
 		try {
 			const state = (await fetchChronosGameStateById(currentGameId)) as GameState | null;
 			if (state && typeof state === 'object') {
 				finalGameResult = null;
+				state.duelCenter = normalizeDuelCenterForView(state.duelCenter);
 				gameStateStore.set({ ...state, gameId: currentGameId });
 
 				const me = state.players[0];
@@ -545,6 +663,21 @@
 		lastReturnedCode = state.duelCenter.aCardCode || null;
 		await unchooseChronosDuelCard(currentGameId, me);
 		await loadGameStateOrFinalResult();
+	}
+
+	async function playAnotherDuel() {
+		const me = $authUser?.id ?? $gameStateStore?.players?.[0] ?? null;
+		if (!me || !browser) {
+			if (browser) window.location.assign('/');
+			return;
+		}
+		try {
+			const { gameId } = await startAttributeDuelChronosGameForPlayer(me);
+			window.location.assign(`/game/duel/${gameId}`);
+		} catch (error) {
+			console.error('Failed to start a new duel', error);
+			window.location.assign('/');
+		}
 	}
 
 	async function surrenderDuelGame() {
@@ -1124,6 +1257,7 @@
 				now = Date.now();
 			}, 250);
 		}
+		await ensureCatalogLoaded();
 		await loadGameStateOrFinalResult();
 		setupMyHandResizeObserver();
 	});
@@ -1321,60 +1455,22 @@
 			? (cardDetailsCacheByCode.get(currentDuelCenter.aCardCode) ?? null)
 			: null;
 
-	$: officialHistoryLogEntries = $gameStateStore?.log ?? [];
 	$: {
-		const officialLength = officialHistoryLogEntries.length;
-		if (officialLength !== lastAcknowledgedOfficialLogLength) {
-			lastAcknowledgedOfficialLogLength = officialLength;
-			if (provisionalRevealHistoryEntries.length) {
-				provisionalRevealHistoryEntries = [];
-			}
-			if (duelStage === 'REVEAL' && typeof centerRevealCycle === 'number') {
-				lastProvisionalRevealCycleId = centerRevealCycle;
-			} else if (duelStage !== 'REVEAL') {
-				lastProvisionalRevealCycleId = null;
-			}
-		}
-	}
-
-	$: {
-		if (
-			duelStage === 'REVEAL' &&
-			typeof centerRevealCycle === 'number' &&
-			centerRevealCycle > 0 &&
-			centerRevealCycle !== lastProvisionalRevealCycleId &&
-			currentDuelCenter &&
-			provisionalRevealHistoryEntries.length === 0
-		) {
-			const provisionalLine = buildProvisionalHistoryLineForReveal(
-				currentDuelCenter,
-				currentDuelRoundWinner
-			);
-			if (provisionalLine) {
-				provisionalRevealHistoryEntries = [provisionalLine];
-				lastProvisionalRevealCycleId = centerRevealCycle;
-			}
-		} else if (duelStage !== 'REVEAL' && provisionalRevealHistoryEntries.length) {
-			provisionalRevealHistoryEntries = [];
-			lastProvisionalRevealCycleId = null;
-		}
-	}
-
-	$: combinedHistoryLogEntries = [...officialHistoryLogEntries, ...provisionalRevealHistoryEntries];
-
-	$: historyLogLength = combinedHistoryLogEntries.length;
-	$: {
-		if (historyLogLength < lastAppliedLogLength) {
-			lastAppliedLogLength = historyLogLength;
-		}
-		if (historyScrollContainerElement && historyLogLength > lastAppliedLogLength) {
-			lastAppliedLogLength = historyLogLength;
-			requestAnimationFrame(() => {
-				if (historyScrollContainerElement) {
-					historyScrollContainerElement.scrollTop = historyScrollContainerElement.scrollHeight;
-				}
-			});
-		}
+		// Recompute the structured timeline whenever the log, card data, or the
+		// current reveal changes. The card maps are referenced explicitly so Svelte
+		// re-runs this block once the catalog details finish loading.
+		void cardDetailsCacheByCode;
+		void codeByLowerName;
+		void centerRevealCycle;
+		void currentDuelCenter;
+		const logs = $gameStateStore?.log ?? [];
+		const parsed = buildHistoryFromLog(logs);
+		const roundCount = parsed.reduce(
+			(accumulator, item) => (item.kind === 'round' ? accumulator + 1 : accumulator),
+			0
+		);
+		const live = duelStage === 'REVEAL' ? buildLiveRound(roundCount + 1) : null;
+		duelHistoryItems = live ? [...parsed, live] : parsed;
 	}
 
 	$: {
@@ -1401,16 +1497,58 @@
 	}
 
 	$: resolvedWinner = $gameStateStore?.winner ?? finalGameResult?.winner ?? null;
+
+	// In ATTRIBUTE_DUEL the match is decided by captured cards: the round winner
+	// takes both cards into their discard pile, so rounds-won = pile size / 2.
+	$: roundsWonA = Math.floor((discardPiles?.[playerA] ?? []).length / 2);
+	$: roundsWonB = Math.floor((discardPiles?.[playerB] ?? []).length / 2);
+	$: chooserUsername =
+		chooserId === playerA ? playerAUsername : chooserId === playerB ? playerBUsername : chooserId;
+
+	const ROUND_BANNER_ICON: Record<'win' | 'lose' | 'draw', string> = {
+		win: '🏆',
+		lose: '💥',
+		draw: '🤝'
+	};
+	$: roundBanner = (() => {
+		if (currentDuelStage !== 'REVEAL') return null;
+		if (!currentDuelRoundWinner) {
+			return { tone: 'draw' as const, icon: ROUND_BANNER_ICON.draw, text: 'Round tied!' };
+		}
+		if (currentDuelRoundWinner === playerA) {
+			return { tone: 'win' as const, icon: ROUND_BANNER_ICON.win, text: 'You win the round!' };
+		}
+		return {
+			tone: 'lose' as const,
+			icon: ROUND_BANNER_ICON.lose,
+			text: `${playerBUsername} wins the round`
+		};
+	})();
+
+	$: endOutcome =
+		resolvedWinner === null
+			? null
+			: resolvedWinner === 'DRAW'
+				? 'draw'
+				: resolvedWinner === playerA
+					? 'win'
+					: 'lose';
+	$: winnerUsername =
+		resolvedWinner === null || resolvedWinner === 'DRAW'
+			? null
+			: ($gameStateStore?.playerUsernames?.[resolvedWinner] ?? resolvedWinner);
 </script>
 
 <svelte:head>
 	<title>Duel – Chronos</title>
 </svelte:head>
 
+<div class="duel-stage-bg" aria-hidden="true"></div>
+
 <div class="fixed-top-bar">
 	<div class="topbar-left">
 		<a href="/" class="home-btn">← Home</a>
-		<div class="mode-pill"><strong>Mode:</strong> ATTRIBUTE_DUEL</div>
+		<div class="mode-pill"><strong>⚔️ Attribute Duel</strong></div>
 	</div>
 	<div class="topbar-right">
 		{#if showDuelCountdown}
@@ -1440,9 +1578,9 @@
 <div class="board">
 	<section class="zone opponent">
 		<div class="zone-header">
-			<span class="pill name">👤 {playerBUsername}</span>
-			<span class="pill hp">❤️ {hpB}</span>
-			<span class="pill deck">🃏 {deckB}</span>
+			<span class="pill name">{opponentLooksLikeBot ? '🤖' : '👤'} {playerBUsername}</span>
+			<span class="pill score" title="Rounds won">🏆 {roundsWonB}</span>
+			<span class="pill deck" title="Cards left in deck">🃏 {deckB}</span>
 		</div>
 		<div class="zone-row two-cols">
 			<div class="deck-col" bind:this={opponentDeckAnchorElement}>
@@ -1483,8 +1621,8 @@
 		<div class="center-content">
 			<div class="center-left">
 				<div
-					class="zone-row two-cols"
-					style="gap:24px; align-items:center; justify-content:center; grid-template-columns:auto auto;"
+					class="zone-row battlefield"
+					style="gap:20px; align-items:center; justify-content:center; grid-template-columns:auto auto auto;"
 				>
 					<div
 						class="duel-slot"
@@ -1527,6 +1665,10 @@
 								<span class="slot-icon">🃏</span>
 							</div>
 						{/if}
+					</div>
+
+					<div class="battle-divider" aria-hidden="true">
+						<span class="battle-divider-orb">VS</span>
 					</div>
 
 					<div
@@ -1648,60 +1790,74 @@
 					</div>
 				{:else if duelStage === 'PICK_ATTRIBUTE'}
 					<div class="notice warn" style="margin-top:12px; text-align:center;">
-						Waiting for {chooserId} to choose the attribute…
+						Waiting for {chooserUsername} to choose the attribute…
 					</div>
+				{:else if duelStage === 'PICK_CARD'}
+					<div class="duel-hint">Select a card from your hand to send into battle.</div>
 				{/if}
 
-				{#if duelStage === 'REVEAL' && !currentDuelRoundWinner}
-					<div class="notice chooser" style="margin-top:12px; text-align:center;">
-						Rodada empatada!
+				{#if roundBanner}
+					<div class={`round-banner ${roundBanner.tone}`}>
+						<span class="round-banner-icon">{roundBanner.icon}</span>
+						<span class="round-banner-text">{roundBanner.text}</span>
 					</div>
 				{/if}
 			</div>
 
 			<div class="center-right">
-				<div class="zone-header">
-					<span class="pill name">⚔️ Attribute Duel</span>
-					{#if discardPiles}
-						<span class="pill">{playerAUsername} pile: {(discardPiles[playerA] ?? []).length}</span>
-						<span class="pill">{playerBUsername} pile: {(discardPiles[playerB] ?? []).length}</span>
-					{/if}
-				</div>
-
-				{#if combinedHistoryLogEntries.length}
-					<div class="history">
-						<div class="title">History</div>
-						<div class="scroll" bind:this={historyScrollContainerElement}>
-							{#each combinedHistoryLogEntries as line, index (index)}
-								{@const presentation = getLogPresentation(line)}
-								<div class={`log-entry ${presentation.category}`}>
-									<span class="log-marker" aria-hidden="true">
-										{presentation.icon}
-									</span>
-									<span class="log-text">{presentation.text}</span>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
+				<DuelHistory
+					items={duelHistoryItems}
+					resolveCard={resolveDuelHistoryCard}
+					playerLabel="You"
+					opponentLabel={playerBUsername}
+					{cardBackImageUrl}
+				/>
 			</div>
 		</div>
 	</section>
 
-	{#if resolvedWinner !== null}
-		<div class="notice success" style="margin-top:12px; text-align:center;">
-			{resolvedWinner === 'DRAW' ? 'Partida empatada' : `Winner: ${resolvedWinner}`}
-		</div>
-		<div style="margin-top:8px;text-align:center;">
-			<a href="/" class="btn" style="text-decoration:none;">Back to home</a>
+	{#if resolvedWinner !== null && endOutcome}
+		<div class="endscreen-overlay">
+			<div class={`endscreen-card ${endOutcome}`}>
+				<div class="endscreen-emblem">
+					{endOutcome === 'win' ? '🏆' : endOutcome === 'lose' ? '💀' : '🤝'}
+				</div>
+				<h2 class="endscreen-title">
+					{endOutcome === 'win' ? 'Victory!' : endOutcome === 'lose' ? 'Defeat' : 'Draw'}
+				</h2>
+				<p class="endscreen-sub">
+					{#if endOutcome === 'draw'}
+						The duel ended in a perfect tie.
+					{:else}
+						{winnerUsername} wins the match.
+					{/if}
+				</p>
+				<div class="endscreen-scoreline">
+					<div class="score-side you">
+						<span class="score-num">{roundsWonA}</span>
+						<span class="score-lbl">You</span>
+					</div>
+					<span class="score-dash">–</span>
+					<div class="score-side opp">
+						<span class="score-num">{roundsWonB}</span>
+						<span class="score-lbl">{playerBUsername}</span>
+					</div>
+				</div>
+				<div class="endscreen-actions">
+					<button class="endscreen-btn primary" type="button" on:click={playAnotherDuel}>
+						⚔️ Play again
+					</button>
+					<a class="endscreen-btn ghost" href="/">🏠 Home</a>
+				</div>
+			</div>
 		</div>
 	{/if}
 
 	<section class="zone player">
 		<div class="zone-header">
-			<span class="pill name">👤 {playerAUsername}</span>
-			<span class="pill hp">❤️ {hpA}</span>
-			<span class="pill deck">🃏 {deckA}</span>
+			<span class="pill name">👤 {playerAUsername} <span class="you-tag">You</span></span>
+			<span class="pill score" title="Rounds won">🏆 {roundsWonA}</span>
+			<span class="pill deck" title="Cards left in deck">🃏 {deckA}</span>
 		</div>
 		<div class="zone-row two-cols">
 			<div class="deck-col" bind:this={playerDeckAnchorElement}>

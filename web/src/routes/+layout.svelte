@@ -12,6 +12,7 @@
 	} from '$lib/config/siteMetadata';
 	import { authUser, clearAuthState, setAuthState } from '$lib/stores/authStore';
 	import type { AuthenticatedChronosUser } from '$lib/types/chronos';
+	import '$lib/styles/appShell.css';
 	import '../app.postcss';
 
 	export let data: { authUser: AuthenticatedChronosUser | null };

@@ -1,7 +1,9 @@
 .board {
 	max-width: 1200px;
+	width: 100%;
+	margin: 0 auto;
 	display: grid;
 	grid-template-rows: auto auto auto;
 	gap: 14px;
-	padding: 10px 14px;
+	padding: 64px 14px 16px;
 }

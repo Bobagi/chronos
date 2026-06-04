@@ -3,10 +3,10 @@
 	const currentYear = new Date().getFullYear();
 </script>
 
-<footer class="site-footer" aria-label="Kairos site footer">
+<footer class="site-footer" aria-label="Chronos site footer">
 	<div class="footer-inner footer-grid">
 		<div class="footer-brand">
-			<h2 class="footer-title">Kairos</h2>
+			<h2 class="footer-title">Chronos</h2>
 			<p class="footer-tagline">Strategic mythology card battles in your browser.</p>
 		</div>
 
@@ -21,7 +21,7 @@
 	</div>
 
 	<div class="footer-legal">
-		<p class="legal-text">© {currentYear} Kairos</p>
+		<p class="legal-text">© {currentYear} Chronos</p>
 		<ul class="legal-links">
 			<li><a href="/privacy">Privacy</a></li>
 			<li><a href="/terms">Terms</a></li>

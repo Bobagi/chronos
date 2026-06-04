@@ -13,8 +13,8 @@
 <header class="site-topbar" aria-label="Chronos top bar">
 	<div class="topbar-inner">
 		<a href="/" class="brand-link">
-			<img class="brand-logo" src={brandLogoUrl} alt="Kairos" />
-			<span class="brand-name">Kairos</span>
+			<img class="brand-logo" src={brandLogoUrl} alt="Chronos" />
+			<span class="brand-name">Chronos</span>
 		</a>
 		<nav class="topbar-nav" aria-label="Primary">
 			{#if isUserAuthenticated}

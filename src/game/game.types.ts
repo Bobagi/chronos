@@ -133,7 +133,11 @@ export function deserializeDuelCenter(
     extractString('attribute') ??
     extractString('attr');
 
-  const candidateRoundWinner = extractString('roundWinner');
+  // serializeDuelCenter persists this under `roundWinnerId`; keep `roundWinner`
+  // as a fallback for any legacy rows. Without this the round winner was lost on
+  // every read, so every round resolved as a draw and matches were unwinnable.
+  const candidateRoundWinner =
+    extractString('roundWinnerId') ?? extractString('roundWinner');
 
   return {
     playerACardCode:
