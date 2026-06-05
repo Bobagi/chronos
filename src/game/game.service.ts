@@ -10,6 +10,7 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { CardRepository } from './card.repository';
 import { ClassicGameService } from './classic-game.service';
 import { DuelGameService } from './duel-game.service';
 import {
@@ -32,21 +33,6 @@ import {
 const DUEL_EXP_MS = 5 * 60 * 1000; // 5 min
 const TURN_DURATION_MS = 10 * 1000;
 
-const CARD_IMAGE_BASE_URL = (
-  process.env.CARD_IMAGE_BASE_URL ?? 'https://bobagi.space'
-).replace(/\/+$/, '');
-
-function applyCardImageBase(card: PrismaCard): PrismaCard {
-  const imageUrl = card.imageUrl;
-  if (!imageUrl || !CARD_IMAGE_BASE_URL) return card;
-
-  const updatedCard: PrismaCard = {
-    ...card,
-    imageUrl: `${CARD_IMAGE_BASE_URL}/${imageUrl}`,
-  };
-  return updatedCard;
-}
-
 function createShuffledDeck(cardCodes: string[]): string[] {
   const shuffledDeck = [...cardCodes];
   for (let index = shuffledDeck.length - 1; index > 0; index -= 1) {
@@ -65,33 +51,20 @@ export class GameService {
     private readonly classic: ClassicGameService,
     private readonly duel: DuelGameService,
     private readonly collectionRepository: GameCollectionRepository,
+    private readonly cardRepository: CardRepository,
   ) {}
 
   /* ---------- Catalog ---------- */
-  private async findCards(
-    where?: Prisma.CardWhereInput,
-  ): Promise<PrismaCard[]> {
-    const cards = await this.prisma.card.findMany({ where });
-    return cards.map((card) => applyCardImageBase(card));
-  }
-
   async getAllCards(): Promise<PrismaCard[]> {
-    return this.findCards();
+    return this.cardRepository.findAll();
   }
 
   async getCardsByCollectionId(collectionId: string): Promise<PrismaCard[]> {
-    const cards = await this.prisma.$queryRaw<PrismaCard[]>(Prisma.sql`
-      SELECT *
-      FROM "Card"
-      WHERE "collectionId" = ${collectionId}::uuid
-      ORDER BY "number" ASC
-    `);
-    return cards.map((card) => applyCardImageBase(card));
+    return this.cardRepository.findByCollectionId(collectionId);
   }
 
   async getCardByCode(code: string): Promise<PrismaCard | null> {
-    const card = await this.prisma.card.findUnique({ where: { code } });
-    return card ? applyCardImageBase(card) : null;
+    return this.cardRepository.findByCode(code);
   }
 
   getCollections(): Promise<CardCollectionRecord[]> {

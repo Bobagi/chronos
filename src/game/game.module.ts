@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { CardRepository } from './card.repository';
 import { ClassicGameService } from './classic-game.service';
 import { DuelGameService } from './duel-game.service';
 import { GameCollectionRepository } from './game-collection.repository';
@@ -16,6 +17,7 @@ import { GameService } from './game.service';
     ClassicGameService,
     DuelGameService,
     GameCollectionRepository,
+    CardRepository,
   ],
   controllers: [GameController],
   exports: [GameService],
