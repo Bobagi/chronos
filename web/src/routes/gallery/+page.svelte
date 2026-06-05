@@ -141,9 +141,8 @@
 		<p class="status">No collections found.</p>
 	{:else}
 		{#each chronosCollections as collection (collection.slug ?? collection.id ?? collection.name)}
-			<fieldset style="border-radius: 10px; border-color: rgba(255, 255, 255, 0.15);">
-				<legend>{getCollectionDisplayName(collection)}</legend>
-				<div class="collection-header">
+			<section class="collection">
+				<div class="collection-banner">
 					<img
 						class="gallery-logo"
 						src={getCollectionLogoImageUrl(collection)}
@@ -151,9 +150,13 @@
 						loading="lazy"
 						decoding="async"
 					/>
-					{#if collection.description}
-						<p class="collection-description">{collection.description}</p>
-					{/if}
+					<div class="collection-meta">
+						<h2 class="collection-name">{getCollectionDisplayName(collection)}</h2>
+						{#if collection.description}
+							<p class="collection-description">{collection.description}</p>
+						{/if}
+						<p class="collection-count">{collection.cards.length} cards</p>
+					</div>
 				</div>
 				{#if !collection.cards.length}
 					<p class="status">No cards found in this collection.</p>
@@ -187,7 +190,7 @@
 						{/each}
 					</div>
 				{/if}
-			</fieldset>
+			</section>
 		{/each}
 	{/if}
 </div>

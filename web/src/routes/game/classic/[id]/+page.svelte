@@ -304,7 +304,7 @@
 			errorMessageText = 'Login required to surrender.';
 			return;
 		}
-		if (browser && !window.confirm('Certeza que quer desistir?')) {
+		if (browser && !window.confirm('Are you sure you want to surrender?')) {
 			return;
 		}
 		try {

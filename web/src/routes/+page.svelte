@@ -139,55 +139,84 @@
 </script>
 
 <div class="page-shell">
-	<section class="content-panel">
-		<header class="panel-header">
-			{#if !currentUser}
-				<h1 class="panel-title">Chronos</h1>
-			{/if}
-
-			<p class="health-text">
-				Server status: <span aria-hidden="true">{backendStatusIcon}</span>
-				<span class="mono">{backendHealthMessage}</span>
-			</p>
-		</header>
-
-		{#if !currentUser}
-			<form class="controls-col auth-col" on:submit|preventDefault={handleChronosLoginSubmission}>
-				<div class="auth-fields">
-					<label class="input-wrap">
-						<span class="input-label">Nickname / Username</span>
-						<input
-							class="input-field"
-							bind:value={usernameInputValue}
-							placeholder="User"
-							autocomplete="username"
-						/>
-					</label>
-					<label class="input-wrap">
-						<span class="input-label">Password</span>
-						<input
-							class="input-field"
-							type="password"
-							bind:value={passwordInputValue}
-							placeholder="••••••••••••••••••••••••"
-							autocomplete="current-password"
-						/>
-					</label>
+	{#if !currentUser}
+		<div class="landing">
+			<div class="landing-hero">
+				<p class="hero-kicker">Digital Collectible Card Duel</p>
+				<h1 class="hero-title">Chronos</h1>
+				<p class="hero-tagline">
+					Command the Dracomania collection and duel by fire, magic and might. Each round both
+					duelists reveal a card and clash on one attribute — capture more cards than your rival to
+					claim the match.
+				</p>
+				<div class="hero-art" aria-hidden="true">
+					<div
+						class="hero-card tilt-left"
+						style="background-image:url('https://bobagi.space/images/cards/3.png')"
+					></div>
+					<div
+						class="hero-card tilt-center"
+						style="background-image:url('https://bobagi.space/images/cards/1.png')"
+					></div>
+					<div
+						class="hero-card tilt-right"
+						style="background-image:url('https://bobagi.space/images/cards/8.png')"
+					></div>
 				</div>
-				{#if loginErrorMessage}
-					<p class="empty-text" style="color:#ffbdbd">{loginErrorMessage}</p>
-				{/if}
-				<div class="auth-actions stacked">
-					<button class="button button-primary" type="submit">Login</button>
-					<button class="button button-accent" type="button" on:click={() => goto('/gallery')}
-						>Gallery</button
-					>
-					<button class="button button-ghost" type="button" on:click={() => goto('/register')}
-						>Create account</button
-					>
+				<p class="hero-status">
+					Server
+					<span
+						class="status-dot"
+						class:online={backendStatusIcon === '🟢'}
+						class:offline={backendStatusIcon === '🔴'}
+					></span>
+					<span class="mono">{backendHealthMessage}</span>
+				</p>
+			</div>
+
+			<div class="auth-card">
+				<h2 class="auth-card-title">Enter the arena</h2>
+				<p class="auth-card-sub">Log in to play, or browse the collection first.</p>
+				<form class="controls-col" on:submit|preventDefault={handleChronosLoginSubmission}>
+					<div class="auth-fields">
+						<label class="input-wrap">
+							<span class="input-label">Username</span>
+							<input
+								class="input-field"
+								bind:value={usernameInputValue}
+								placeholder="Your nickname"
+								autocomplete="username"
+							/>
+						</label>
+						<label class="input-wrap">
+							<span class="input-label">Password</span>
+							<input
+								class="input-field"
+								type="password"
+								bind:value={passwordInputValue}
+								placeholder="••••••••"
+								autocomplete="current-password"
+							/>
+						</label>
+					</div>
+					{#if loginErrorMessage}
+						<p class="empty-text" style="color:#ffbdbd">{loginErrorMessage}</p>
+					{/if}
+					<button class="button button-primary" type="submit">⚔️ Log in</button>
+				</form>
+				<div class="auth-divider">or</div>
+				<div class="auth-actions">
+					<button class="button button-ghost" type="button" on:click={() => goto('/gallery')}>
+						🖼️ Browse the gallery
+					</button>
+					<button class="button button-neutral" type="button" on:click={() => goto('/register')}>
+						Create an account
+					</button>
 				</div>
-			</form>
-		{:else}
+			</div>
+		</div>
+	{:else}
+		<div class="dashboard">
 			<div class="profile-card">
 				<div class="avatar-wrap" aria-hidden="true">
 					<img
@@ -201,27 +230,40 @@
 				<div class="profile-main">
 					<div class="profile-top">
 						<div class="user-name">
-							<strong>{currentUser.username}</strong>
-							{#if isAdmin}<span class="role-badge admin">ADMIN</span>{/if}
+							{currentUser.username}
+							{#if isAdmin}<span class="role-badge admin">Admin</span>{/if}
 						</div>
 						<div class="profile-actions">
-							<button class="button button-neutral" on:click={() => goto('/gallery')}
-								>🖼️ Gallery</button
-							>
-							<button
-								class="button button-primary"
-								on:click={() =>
-									currentUser
-										? (showFriendsPanel = true)
-										: (loginErrorMessage = 'Login required to open friends panel.')}
-								disabled={!currentUser}
-							>
+							<button class="button button-neutral" on:click={() => goto('/gallery')}>
+								🖼️ Gallery
+							</button>
+							<button class="button button-neutral" on:click={() => (showFriendsPanel = true)}>
 								👥 Friends
 							</button>
+							{#if isAdmin}
+								<button
+									class="button button-ghost"
+									on:click={expireInactiveChronosGamesAndReloadDashboard}
+								>
+									⏳ Expire old
+								</button>
+							{/if}
 						</div>
 					</div>
 
 					<div class="stats-grid">
+						<div class="stat">
+							<div class="stat-num">{statGamesWon}</div>
+							<div class="stat-label">Wins</div>
+						</div>
+						<div class="stat">
+							<div class="stat-num">{statGamesPlayed}</div>
+							<div class="stat-label">Games played</div>
+						</div>
+						<div class="stat">
+							<div class="stat-num">{statGamesDrawn}</div>
+							<div class="stat-label">Draws</div>
+						</div>
 						<div class="stat">
 							<div class="stat-num">{statActive}</div>
 							<div class="stat-label">Active games</div>
@@ -234,63 +276,26 @@
 							<div class="stat-num">{statLastUpdated}</div>
 							<div class="stat-label">Last activity</div>
 						</div>
-						<div class="stat">
-							<div class="stat-num">{statGamesPlayed}</div>
-							<div class="stat-label">Games played</div>
-						</div>
-						<div class="stat">
-							<div class="stat-num">{statGamesWon}</div>
-							<div class="stat-label">Wins</div>
-						</div>
-						<div class="stat">
-							<div class="stat-num">{statGamesDrawn}</div>
-							<div class="stat-label">Draws</div>
-						</div>
-					</div>
-
-					<div class="profile-cta">
-						<button
-							class="button button-danger"
-							on:click={startNewAttributeDuelChronosGameForPlayer}>⚔️ Start Duel</button
-						>
-						{#if isAdmin}
-							<button
-								class="button button-ghost"
-								on:click={expireInactiveChronosGamesAndReloadDashboard}>⏳ Expire old games</button
-							>
-						{/if}
-
-						{#if showFriendsPanel}
-							{#if currentUser}
-								<FriendsPanel
-									currentUserId={currentUser.id}
-									on:close={() => (showFriendsPanel = false)}
-									on:navigateToGame={handleFriendMatchSelection}
-									on:refreshDashboard={refreshDashboardAfterFriendPanelInteraction}
-								/>
-							{:else}
-								<div class="friends-overlay-message">
-									<div class="friends-overlay-card">
-										<p>You need to log in to manage friends.</p>
-										<button
-											type="button"
-											class="button button-accent"
-											on:click={() => (showFriendsPanel = false)}
-										>
-											Close
-										</button>
-									</div>
-								</div>
-							{/if}
-						{/if}
 					</div>
 				</div>
 			</div>
 
+			<div class="play-cta">
+				<div class="play-cta-copy">
+					<h2 class="play-cta-title">Ready to duel?</h2>
+					<p class="play-cta-sub">
+						Start an Attribute Duel against the bot and grow your collection of victories.
+					</p>
+				</div>
+				<button class="button button-primary" on:click={startNewAttributeDuelChronosGameForPlayer}>
+					⚔️ Start Duel
+				</button>
+			</div>
+
 			<section class="games-section">
-				<h2 class="section-title">My Active Games</h2>
+				<h2 class="section-title">Your active games</h2>
 				{#if myActiveChronosGames.length === 0}
-					<p class="empty-text">You have no active games. Start one above!</p>
+					<p class="empty-text">No active games yet — start a duel above.</p>
 				{:else}
 					<ul class="games-list">
 						{#each myActiveChronosGames as gameSummary}
@@ -308,7 +313,7 @@
 								</div>
 								<div class="game-actions">
 									<button
-										class="button button-neutral"
+										class="button button-primary"
 										on:click={() =>
 											navigateToExistingChronosGame(
 												resolveChronosGameIdentifier(gameSummary),
@@ -316,7 +321,7 @@
 											)}
 										title="Open game"
 									>
-										➡️ Open
+										▶ Resume
 									</button>
 									{#if isAdmin}
 										<button
@@ -327,7 +332,7 @@
 												).then(refreshChronosDashboardData)}
 											title="Finish the game"
 										>
-											🗑️ Finish
+											🗑️
 										</button>
 									{/if}
 								</div>
@@ -338,10 +343,10 @@
 			</section>
 
 			{#if isAdmin}
-				<section class="games-section" style="margin-top:18px">
-					<h2 class="section-title">All Active (Admin)</h2>
+				<section class="games-section">
+					<h2 class="section-title">All active games (admin)</h2>
 					{#if allActiveChronosGames.length === 0}
-						<p class="empty-text">No active games on server.</p>
+						<p class="empty-text">No active games on the server.</p>
 					{:else}
 						<ul class="games-list">
 							{#each allActiveChronosGames as gameSummary}
@@ -365,7 +370,7 @@
 													gameSummary.mode
 												)}
 										>
-											➡️ Open
+											▶ Open
 										</button>
 										<button
 											class="button button-danger"
@@ -374,7 +379,7 @@
 													resolveChronosGameIdentifier(gameSummary)
 												).then(refreshChronosDashboardData)}
 										>
-											🗑️ Finish
+											🗑️
 										</button>
 									</div>
 								</li>
@@ -383,6 +388,15 @@
 					{/if}
 				</section>
 			{/if}
-		{/if}
-	</section>
+
+			{#if showFriendsPanel}
+				<FriendsPanel
+					currentUserId={currentUser.id}
+					on:close={() => (showFriendsPanel = false)}
+					on:navigateToGame={handleFriendMatchSelection}
+					on:refreshDashboard={refreshDashboardAfterFriendPanelInteraction}
+				/>
+			{/if}
+		</div>
+	{/if}
 </div>

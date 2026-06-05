@@ -101,9 +101,9 @@
 		titleFontSizePx = fontPx;
 	}
 
-	$: magicBadge = makeBadge('/icons/magic_icon.png', magicValue, 'MAGIA');
-	$: mightBadge = makeBadge('/icons/strength_icon.png', mightValue, 'FORÇA');
-	$: fireBadge = makeBadge('/icons/fire_icon.png', fireValue, 'FOGO');
+	$: magicBadge = makeBadge('/icons/magic_icon.png', magicValue, 'MAGIC');
+	$: mightBadge = makeBadge('/icons/strength_icon.png', mightValue, 'MIGHT');
+	$: fireBadge = makeBadge('/icons/fire_icon.png', fireValue, 'FIRE');
 
 	$: tooltipText = descriptionText
 		? `${titleText ?? 'Card'} — ${descriptionText}`
