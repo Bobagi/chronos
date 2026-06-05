@@ -18,6 +18,9 @@
 	export let data: { authUser: AuthenticatedChronosUser | null };
 
 	$: canonicalUrl = $page.url?.href ?? SITE_URL;
+	// Game routes are a full-screen, chromeless experience (the board owns the
+	// viewport); the global top bar/footer would only overlap and waste height.
+	$: isGameRoute = ($page.url?.pathname ?? '').startsWith('/game/');
 
 	$: structuredData = {
 		'@context': 'https://schema.org',
@@ -58,14 +61,18 @@
 	`}
 </svelte:head>
 
-<TopBar
-	isUserAuthenticated={$authUser !== null}
-	on:logout={handleLogout}
-	on:openFriends={() => {}}
-/>
+{#if !isGameRoute}
+	<TopBar
+		isUserAuthenticated={$authUser !== null}
+		on:logout={handleLogout}
+		on:openFriends={() => {}}
+	/>
+{/if}
 
 <slot />
 
-<SiteFooter />
+{#if !isGameRoute}
+	<SiteFooter />
+{/if}
 
 <style src="../app.postcss"></style>

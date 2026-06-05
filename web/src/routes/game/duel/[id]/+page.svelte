@@ -55,7 +55,9 @@
 	$: currentDuelCenter = $gameStateStore?.duelCenter ?? null;
 	$: currentDuelStage = $gameStateStore?.duelStage ?? null;
 	$: currentDuelRoundWinner = currentDuelCenter?.roundWinner ?? null;
-	const cardWidthCssValue = 'clamp(104px, 17.5vw, 200px)';
+	// Sized against viewport height so the whole board fits one screen without
+	// scrolling (both hands + the battlefield visible at once).
+	const cardWidthCssValue = 'clamp(76px, 13.5vh, 150px)';
 
 	let now = Date.now();
 	let duelTimerHandle: ReturnType<typeof setInterval> | null = null;
@@ -934,7 +936,7 @@
 		</div>
 	</section>
 
-	<section class="zone center" style="margin:10px auto; max-width:1200px;">
+	<section class="zone center">
 		<div class="center-content">
 			<div class="center-left">
 				<div

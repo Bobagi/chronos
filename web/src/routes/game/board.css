@@ -1,9 +1,27 @@
+/*
+ * The duel board fills exactly one screen: a fixed-height flex column
+ * (opponent zone / center / player zone) that never scrolls the page. The
+ * battle log scrolls inside its own panel instead of growing the board.
+ */
 .board {
-	max-width: 1200px;
+	max-width: 1280px;
 	width: 100%;
 	margin: 0 auto;
-	display: grid;
-	grid-template-rows: auto auto auto;
-	gap: 14px;
-	padding: 64px 14px 16px;
+	height: 100vh;
+	height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	gap: clamp(6px, 1vh, 12px);
+	padding: clamp(46px, 6.5vh, 60px) clamp(8px, 1.4vw, 18px) clamp(8px, 1.4vh, 16px);
+	overflow: hidden;
+}
+
+.zone.opponent,
+.zone.player {
+	flex: 0 0 auto;
+}
+
+.zone.center {
+	flex: 1 1 auto;
+	min-height: 0;
 }

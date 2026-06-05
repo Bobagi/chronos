@@ -5,7 +5,7 @@
 	position: relative;
 	display: block;
 	width: 100%;
-	height: clamp(140px, 34vh, 260px);
+	height: clamp(116px, 21vh, 190px);
 }
 .hand.fan .card-socket {
 	position: absolute;
@@ -27,8 +27,8 @@
 		translateY(var(--y)) rotate(calc(var(--rot) * var(--offset)));
 	z-index: calc(200 + var(--i));
 	transition:
-		transform 140ms ease,
-		filter 140ms ease;
+		transform 0.16s ease,
+		filter 0.16s ease;
 }
 .my-hand.fan .card-socket {
 	transform-origin: bottom center;
@@ -41,17 +41,43 @@
 	--y: calc(10px - 4px * abs(var(--offset)));
 	z-index: calc(100 + (var(--n) - var(--i)));
 }
+
+/* Hearthstone-style "this is the card you're about to play" highlight. */
 .my-hand.fan .card-socket:hover,
 .my-hand.fan .card-socket:focus-visible {
 	transform: translate(-50%, -50%) translateX(calc(var(--spread) * var(--offset)))
-		translateY(calc(var(--y) - 18px)) rotate(calc(var(--rot) * var(--offset))) scale(1.06);
+		translateY(calc(var(--y) - 42px)) rotate(0deg) scale(1.22);
 	z-index: 999;
-	filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.45));
+	filter: drop-shadow(0 0 10px rgba(255, 214, 120, 0.95))
+		drop-shadow(0 0 22px rgba(255, 190, 80, 0.7)) drop-shadow(0 16px 22px rgba(0, 0, 0, 0.55));
 }
+.my-hand.fan .card-socket:focus-visible {
+	outline: none;
+}
+/* A soft golden pedestal under the lifted card to reinforce the selection. */
+.my-hand.fan .card-socket::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	bottom: -16px;
+	width: 76%;
+	height: 16px;
+	transform: translateX(-50%) scaleX(0.6);
+	border-radius: 50%;
+	background: radial-gradient(ellipse at center, rgba(255, 206, 110, 0.55), transparent 70%);
+	opacity: 0;
+	transition: opacity 0.16s ease;
+	pointer-events: none;
+}
+.my-hand.fan .card-socket:hover::after,
+.my-hand.fan .card-socket:focus-visible::after {
+	opacity: 1;
+}
+
 .card-back-wrap {
 	position: relative;
 	width: 100%;
 	aspect-ratio: 430/670;
 	border-radius: 10px;
-	box-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.42);
 }
