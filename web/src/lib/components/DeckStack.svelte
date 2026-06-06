@@ -22,8 +22,8 @@
 	/** Stacking direction */
 	export let direction: 'right' | 'left' = 'right';
 
-	/** `contain` avoids clipping the card back; use `cover` to crop and fill */
-	export let imageFit: 'contain' | 'cover' = 'contain';
+	/** `cover` fills + crops so every back looks identical to the cards on the field */
+	export let imageFit: 'contain' | 'cover' = 'cover';
 
 	// Reactive derivations
 	$: visibleCount = Math.min(Math.max(0, deckCount), maxVisible);
@@ -41,10 +41,10 @@
 		<div
 			style="
         position:absolute; inset:0;
-        overflow:visible; pointer-events:none;height:96%;
+        overflow:visible; pointer-events:none;height:100%;
         transform: translate({dir * i * offsetXPx}px, {i * offsetYPx}px);
         z-index:{i};
-        filter: drop-shadow(0 2px 10px rgba(0,0,0,.35));
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,.35));
       "
 		>
 			<img
@@ -53,7 +53,7 @@
 				style="
           position:absolute; inset:0; width:100%; height:100%;
           object-fit:{imageFit};
-          display:block; border-radius:10px;
+          display:block; border-radius:6px;
         "
 				loading="lazy"
 				decoding="async"

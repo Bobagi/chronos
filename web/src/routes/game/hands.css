@@ -48,8 +48,8 @@
 	transform: translate(-50%, -50%) translateX(calc(var(--spread) * var(--offset)))
 		translateY(calc(var(--y) - 42px)) rotate(0deg) scale(1.22);
 	z-index: 999;
-	filter: drop-shadow(0 0 10px rgba(255, 214, 120, 0.95))
-		drop-shadow(0 0 22px rgba(255, 190, 80, 0.7)) drop-shadow(0 16px 22px rgba(0, 0, 0, 0.55));
+	filter: drop-shadow(0 0 1.5px rgba(255, 238, 175, 1)) drop-shadow(0 0 3px rgba(255, 224, 130, 1))
+		drop-shadow(0 0 6px rgba(255, 200, 80, 0.9)) drop-shadow(0 12px 18px rgba(0, 0, 0, 0.5));
 }
 .my-hand.fan .card-socket:focus-visible {
 	outline: none;

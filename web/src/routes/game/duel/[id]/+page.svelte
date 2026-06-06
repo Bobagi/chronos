@@ -910,8 +910,8 @@
 					aspectHeight={670}
 					cardWidthCss={cardWidthCssValue}
 					maxVisible={7}
-					offsetXPx={4}
-					offsetYPx={3}
+					offsetXPx={2}
+					offsetYPx={1.5}
 					direction="right"
 				/>
 			</div>
@@ -1187,8 +1187,8 @@
 					aspectHeight={670}
 					cardWidthCss={cardWidthCssValue}
 					maxVisible={7}
-					offsetXPx={4}
-					offsetYPx={3}
+					offsetXPx={2}
+					offsetYPx={1.5}
 					direction="right"
 				/>
 			</div>
