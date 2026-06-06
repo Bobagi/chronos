@@ -1,8 +1,17 @@
 # CLAUDE.md — Chronos
 
-Guidance for Claude Code working in this repo. Read this first; it should save you
-re-discovering the project. **Keep it updated** when you change architecture, commands,
-or deploy steps. All code, comments and UI text are **English**; use intuitive names.
+> **SESSION PROTOCOL — follow automatically, every time, without being reminded:**
+>
+> 1. **Trust this file before exploring.** It is auto-loaded whenever you read any file
+>    under `/opt/chronos`, and the machine's `/root/CLAUDE.md` already tells you to read a
+>    repo's own `CLAUDE.md` first. Don't re-discover what's documented here.
+> 2. **Keep it current — treat a stale CLAUDE.md as a bug.** Whenever a task changes the
+>    architecture, file map, commands, deploy steps, gotchas, or the Status section, update
+>    this file **in the same commit as the code change**. This is a standing instruction; do
+>    it without the user asking.
+
+Guidance for Claude Code working in this repo. All code, comments and UI text are
+**English**; use intuitive names.
 
 ## What Chronos is
 
