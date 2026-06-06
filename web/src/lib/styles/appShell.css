@@ -6,8 +6,11 @@
  */
 
 @font-face {
+	/* The display / card typeface: the real, complete Exocet Heavy
+	   (Jonathan Barnbrook / Emigre, 1992). Kept under the 'Draco' family alias
+	   so every existing reference keeps working. */
 	font-family: 'Draco';
-	src: url('/fonts/dracoFont.woff') format('woff');
+	src: url('/fonts/ExocetHeavy.ttf') format('truetype');
 	font-weight: 400 900;
 	font-style: normal;
 	font-display: swap;

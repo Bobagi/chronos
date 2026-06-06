@@ -7,27 +7,37 @@
 		loginChronosUserAccount,
 		startAttributeDuelChronosGameForPlayer
 	} from '$lib/api/GameClient';
+	import CardComposite from '$lib/components/CardComposite.svelte';
 	import FriendsPanel from '$lib/components/FriendsPanel.svelte';
 	import {
 		extractLastActivityTimestamp,
 		formatRelativeLastActivity,
 		resolveChronosGameIdentifier
 	} from '$lib/services/chronosGameSummaryUtils';
+	import type { FeaturedHeroCard } from '$lib/services/featuredHeroCards';
 	import type {
 		AuthenticatedChronosUser,
 		ChronosDashboardData,
 		ChronosGameSummaryWithMetadata
 	} from '$lib/types/chronos';
 	import { setAuthState } from '$lib/stores/authStore';
+	import './game/fonts.css';
 	import './mainpage.css';
 
 	export let data: {
 		authUser: AuthenticatedChronosUser | null;
 		dashboard: ChronosDashboardData;
+		featuredCards: FeaturedHeroCard[];
 	};
 
 	const avatarFallbackImageUrl = '/avatars/placeholder.png';
 	const avatarPrimaryImageUrl = 'https://bobagi.space/images/cards/23.png';
+
+	// Same frame + title overlays the gallery and the duel board use, so the hero
+	// shows the exact cards as they appear in-game (not bare art tiles).
+	const heroCardFrameImageUrl = '/frames/default.png';
+	const heroCardTitleImageUrl = '/frames/title.png';
+	const heroCardTiltClasses = ['tilt-left', 'tilt-center', 'tilt-right'];
 
 	let usernameInputValue = '';
 	let passwordInputValue = '';
@@ -36,6 +46,8 @@
 
 	$: currentUser = data.authUser;
 	$: setAuthState(currentUser ?? null);
+
+	$: featuredCards = data.featuredCards ?? [];
 
 	$: dashboardData = data.dashboard;
 	$: backendHealthMessage = dashboardData?.backendHealthMessage ?? 'Checking server…';
@@ -149,20 +161,26 @@
 					duelists reveal a card and clash on one attribute — capture more cards than your rival to
 					claim the match.
 				</p>
-				<div class="hero-art" aria-hidden="true">
-					<div
-						class="hero-card tilt-left"
-						style="background-image:url('https://bobagi.space/images/cards/3.png')"
-					></div>
-					<div
-						class="hero-card tilt-center"
-						style="background-image:url('https://bobagi.space/images/cards/1.png')"
-					></div>
-					<div
-						class="hero-card tilt-right"
-						style="background-image:url('https://bobagi.space/images/cards/8.png')"
-					></div>
-				</div>
+				{#if featuredCards.length}
+					<div class="hero-art" aria-hidden="true">
+						{#each featuredCards as heroCard, index (heroCard.code)}
+							<div class="hero-card {heroCardTiltClasses[index] ?? ''}">
+								<CardComposite
+									artImageUrl={heroCard.imageUrl}
+									frameImageUrl={heroCardFrameImageUrl}
+									titleImageUrl={heroCardTitleImageUrl}
+									titleText={heroCard.name}
+									descriptionText={heroCard.description}
+									magicValue={heroCard.magic}
+									mightValue={heroCard.might}
+									fireValue={heroCard.fire}
+									cornerNumberValue={heroCard.number}
+									enableTilt={false}
+								/>
+							</div>
+						{/each}
+					</div>
+				{/if}
 				<p class="hero-status">
 					Server
 					<span

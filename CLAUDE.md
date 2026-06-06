@@ -43,6 +43,11 @@ their discard pile; whoever captured more cards when a hand empties wins the mat
   needs `npm_config_engine_strict=false` to tolerate that.
 - Card art is served from `https://bobagi.space/images/cards/<number>.png`
   (backend prepends `CARD_IMAGE_BASE_URL`, default `https://bobagi.space`, in `CardRepository`).
+- The card / display font (`--font-display: 'Draco'`) is the real, complete **Exocet Heavy**
+  (Jonathan Barnbrook / Emigre, 1992 — the Diablo-logo typeface), at `web/static/fonts/ExocetHeavy.ttf`.
+  It's loaded via `@font-face` in `appShell.css` and `web/src/routes/game/fonts.css` under the legacy
+  `'Draco'` family alias (kept so existing references keep working). An earlier incomplete free
+  conversion (where `T` rendered as `+`) was replaced by this file.
 
 ### Deploy the FRONTEND (after editing anything in `web/`)
 ```bash
@@ -84,8 +89,13 @@ web/                         SvelteKit frontend
   src/routes/mainpage.css            home (landing/login hero + player dashboard) layout
   src/routes/+layout.svelte          renders TopBar/SiteFooter — HIDDEN on /game routes (chromeless)
   src/routes/+page.svelte            home: logged-out hero+login / logged-in dashboard
+                                     (hero shows real CardComposite cards, SSR'd via +page.server.ts)
   src/routes/gallery/+page.svelte    card collection showcase
   src/routes/register/+page.svelte
+  src/routes/privacy/+page.svelte    generic Privacy Policy (linked from the footer)
+  src/routes/terms/+page.svelte      generic Terms of Service (linked from the footer)
+  src/lib/styles/routes/legalPage.css      shared styling for /privacy and /terms
+  src/lib/services/featuredHeroCards.ts    picks the 3 cards the landing hero renders
   src/lib/components/FriendsPanel.svelte   friends modal (search/requests/roster/chat)
   src/lib/components/CardComposite.svelte  renders one card (art + frame + MAGIC/MIGHT/FIRE badges)
   src/lib/components/DeckStack.svelte      stacked deck of card backs
@@ -154,3 +164,5 @@ web/                         SvelteKit frontend
   hover highlight.
 - Backend follows NestJS layered architecture (modules/services/repositories/DTOs/guards); the duel
   page was decomposed into `web/src/lib/duel/*` modules.
+- The logged-out landing hero now renders the actual in-game cards (CardComposite, SSR'd) instead of
+  bare art tiles; the footer's Privacy/Terms links resolve to real `/privacy` and `/terms` pages.

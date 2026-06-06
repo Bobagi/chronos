@@ -1,6 +1,7 @@
 @font-face {
+	/* Real Exocet Heavy (Emigre), aliased as 'Draco'. See appShell.css. */
 	font-family: 'Draco';
-	src: url('/fonts/dracoFont.woff') format('woff');
+	src: url('/fonts/ExocetHeavy.ttf') format('truetype');
 	font-weight: 400 900;
 	font-style: normal;
 	font-display: swap;
