@@ -119,6 +119,16 @@
 	function closeCardModal() {
 		selectedCardItem = null;
 	}
+
+	// The same three power icons the cards themselves use (wizard hat / shield /
+	// fireball), instead of emoji, for the modal's stat chips.
+	$: modalStats = selectedCardItem
+		? [
+				{ icon: '/icons/magic_icon.png', label: 'Magic', value: selectedCardItem.magic ?? 0 },
+				{ icon: '/icons/strength_icon.png', label: 'Might', value: selectedCardItem.might ?? 0 },
+				{ icon: '/icons/fire_icon.png', label: 'Fire', value: selectedCardItem.fire ?? 0 }
+			]
+		: [];
 </script>
 
 <svelte:window on:keydown={(e) => e.key === 'Escape' && (selectedCardItem = null)} />
@@ -203,40 +213,53 @@
 		on:click|self={closeCardModal}
 		on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && closeCardModal()}
 	>
-		<div class="modal-card">
+		<div
+			class="modal-card"
+			role="dialog"
+			aria-modal="true"
+			aria-label={selectedCardItem.name ?? selectedCardItem.code}
+		>
 			<button class="modal-close" on:click={closeCardModal} aria-label="Close">×</button>
-			<div class="modal-body">
-				<div class="modal-inner">
-					<div class="modal-card-wrap">
-						<CardComposite
-							artImageUrl={resolveAssetUrl(selectedCardItem.imageUrl) ?? ''}
-							frameImageUrl={defaultFrameOverlayImageUrl}
-							titleImageUrl={titleOverlayImageUrl}
-							titleText={selectedCardItem.name ?? selectedCardItem.code}
-							aspectWidth={430}
-							aspectHeight={670}
-							artObjectFit="cover"
-							enableTilt={true}
-							descriptionText={selectedCardItem.description ?? ''}
-							magicValue={selectedCardItem.magic ?? 0}
-							mightValue={selectedCardItem.might ?? 0}
-							fireValue={selectedCardItem.fire ?? 0}
-							cornerNumberValue={selectedCardItem.number ?? 0}
-						/>
+			<div class="modal-inner">
+				<div class="modal-card-wrap">
+					<CardComposite
+						artImageUrl={resolveAssetUrl(selectedCardItem.imageUrl) ?? ''}
+						frameImageUrl={defaultFrameOverlayImageUrl}
+						titleImageUrl={titleOverlayImageUrl}
+						titleText={selectedCardItem.name ?? selectedCardItem.code}
+						aspectWidth={430}
+						aspectHeight={670}
+						artObjectFit="cover"
+						enableTilt={true}
+						descriptionText={selectedCardItem.description ?? ''}
+						magicValue={selectedCardItem.magic ?? 0}
+						mightValue={selectedCardItem.might ?? 0}
+						fireValue={selectedCardItem.fire ?? 0}
+						cornerNumberValue={selectedCardItem.number ?? 0}
+					/>
+				</div>
+
+				<div class="meta">
+					<p class="meta-eyebrow">
+						<span class="meta-collection">{selectedCardItem.collectionName ?? 'Card'}</span>
+						<span class="meta-number">№ {selectedCardItem.number ?? 0}</span>
+					</p>
+					<h2 class="meta-title">{selectedCardItem.name ?? selectedCardItem.code}</h2>
+					<p class="meta-code mono">{selectedCardItem.code}</p>
+
+					<div class="attrs">
+						{#each modalStats as stat}
+							<span class="attr">
+								<img class="attr-icon" src={stat.icon} alt="" aria-hidden="true" />
+								<span class="attr-value">{stat.value}</span>
+								<span class="attr-label">{stat.label}</span>
+							</span>
+						{/each}
 					</div>
 
-					<div class="meta">
-						<h2>{selectedCardItem.name ?? selectedCardItem.code}</h2>
-						<p class="mono code">{selectedCardItem.code}</p>
-						<div class="attrs">
-							<span>🧙 {selectedCardItem.magic ?? 0}</span>
-							<span>💪 {selectedCardItem.might ?? 0}</span>
-							<span>🔥 {selectedCardItem.fire ?? 0}</span>
-						</div>
-						{#if selectedCardItem.description}
-							<p class="desc">{selectedCardItem.description}</p>
-						{/if}
-					</div>
+					{#if selectedCardItem.description}
+						<p class="meta-desc">{selectedCardItem.description}</p>
+					{/if}
 				</div>
 			</div>
 		</div>

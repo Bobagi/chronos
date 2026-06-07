@@ -9,7 +9,6 @@
 </script>
 
 <svelte:head>
-	<title>Terms of Service — Chronos</title>
 	<meta name="description" content="The terms for playing the Chronos digital card game." />
 </svelte:head>
 

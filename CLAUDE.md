@@ -128,6 +128,14 @@ web/                         SvelteKit frontend
 - **Game routes are chromeless.** `+layout.svelte` hides the global TopBar/footer on `/game/*`; the
   board owns the viewport (`height: 100dvh`, no page scroll). Card sizes are viewport-height based so
   both hands + the battlefield fit one screen; the battle log scrolls inside its own panel.
+- **CardComposite is sized with container-query units.** Its root sets `container-type:size`, so
+  inner sizes/fonts use `cqh`/`cqw` and scale with the card. Don't size card text in `px` or via
+  `inherit` from the root — a past bug left the corner number on `font-size:var(--corner-number-font-cqh)`
+  (undefined) plus `.card-corner-number { font-size: inherit !important }`, so it didn't grow in the
+  enlarged gallery modal. Size such elements with a `cqh` value on the element itself.
+- **Gallery card modal** (`web/src/lib/styles/routes/galleryPage.css`): the enlarged card is sized by
+  **height** (`min(72vh, 600px)` + `aspect-ratio`) so the whole dialog never scrolls; the detail panel
+  uses the real power icons (`/icons/{magic,strength,fire}_icon.png`), not emoji.
 - **Prettier:** the repo's `prettier-plugin-svelte` crashes on Prettier **3.8** (`getVisitorKeys`).
   Format with a compatible version: `npx --yes prettier@3.6.2 --write .` (run inside `web/` and at the
   repo root). `web/pnpm-lock.yaml` is untracked by design — don't commit it.

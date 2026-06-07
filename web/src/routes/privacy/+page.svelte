@@ -9,7 +9,6 @@
 </script>
 
 <svelte:head>
-	<title>Privacy Policy — Chronos</title>
 	<meta
 		name="description"
 		content="How the Chronos card game collects, uses and protects your information."
