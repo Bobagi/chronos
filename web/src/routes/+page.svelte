@@ -14,6 +14,7 @@
 		formatRelativeLastActivity,
 		resolveChronosGameIdentifier
 	} from '$lib/services/chronosGameSummaryUtils';
+	import { t } from '$lib/i18n';
 	import type { FeaturedHeroCard } from '$lib/services/featuredHeroCards';
 	import type {
 		AuthenticatedChronosUser,
@@ -41,7 +42,7 @@
 
 	let usernameInputValue = '';
 	let passwordInputValue = '';
-	let loginErrorMessage = '';
+	let loginErrorKey: string | null = null;
 	let showFriendsPanel = false;
 
 	$: currentUser = data.authUser;
@@ -84,12 +85,12 @@
 			const { user } = await loginChronosUserAccount(usernameInputValue.trim(), passwordInputValue);
 			setAuthState(user);
 			passwordInputValue = '';
-			loginErrorMessage = '';
+			loginErrorKey = null;
 			showFriendsPanel = false;
 			await refreshChronosDashboardData();
 		} catch (err) {
 			console.error('loginChronosUserAccount failed', err);
-			loginErrorMessage = 'Invalid username or password.';
+			loginErrorKey = 'home.auth.invalidCredentials';
 		}
 	}
 
@@ -154,13 +155,9 @@
 	{#if !currentUser}
 		<div class="landing">
 			<div class="landing-hero">
-				<p class="hero-kicker">Digital Collectible Card Duel</p>
+				<p class="hero-kicker">{$t('home.kicker')}</p>
 				<h1 class="hero-title">Chronos</h1>
-				<p class="hero-tagline">
-					Command the Dracomania collection and duel by fire, magic and might. Each round both
-					duelists reveal a card and clash on one attribute — capture more cards than your rival to
-					claim the match.
-				</p>
+				<p class="hero-tagline">{$t('home.tagline')}</p>
 				{#if featuredCards.length}
 					<div class="hero-art" aria-hidden="true">
 						{#each featuredCards as heroCard, index (heroCard.code)}
@@ -182,7 +179,7 @@
 					</div>
 				{/if}
 				<p class="hero-status">
-					Server
+					{$t('home.serverLabel')}
 					<span
 						class="status-dot"
 						class:online={backendStatusIcon === '🟢'}
@@ -193,21 +190,21 @@
 			</div>
 
 			<div class="auth-card">
-				<h2 class="auth-card-title">Enter the arena</h2>
-				<p class="auth-card-sub">Log in to play, or browse the collection first.</p>
+				<h2 class="auth-card-title">{$t('home.auth.title')}</h2>
+				<p class="auth-card-sub">{$t('home.auth.subtitle')}</p>
 				<form class="controls-col" on:submit|preventDefault={handleChronosLoginSubmission}>
 					<div class="auth-fields">
 						<label class="input-wrap">
-							<span class="input-label">Username</span>
+							<span class="input-label">{$t('home.auth.username')}</span>
 							<input
 								class="input-field"
 								bind:value={usernameInputValue}
-								placeholder="Your nickname"
+								placeholder={$t('home.auth.usernamePlaceholder')}
 								autocomplete="username"
 							/>
 						</label>
 						<label class="input-wrap">
-							<span class="input-label">Password</span>
+							<span class="input-label">{$t('home.auth.password')}</span>
 							<input
 								class="input-field"
 								type="password"
@@ -217,18 +214,18 @@
 							/>
 						</label>
 					</div>
-					{#if loginErrorMessage}
-						<p class="empty-text" style="color:#ffbdbd">{loginErrorMessage}</p>
+					{#if loginErrorKey}
+						<p class="empty-text" style="color:#ffbdbd">{$t(loginErrorKey)}</p>
 					{/if}
-					<button class="button button-primary" type="submit">⚔️ Log in</button>
+					<button class="button button-primary" type="submit">⚔️ {$t('home.auth.login')}</button>
 				</form>
-				<div class="auth-divider">or</div>
+				<div class="auth-divider">{$t('home.auth.or')}</div>
 				<div class="auth-actions">
 					<button class="button button-ghost" type="button" on:click={() => goto('/gallery')}>
-						🖼️ Browse the gallery
+						🖼️ {$t('home.auth.browseGallery')}
 					</button>
 					<button class="button button-neutral" type="button" on:click={() => goto('/register')}>
-						Create an account
+						{$t('home.auth.createAccount')}
 					</button>
 				</div>
 			</div>
@@ -249,21 +246,22 @@
 					<div class="profile-top">
 						<div class="user-name">
 							{currentUser.username}
-							{#if isAdmin}<span class="role-badge admin">Admin</span>{/if}
+							{#if isAdmin}<span class="role-badge admin">{$t('home.dashboard.adminBadge')}</span
+								>{/if}
 						</div>
 						<div class="profile-actions">
 							<button class="button button-neutral" on:click={() => goto('/gallery')}>
-								🖼️ Gallery
+								🖼️ {$t('home.dashboard.gallery')}
 							</button>
 							<button class="button button-neutral" on:click={() => (showFriendsPanel = true)}>
-								👥 Friends
+								👥 {$t('home.dashboard.friends')}
 							</button>
 							{#if isAdmin}
 								<button
 									class="button button-ghost"
 									on:click={expireInactiveChronosGamesAndReloadDashboard}
 								>
-									⏳ Expire old
+									⏳ {$t('home.dashboard.expireOld')}
 								</button>
 							{/if}
 						</div>
@@ -272,27 +270,27 @@
 					<div class="stats-grid">
 						<div class="stat">
 							<div class="stat-num">{statGamesWon}</div>
-							<div class="stat-label">Wins</div>
+							<div class="stat-label">{$t('home.dashboard.stats.wins')}</div>
 						</div>
 						<div class="stat">
 							<div class="stat-num">{statGamesPlayed}</div>
-							<div class="stat-label">Games played</div>
+							<div class="stat-label">{$t('home.dashboard.stats.played')}</div>
 						</div>
 						<div class="stat">
 							<div class="stat-num">{statGamesDrawn}</div>
-							<div class="stat-label">Draws</div>
+							<div class="stat-label">{$t('home.dashboard.stats.draws')}</div>
 						</div>
 						<div class="stat">
 							<div class="stat-num">{statActive}</div>
-							<div class="stat-label">Active games</div>
+							<div class="stat-label">{$t('home.dashboard.stats.active')}</div>
 						</div>
 						<div class="stat">
 							<div class="stat-num">{statRank}</div>
-							<div class="stat-label">Rank</div>
+							<div class="stat-label">{$t('home.dashboard.stats.rank')}</div>
 						</div>
 						<div class="stat">
 							<div class="stat-num">{statLastUpdated}</div>
-							<div class="stat-label">Last activity</div>
+							<div class="stat-label">{$t('home.dashboard.stats.lastActivity')}</div>
 						</div>
 					</div>
 				</div>
@@ -300,20 +298,18 @@
 
 			<div class="play-cta">
 				<div class="play-cta-copy">
-					<h2 class="play-cta-title">Ready to duel?</h2>
-					<p class="play-cta-sub">
-						Start an Attribute Duel against the bot and grow your collection of victories.
-					</p>
+					<h2 class="play-cta-title">{$t('home.dashboard.readyTitle')}</h2>
+					<p class="play-cta-sub">{$t('home.dashboard.readySub')}</p>
 				</div>
 				<button class="button button-primary" on:click={startNewAttributeDuelChronosGameForPlayer}>
-					⚔️ Start Duel
+					⚔️ {$t('home.dashboard.startDuel')}
 				</button>
 			</div>
 
 			<section class="games-section">
-				<h2 class="section-title">Your active games</h2>
+				<h2 class="section-title">{$t('home.dashboard.yourGames')}</h2>
 				{#if myActiveChronosGames.length === 0}
-					<p class="empty-text">No active games yet — start a duel above.</p>
+					<p class="empty-text">{$t('home.dashboard.noGames')}</p>
 				{:else}
 					<ul class="games-list">
 						{#each myActiveChronosGames as gameSummary}
@@ -321,9 +317,9 @@
 								<div class="game-info">
 									<p class="game-id mono">{resolveChronosGameIdentifier(gameSummary)}</p>
 									<p class="game-meta">
-										Mode: <b>{gameSummary.mode}</b>
+										{$t('home.dashboard.mode')}: <b>{gameSummary.mode}</b>
 										{#if extractLastActivityTimestamp(gameSummary)}
-											• Updated: {formatRelativeLastActivity(
+											• {$t('home.dashboard.updated')}: {formatRelativeLastActivity(
 												extractLastActivityTimestamp(gameSummary)
 											)}
 										{/if}
@@ -337,9 +333,9 @@
 												resolveChronosGameIdentifier(gameSummary),
 												gameSummary.mode
 											)}
-										title="Open game"
+										title={$t('home.dashboard.openGame')}
 									>
-										▶ Resume
+										▶ {$t('home.dashboard.resume')}
 									</button>
 									{#if isAdmin}
 										<button
@@ -348,7 +344,7 @@
 												endChronosGameSessionOnServer(
 													resolveChronosGameIdentifier(gameSummary)
 												).then(refreshChronosDashboardData)}
-											title="Finish the game"
+											title={$t('home.dashboard.finishGame')}
 										>
 											🗑️
 										</button>
@@ -362,9 +358,9 @@
 
 			{#if isAdmin}
 				<section class="games-section">
-					<h2 class="section-title">All active games (admin)</h2>
+					<h2 class="section-title">{$t('home.dashboard.allGames')}</h2>
 					{#if allActiveChronosGames.length === 0}
-						<p class="empty-text">No active games on the server.</p>
+						<p class="empty-text">{$t('home.dashboard.noServerGames')}</p>
 					{:else}
 						<ul class="games-list">
 							{#each allActiveChronosGames as gameSummary}
@@ -372,9 +368,13 @@
 									<div class="game-info">
 										<p class="game-id mono">{resolveChronosGameIdentifier(gameSummary)}</p>
 										<p class="game-meta">
-											Mode: <b>{gameSummary.mode}</b>
-											{#if gameSummary.players}• Players: {gameSummary.players.join(' · ')}{/if}
-											{#if extractLastActivityTimestamp(gameSummary)}• Updated: {formatRelativeLastActivity(
+											{$t('home.dashboard.mode')}: <b>{gameSummary.mode}</b>
+											{#if gameSummary.players}• {$t('home.dashboard.players')}: {gameSummary.players.join(
+													' · '
+												)}{/if}
+											{#if extractLastActivityTimestamp(gameSummary)}• {$t(
+													'home.dashboard.updated'
+												)}: {formatRelativeLastActivity(
 													extractLastActivityTimestamp(gameSummary)
 												)}{/if}
 										</p>
@@ -388,7 +388,7 @@
 													gameSummary.mode
 												)}
 										>
-											▶ Open
+											▶ {$t('home.dashboard.open')}
 										</button>
 										<button
 											class="button button-danger"

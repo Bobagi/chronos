@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { assets } from '$app/paths';
+	import { t } from '$lib/i18n';
 	import { createEventDispatcher } from 'svelte';
+	import LanguageSelector from './LanguageSelector.svelte';
 	export let isUserAuthenticated: boolean = false;
 	const dispatch = createEventDispatcher();
 
@@ -17,8 +19,11 @@
 			<span class="brand-name">Chronos</span>
 		</a>
 		<nav class="topbar-nav" aria-label="Primary">
+			<LanguageSelector />
 			{#if isUserAuthenticated}
-				<button type="button" class="button button-primary" on:click={requestLogout}>Logout</button>
+				<button type="button" class="button button-primary" on:click={requestLogout}>
+					{$t('nav.logout')}
+				</button>
 			{/if}
 		</nav>
 	</div>

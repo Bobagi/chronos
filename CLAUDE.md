@@ -96,6 +96,12 @@ web/                         SvelteKit frontend
   src/routes/terms/+page.svelte      generic Terms of Service (linked from the footer)
   src/lib/styles/routes/legalPage.css      shared styling for /privacy and /terms
   src/lib/services/featuredHeroCards.ts    picks the 3 cards the landing hero renders
+  src/lib/i18n/                            multilanguage system (en / pt / es):
+      config.ts            supported locales, cookie name, Accept-Language resolution
+      index.ts             `locale` store + `$t(key, vars)` translator (English fallback)
+      locales/{en,pt,es}.ts  string dictionaries (en is the canonical shape)
+  src/lib/components/LanguageSelector.svelte  header language dropdown (flags + native names)
+  src/lib/components/FlagIcon.svelte          inline SVG flags (BR / ES / GB)
   src/lib/components/FriendsPanel.svelte   friends modal (search/requests/roster/chat)
   src/lib/components/CardComposite.svelte  renders one card (art + frame + MAGIC/MIGHT/FIRE badges)
   src/lib/components/DeckStack.svelte      stacked deck of card backs
@@ -136,6 +142,15 @@ web/                         SvelteKit frontend
 - **Gallery card modal** (`web/src/lib/styles/routes/galleryPage.css`): the enlarged card is sized by
   **height** (`min(72vh, 600px)` + `aspect-ratio`) so the whole dialog never scrolls; the detail panel
   uses the real power icons (`/icons/{magic,strength,fire}_icon.png`), not emoji.
+- **i18n is a small custom store** (`web/src/lib/i18n`). It exposes a `locale` store and a reactive
+  `$t('a.b.c', vars)` translator (dotted keys, `{var}` interpolation, English fallback so missing
+  strings never crash). The server resolves the locale in `hooks.server.ts` (cookie `chronos_locale`
+  → `Accept-Language` → default `en`), puts it on `locals.locale` + layout `data.locale`, and
+  `+layout.svelte` calls `initLocale(data.locale)` so SSR renders the chosen language; `app.html` uses
+  `<html lang="%lang%">` (replaced in the hook). `setLocale()` (the header `LanguageSelector`) updates
+  the store + cookie + `<html lang>`. To add a string: add the key to **all three** `locales/*.ts`
+  (en is the canonical shape) and use `$t('...')`. Translated so far: top bar, footer, home, gallery
+  + card modal, register. Still English-only: `/privacy`, `/terms`, the duel board, the friends panel.
 - **Prettier:** the repo's `prettier-plugin-svelte` crashes on Prettier **3.8** (`getVisitorKeys`).
   Format with a compatible version: `npx --yes prettier@3.6.2 --write .` (run inside `web/` and at the
   repo root). `web/pnpm-lock.yaml` is untracked by design — don't commit it.
@@ -174,3 +189,5 @@ web/                         SvelteKit frontend
   page was decomposed into `web/src/lib/duel/*` modules.
 - The logged-out landing hero now renders the actual in-game cards (CardComposite, SSR'd) instead of
   bare art tiles; the footer's Privacy/Terms links resolve to real `/privacy` and `/terms` pages.
+- Multilanguage (en / pt / es) with a flag language selector in the top bar; persisted via cookie and
+  SSR-resolved. Main surfaces translated (see the i18n gotcha for what's covered / still English).

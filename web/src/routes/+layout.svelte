@@ -10,12 +10,18 @@
 		SITE_URL,
 		SOCIAL_LINKS
 	} from '$lib/config/siteMetadata';
+	import { initLocale } from '$lib/i18n';
+	import type { Locale } from '$lib/i18n/config';
 	import { authUser, clearAuthState, setAuthState } from '$lib/stores/authStore';
 	import type { AuthenticatedChronosUser } from '$lib/types/chronos';
 	import '$lib/styles/appShell.css';
 	import '../app.postcss';
 
-	export let data: { authUser: AuthenticatedChronosUser | null };
+	export let data: { authUser: AuthenticatedChronosUser | null; locale: Locale };
+
+	// Keep the i18n store in sync with the locale the server resolved (cookie or
+	// Accept-Language). Runs during SSR and on every client navigation.
+	$: initLocale(data.locale);
 
 	$: canonicalUrl = $page.url?.href ?? SITE_URL;
 	// Game routes are a full-screen, chromeless experience (the board owns the

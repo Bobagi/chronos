@@ -2,6 +2,7 @@
 	import type { ChronosCardCatalogItem, ChronosCardCollection } from '$lib/api/GameClient';
 	import { fetchChronosCardCatalog } from '$lib/api/GameClient';
 	import CardComposite from '$lib/components/CardComposite.svelte';
+	import { t } from '$lib/i18n';
 	import '$lib/styles/routes/galleryPage.css';
 	import { onMount } from 'svelte';
 	import '../game/game.css';
@@ -124,9 +125,21 @@
 	// fireball), instead of emoji, for the modal's stat chips.
 	$: modalStats = selectedCardItem
 		? [
-				{ icon: '/icons/magic_icon.png', label: 'Magic', value: selectedCardItem.magic ?? 0 },
-				{ icon: '/icons/strength_icon.png', label: 'Might', value: selectedCardItem.might ?? 0 },
-				{ icon: '/icons/fire_icon.png', label: 'Fire', value: selectedCardItem.fire ?? 0 }
+				{
+					icon: '/icons/magic_icon.png',
+					label: $t('gallery.stats.magic'),
+					value: selectedCardItem.magic ?? 0
+				},
+				{
+					icon: '/icons/strength_icon.png',
+					label: $t('gallery.stats.might'),
+					value: selectedCardItem.might ?? 0
+				},
+				{
+					icon: '/icons/fire_icon.png',
+					label: $t('gallery.stats.fire'),
+					value: selectedCardItem.fire ?? 0
+				}
 			]
 		: [];
 </script>
@@ -136,19 +149,19 @@
 <div class="gallery-panel">
 	<header class="panel-header">
 		<div style="display: flex; justify-content: space-between; width: 100%;">
-			<a href="/" class="home-btn" style="min-width: 10vw;">← Home</a>
-			<h1 class="panel-title">Collections</h1>
+			<a href="/" class="home-btn" style="min-width: 10vw;">← {$t('gallery.home')}</a>
+			<h1 class="panel-title">{$t('gallery.title')}</h1>
 			<span style="min-width: 10vw;"></span>
 		</div>
-		<p class="panel-sub">Click a card to enlarge it.</p>
+		<p class="panel-sub">{$t('gallery.subtitle')}</p>
 	</header>
 
 	{#if isLoadingCards}
-		<p class="status">Loading cards…</p>
+		<p class="status">{$t('gallery.loading')}</p>
 	{:else if errorMessageText}
-		<p class="status error">Error: {errorMessageText}</p>
+		<p class="status error">{$t('gallery.error', { message: errorMessageText })}</p>
 	{:else if !chronosCollections.length}
-		<p class="status">No collections found.</p>
+		<p class="status">{$t('gallery.noCollections')}</p>
 	{:else}
 		{#each chronosCollections as collection (collection.slug ?? collection.id ?? collection.name)}
 			<section class="collection">
@@ -165,11 +178,13 @@
 						{#if collection.description}
 							<p class="collection-description">{collection.description}</p>
 						{/if}
-						<p class="collection-count">{collection.cards.length} cards</p>
+						<p class="collection-count">
+							{$t('gallery.cardCount', { count: collection.cards.length })}
+						</p>
 					</div>
 				</div>
 				{#if !collection.cards.length}
-					<p class="status">No cards found in this collection.</p>
+					<p class="status">{$t('gallery.noCards')}</p>
 				{:else}
 					<div class="gallery-grid">
 						{#each collection.cards as cardItem (cardItem.code + cardItem.name)}
@@ -219,7 +234,9 @@
 			aria-modal="true"
 			aria-label={selectedCardItem.name ?? selectedCardItem.code}
 		>
-			<button class="modal-close" on:click={closeCardModal} aria-label="Close">×</button>
+			<button class="modal-close" on:click={closeCardModal} aria-label={$t('gallery.close')}
+				>×</button
+			>
 			<div class="modal-inner">
 				<div class="modal-card-wrap">
 					<CardComposite
@@ -241,7 +258,9 @@
 
 				<div class="meta">
 					<p class="meta-eyebrow">
-						<span class="meta-collection">{selectedCardItem.collectionName ?? 'Card'}</span>
+						<span class="meta-collection"
+							>{selectedCardItem.collectionName ?? $t('gallery.card')}</span
+						>
 						<span class="meta-number">№ {selectedCardItem.number ?? 0}</span>
 					</p>
 					<h2 class="meta-title">{selectedCardItem.name ?? selectedCardItem.code}</h2>
