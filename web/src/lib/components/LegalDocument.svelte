@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { SOCIAL_LINKS } from '$lib/config/siteMetadata';
-	import { t, td } from '$lib/i18n';
+	import { locale, t, td } from '$lib/i18n';
 	import '$lib/styles/routes/legalPage.css';
 
 	export let docKey: 'privacy' | 'terms';
@@ -15,11 +15,17 @@
 		sections: LegalSection[];
 	};
 
-	const lastUpdated = 'June 7, 2026';
+	const lastUpdatedDate = new Date(2026, 5, 7); // 7 June 2026 (month is 0-indexed)
 	const githubUrl =
 		SOCIAL_LINKS.find((link) => link.label === 'GitHub')?.url ??
 		'https://github.com/bobagi/chronos';
 
+	// Format the "last updated" date in the active language (e.g. "7 de junho de 2026").
+	$: lastUpdated = lastUpdatedDate.toLocaleDateString($locale, {
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric'
+	});
 	$: doc = $td<LegalDoc>(`legal.${docKey}`);
 </script>
 
