@@ -19,6 +19,7 @@
 		type ChronosPlayerSummary,
 		type GameMode
 	} from '$lib/api/GameClient';
+	import { t } from '$lib/i18n';
 	import '$lib/styles/components/FriendsPanel.css';
 
 	const dispatch = createEventDispatcher<{
@@ -68,14 +69,14 @@
 		if (error instanceof ChronosApiError) {
 			if (error.status === 401) {
 				return {
-					text: 'Your Chronos session expired. Please sign in again to manage friends.',
+					text: $t('friends.sessionExpired'),
 					tone: 'warning'
 				};
 			}
 
 			if (error.status === 500 && error.path.startsWith('/friends')) {
 				return {
-					text: 'Chronos backend is missing the friendship tables. Execute the latest Prisma migrations in Chronos (e.g. pnpm prisma migrate deploy) and seed the database before testing the friends features.',
+					text: $t('friends.missingTables'),
 					tone: 'warning'
 				};
 			}
@@ -136,7 +137,7 @@
 			loadError = null;
 		} catch (error) {
 			console.error('Failed to load friends data', error);
-			const notice = interpretFriendServiceError(error, 'Unable to load friend data.');
+			const notice = interpretFriendServiceError(error, $t('friends.loadFail'));
 			if (notice.tone === 'error') {
 				loadError = notice.text;
 			} else {
@@ -175,7 +176,7 @@
 			searchResults = await searchChronosPlayers(term);
 		} catch (error) {
 			console.error('Search failed', error);
-			announceFriendServiceIssue(error, 'Failed to search players.');
+			announceFriendServiceIssue(error, $t('friends.searchFail'));
 		} finally {
 			searchInFlight = false;
 		}
@@ -185,10 +186,10 @@
 		try {
 			await sendChronosFriendRequest(targetId);
 			await loadInitialData();
-			scheduleEphemeralNotice({ text: 'Friend request sent.', tone: 'success' });
+			scheduleEphemeralNotice({ text: $t('friends.requestSent'), tone: 'success' });
 		} catch (error) {
 			console.error('Failed to send friend request', error);
-			announceFriendServiceIssue(error, 'Unable to send friend request.');
+			announceFriendServiceIssue(error, $t('friends.requestSendFail'));
 		}
 	}
 
@@ -198,12 +199,12 @@
 			await loadInitialData();
 			dispatch('refreshDashboard');
 			scheduleEphemeralNotice({
-				text: accept ? 'Friend request accepted.' : 'Friend request dismissed.',
+				text: accept ? $t('friends.requestAccepted') : $t('friends.requestDismissed'),
 				tone: 'success'
 			});
 		} catch (error) {
 			console.error('Failed to resolve friend request', error);
-			announceFriendServiceIssue(error, 'Unable to resolve friend request.');
+			announceFriendServiceIssue(error, $t('friends.requestResolveFail'));
 		}
 	}
 
@@ -216,10 +217,10 @@
 			}
 			await loadInitialData();
 			dispatch('refreshDashboard');
-			scheduleEphemeralNotice({ text: 'Friend removed.', tone: 'info' });
+			scheduleEphemeralNotice({ text: $t('friends.friendRemoved'), tone: 'info' });
 		} catch (error) {
 			console.error('Failed to remove friend', error);
-			announceFriendServiceIssue(error, 'Unable to remove friend.');
+			announceFriendServiceIssue(error, $t('friends.friendRemoveFail'));
 		}
 	}
 
@@ -235,10 +236,10 @@
 			}
 			await loadInitialData();
 			dispatch('refreshDashboard');
-			scheduleEphemeralNotice({ text: 'Player blocked.', tone: 'info' });
+			scheduleEphemeralNotice({ text: $t('friends.playerBlocked'), tone: 'info' });
 		} catch (error) {
 			console.error('Failed to block player', error);
-			announceFriendServiceIssue(error, 'Unable to block player.');
+			announceFriendServiceIssue(error, $t('friends.playerBlockFail'));
 		}
 	}
 
@@ -250,7 +251,7 @@
 			chatMessages = history.messages ?? [];
 		} catch (error) {
 			console.error('Failed to fetch chat history', error);
-			announceFriendServiceIssue(error, 'Unable to load chat history.');
+			announceFriendServiceIssue(error, $t('friends.chatLoadFail'));
 		} finally {
 			chatLoading = false;
 		}
@@ -274,7 +275,7 @@
 			chatMessageDraft = '';
 		} catch (error) {
 			console.error('Failed to send chat message', error);
-			announceFriendServiceIssue(error, 'Unable to send message.');
+			announceFriendServiceIssue(error, $t('friends.messageSendFail'));
 		}
 	}
 
@@ -284,10 +285,10 @@
 			const { gameId } = await startChronosGameWithFriend(friendship.friend.id, mode);
 			dispatch('navigateToGame', { gameId, mode });
 			dispatch('refreshDashboard');
-			scheduleEphemeralNotice({ text: 'Match created.', tone: 'success' });
+			scheduleEphemeralNotice({ text: $t('friends.matchCreated'), tone: 'success' });
 		} catch (error) {
 			console.error('Failed to start friend match', error);
-			announceFriendServiceIssue(error, 'Unable to start match with friend.');
+			announceFriendServiceIssue(error, $t('friends.matchStartFail'));
 		}
 	}
 
@@ -302,19 +303,27 @@
 		: null;
 
 	const isSelf = (playerId: string) => playerId === currentUserId;
+
+	// Reactive so the status pills re-translate when the language changes.
+	$: friendshipStatusLabels = {
+		ACCEPTED: $t('friends.statusAccepted'),
+		PENDING: $t('friends.statusPending'),
+		DECLINED: $t('friends.statusDeclined'),
+		BLOCKED: $t('friends.statusBlocked')
+	} as Record<string, string>;
 </script>
 
 <div class="friends-overlay" role="dialog" aria-modal="true">
 	<div class="friends-panel">
 		<header class="friends-header">
-			<h2>Allies & Rivals</h2>
+			<h2>{$t('friends.title')}</h2>
 			<button
 				type="button"
 				class="button button-ghost small"
 				on:click={() => dispatch('close')}
-				aria-label="Close friends panel"
+				aria-label={$t('friends.closeAria')}
 			>
-				✕ Close
+				✕ {$t('friends.close')}
 			</button>
 		</header>
 
@@ -332,24 +341,24 @@
 			<div class="column column-left">
 				<section class="card">
 					<div class="card-header">
-						<h3>Search players</h3>
-						<p class="card-hint">Challenge someone new or send a request.</p>
+						<h3>{$t('friends.searchTitle')}</h3>
+						<p class="card-hint">{$t('friends.searchHint')}</p>
 					</div>
 					<form class="search-form" on:submit|preventDefault={searchPlayers}>
 						<input
 							type="search"
-							placeholder="Search usernames"
+							placeholder={$t('friends.searchPlaceholder')}
 							bind:value={searchTerm}
-							aria-label="Search players"
+							aria-label={$t('friends.searchAria')}
 						/>
 						<button type="submit" class="button button-accent" disabled={searchInFlight}
-							>Search</button
+							>{$t('friends.search')}</button
 						>
 					</form>
 					{#if searchInFlight}
-						<div class="hint">Searching…</div>
+						<div class="hint">{$t('friends.searching')}</div>
 					{:else if searchResults.length === 0 && searchTerm.trim()}
-						<div class="hint">No players found.</div>
+						<div class="hint">{$t('friends.noPlayers')}</div>
 					{:else if searchResults.length > 0}
 						<ul class="list">
 							{#each searchResults as user}
@@ -357,7 +366,7 @@
 									<div class="list-primary">
 										<strong>{user.username}</strong>
 										{#if isSelf(user.id)}
-											<span class="status-pill neutral">You</span>
+											<span class="status-pill neutral">{$t('friends.you')}</span>
 										{/if}
 									</div>
 									<button
@@ -366,7 +375,7 @@
 										disabled={isSelf(user.id)}
 										on:click={() => sendRequest(user.id)}
 									>
-										Send request
+										{$t('friends.sendRequest')}
 									</button>
 								</li>
 							{/each}
@@ -376,11 +385,11 @@
 
 				<section class="card">
 					<div class="card-header">
-						<h3>Incoming requests</h3>
-						<p class="card-hint">Respond to challengers awaiting your answer.</p>
+						<h3>{$t('friends.requestsTitle')}</h3>
+						<p class="card-hint">{$t('friends.requestsHint')}</p>
 					</div>
 					{#if requests.length === 0}
-						<div class="hint">No pending requests.</div>
+						<div class="hint">{$t('friends.noRequests')}</div>
 					{:else}
 						<ul class="list">
 							{#each requests as request}
@@ -397,14 +406,14 @@
 											class="button button-accent small"
 											on:click={() => handleRequestResponse(request.friendshipId, true)}
 										>
-											Accept
+											{$t('friends.accept')}
 										</button>
 										<button
 											type="button"
 											class="button button-ghost small"
 											on:click={() => handleRequestResponse(request.friendshipId, false)}
 										>
-											Dismiss
+											{$t('friends.dismiss')}
 										</button>
 									</div>
 								</li>
@@ -415,11 +424,11 @@
 
 				<section class="card">
 					<div class="card-header">
-						<h3>Friends roster</h3>
-						<p class="card-hint">Manage alliances, duels, and rivalries.</p>
+						<h3>{$t('friends.rosterTitle')}</h3>
+						<p class="card-hint">{$t('friends.rosterHint')}</p>
 					</div>
 					{#if friends.length === 0}
-						<div class="hint">You have no allies yet. Send a request above.</div>
+						<div class="hint">{$t('friends.noFriends')}</div>
 					{:else}
 						<ul class="list">
 							{#each friends as friendship}
@@ -433,10 +442,10 @@
 											<span
 												class={`status-pill ${friendship.status === 'ACCEPTED' ? 'success' : friendship.status === 'PENDING' ? 'warning' : 'danger'}`}
 											>
-												{friendship.status}
+												{friendshipStatusLabels[friendship.status] ?? friendship.status}
 											</span>
 											{#if friendship.blockedByMe}
-												<span class="status-pill danger">Blocked</span>
+												<span class="status-pill danger">{$t('friends.blocked')}</span>
 											{/if}
 										</div>
 									</div>
@@ -445,7 +454,7 @@
 										class="button button-neutral small"
 										on:click={() => selectFriend(friendship)}
 									>
-										View
+										{$t('friends.view')}
 									</button>
 								</li>
 							{/each}
@@ -457,11 +466,11 @@
 			<div class="column column-right">
 				<section class="card">
 					<div class="card-header">
-						<h3>Friend details</h3>
-						<p class="card-hint">Invite to a battle or manage your connection.</p>
+						<h3>{$t('friends.detailsTitle')}</h3>
+						<p class="card-hint">{$t('friends.detailsHint')}</p>
 					</div>
 					{#if !selectedFriendship}
-						<div class="hint">Select a friend to see more options.</div>
+						<div class="hint">{$t('friends.selectFriend')}</div>
 					{:else}
 						<div class="friend-detail">
 							<h4>{selectedFriendship.friend.username}</h4>
@@ -469,10 +478,10 @@
 								<span
 									class={`status-pill ${selectedFriendship.status === 'ACCEPTED' ? 'success' : selectedFriendship.status === 'PENDING' ? 'warning' : 'danger'}`}
 								>
-									{selectedFriendship.status}
+									{friendshipStatusLabels[selectedFriendship.status] ?? selectedFriendship.status}
 								</span>
 								{#if selectedFriendship.blockedByMe}
-									<span class="status-pill danger">Blocked</span>
+									<span class="status-pill danger">{$t('friends.blocked')}</span>
 								{/if}
 							</div>
 							{#if selectedFriendship.status === 'ACCEPTED' && !selectedFriendship.blockedByMe}
@@ -482,21 +491,21 @@
 										class="button button-accent"
 										on:click={() => startFriendMatch(selectedFriendship, 'CLASSIC')}
 									>
-										Start classic match
+										{$t('friends.startClassic')}
 									</button>
 									<button
 										type="button"
 										class="button button-accent"
 										on:click={() => startFriendMatch(selectedFriendship, 'ATTRIBUTE_DUEL')}
 									>
-										Start duel
+										{$t('friends.startDuel')}
 									</button>
 									<button
 										type="button"
 										class="button button-neutral"
 										on:click={() => selectFriend(selectedFriendship)}
 									>
-										Open chat
+										{$t('friends.openChat')}
 									</button>
 								</div>
 							{/if}
@@ -506,14 +515,14 @@
 									class="button button-ghost"
 									on:click={() => removeFriend(selectedFriendship.friendshipId)}
 								>
-									Remove friend
+									{$t('friends.removeFriend')}
 								</button>
 								<button
 									type="button"
 									class="button button-danger"
 									on:click={() => blockFriend(selectedFriendship.friend.id)}
 								>
-									Block player
+									{$t('friends.blockPlayer')}
 								</button>
 							</div>
 						</div>
@@ -522,17 +531,17 @@
 
 				<section class="card chat-card">
 					<div class="card-header">
-						<h3>Friend chat</h3>
-						<p class="card-hint">Exchange messages with your allies.</p>
+						<h3>{$t('friends.chatTitle')}</h3>
+						<p class="card-hint">{$t('friends.chatHint')}</p>
 					</div>
 					{#if !selectedFriendship}
-						<div class="hint">Pick a friend from the roster to view your chat history.</div>
+						<div class="hint">{$t('friends.chatPickFriend')}</div>
 					{:else}
 						<div class="chat-panel">
 							{#if chatLoading}
-								<div class="hint">Loading chat…</div>
+								<div class="hint">{$t('friends.chatLoading')}</div>
 							{:else if chatMessages.length === 0}
-								<div class="hint">No messages yet.</div>
+								<div class="hint">{$t('friends.noMessages')}</div>
 							{:else}
 								<ul class="chat-list">
 									{#each chatMessages as message}
@@ -554,7 +563,7 @@
 							>
 								<input
 									type="text"
-									placeholder="Type a message"
+									placeholder={$t('friends.messagePlaceholder')}
 									bind:value={chatMessageDraft}
 									disabled={!selectedFriendship || selectedFriendship.blockedByMe}
 								/>
@@ -565,7 +574,7 @@
 										!selectedFriendship ||
 										selectedFriendship.blockedByMe}
 								>
-									Send
+									{$t('friends.send')}
 								</button>
 							</form>
 						</div>

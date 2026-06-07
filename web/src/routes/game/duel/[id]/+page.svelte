@@ -19,6 +19,7 @@
 	import { startAttributeThemedDefeatAnimation } from '$lib/duel/defeatAnimation';
 	import { detectChosenAttributeMode, normalizeDuelCenterForView } from '$lib/duel/duelCenter';
 	import { buildHistoryFromLog, buildLiveRound } from '$lib/duel/history';
+	import { t } from '$lib/i18n';
 	import type { DuelHistoryCardInfo, DuelHistoryItem } from '$lib/duel/historyTypes';
 	import { authUser } from '$lib/stores/authStore';
 	import { game as gameStateStore, type GameState } from '$lib/stores/game';
@@ -475,7 +476,7 @@
 		try {
 			finalGameResult = await fetchChronosGameResult(currentGameId);
 		} catch {
-			errorMessageText = 'Could not load game state';
+			errorMessageText = $t('duel.errorLoadState');
 		}
 	}
 
@@ -524,10 +525,10 @@
 	async function surrenderDuelGame() {
 		if (isGameOver()) return;
 		if (!$authUser) {
-			errorMessageText = 'Login required to surrender.';
+			errorMessageText = $t('duel.loginToSurrender');
 			return;
 		}
-		if (browser && !window.confirm('Are you sure you want to surrender?')) {
+		if (browser && !window.confirm($t('duel.surrenderConfirm'))) {
 			return;
 		}
 		try {
@@ -535,7 +536,7 @@
 			await loadGameStateOrFinalResult();
 		} catch (error) {
 			console.error('Failed to surrender duel game', error);
-			errorMessageText = 'Unable to surrender match.';
+			errorMessageText = $t('duel.errorSurrender');
 		}
 	}
 
@@ -622,10 +623,12 @@
 	$: duelTimerLabel = (() => {
 		if (!duelCountdownText) return null;
 		if (currentDuelStage === 'PICK_ATTRIBUTE') {
-			return chooserId === playerA ? 'Choose attribute' : 'Opponent choosing';
+			return chooserId === playerA
+				? $t('duel.timerChooseAttribute')
+				: $t('duel.timerOpponentChoosing');
 		}
 		if (currentDuelStage === 'PICK_CARD') {
-			return 'Select cards';
+			return $t('duel.timerSelectCards');
 		}
 		return null;
 	})();
@@ -772,7 +775,8 @@
 				const trimmed = (name ?? '').trim();
 				return trimmed ? (codeByLowerName.get(trimmed.toLowerCase()) ?? null) : null;
 			},
-			getLogPresentation
+			getLogPresentation,
+			surrenderedText: $t('duel.playerSurrendered')
 		});
 		const roundCount = parsed.reduce(
 			(accumulator, item) => (item.kind === 'round' ? accumulator + 1 : accumulator),
@@ -832,15 +836,15 @@
 	$: roundBanner = (() => {
 		if (currentDuelStage !== 'REVEAL') return null;
 		if (!currentDuelRoundWinner) {
-			return { tone: 'draw' as const, icon: ROUND_BANNER_ICON.draw, text: 'Round tied!' };
+			return { tone: 'draw' as const, icon: ROUND_BANNER_ICON.draw, text: $t('duel.roundTied') };
 		}
 		if (currentDuelRoundWinner === playerA) {
-			return { tone: 'win' as const, icon: ROUND_BANNER_ICON.win, text: 'You win the round!' };
+			return { tone: 'win' as const, icon: ROUND_BANNER_ICON.win, text: $t('duel.roundYouWin') };
 		}
 		return {
 			tone: 'lose' as const,
 			icon: ROUND_BANNER_ICON.lose,
-			text: `${playerBUsername} wins the round`
+			text: $t('duel.roundOpponentWins', { name: playerBUsername })
 		};
 	})();
 
@@ -858,16 +862,12 @@
 			: ($gameStateStore?.playerUsernames?.[resolvedWinner] ?? resolvedWinner);
 </script>
 
-<svelte:head>
-	<title>Duel – Chronos</title>
-</svelte:head>
-
 <div class="duel-stage-bg" aria-hidden="true"></div>
 
 <div class="fixed-top-bar">
 	<div class="topbar-left">
-		<a href="/" class="home-btn">← Home</a>
-		<div class="mode-pill"><strong>⚔️ Attribute Duel</strong></div>
+		<a href="/" class="home-btn">← {$t('duel.home')}</a>
+		<div class="mode-pill"><strong>⚔️ {$t('duel.mode')}</strong></div>
 	</div>
 	<div class="topbar-right">
 		{#if showDuelCountdown}
@@ -884,10 +884,10 @@
 					on:click={surrenderDuelGame}
 					disabled={!$authUser}
 				>
-					🏳️ Surrender
+					🏳️ {$t('duel.surrender')}
 				</button>
 				{#if !$authUser}
-					<span class="surrender-hint">Login required to surrender.</span>
+					<span class="surrender-hint">{$t('duel.loginToSurrender')}</span>
 				{/if}
 			</div>
 		{/if}
@@ -898,8 +898,8 @@
 	<section class="zone opponent">
 		<div class="zone-header">
 			<span class="pill name">{opponentLooksLikeBot ? '🤖' : '👤'} {playerBUsername}</span>
-			<span class="pill score" title="Rounds won">🏆 {roundsWonB}</span>
-			<span class="pill deck" title="Cards left in deck">🃏 {deckB}</span>
+			<span class="pill score" title={$t('duel.roundsWon')}>🏆 {roundsWonB}</span>
+			<span class="pill deck" title={$t('duel.cardsLeft')}>🃏 {deckB}</span>
 		</div>
 		<div class="zone-row two-cols">
 			<div class="deck-col" bind:this={opponentDeckAnchorElement}>
@@ -921,7 +921,7 @@
 						class="card-socket"
 						style={`width:${cardWidthCssValue}; --i:${i}; --n:${oppHandCount}`}
 					>
-						<div class="card-back-wrap" title="Opponent card">
+						<div class="card-back-wrap" title={$t('duel.opponentCard')}>
 							<img
 								src="/frames/card-back.png"
 								alt="card-back"
@@ -953,7 +953,7 @@
 								bind:this={centerSlotAElement}
 								class={`result-wrap ${currentDuelStage === 'REVEAL' && currentDuelRoundWinner === playerA ? 'winner-glow' : currentDuelStage === 'REVEAL' && currentDuelRoundWinner && currentDuelRoundWinner !== playerA ? 'loser-shake' : ''}`}
 								on:click={onCenterCardReturnToHand}
-								title="Return card to hand"
+								title={$t('duel.returnCard')}
 							>
 								<CardComposite
 									artImageUrl={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
@@ -1059,15 +1059,15 @@
 
 				{#if duelStage === 'PICK_ATTRIBUTE' && chooserId === playerA}
 					<div class="notice chooser" style="margin-top:12px; text-align:center;">
-						<span>Choose attribute:</span>
+						<span>{$t('duel.chooseAttribute')}</span>
 						<div>
 							<button
 								class="btn attribute-option"
 								class:attribute-highlight={isHighlightedAttribute('magic')}
 								disabled={isGameOver()}
 								on:click={() => chooseAttr('magic')}
-								title={`Choose magic (${chooserCardDetails?.magic ?? '–'})`}
-								aria-label={`Choose magic (${chooserCardDetails?.magic ?? 'unknown'})`}
+								title={$t('duel.chooseMagic', { value: chooserCardDetails?.magic ?? '–' })}
+								aria-label={$t('duel.chooseMagic', { value: chooserCardDetails?.magic ?? '–' })}
 							>
 								<img src="/icons/magic_icon.png" alt="Magic icon" loading="lazy" decoding="async" />
 								{#if chooserCardDetails}
@@ -1079,8 +1079,8 @@
 								class:attribute-highlight={isHighlightedAttribute('might')}
 								disabled={isGameOver()}
 								on:click={() => chooseAttr('might')}
-								title={`Choose might (${chooserCardDetails?.might ?? '–'})`}
-								aria-label={`Choose might (${chooserCardDetails?.might ?? 'unknown'})`}
+								title={$t('duel.chooseMight', { value: chooserCardDetails?.might ?? '–' })}
+								aria-label={$t('duel.chooseMight', { value: chooserCardDetails?.might ?? '–' })}
 							>
 								<img
 									src="/icons/strength_icon.png"
@@ -1097,8 +1097,8 @@
 								class:attribute-highlight={isHighlightedAttribute('fire')}
 								disabled={isGameOver()}
 								on:click={() => chooseAttr('fire')}
-								title={`Choose fire (${chooserCardDetails?.fire ?? '–'})`}
-								aria-label={`Choose fire (${chooserCardDetails?.fire ?? 'unknown'})`}
+								title={$t('duel.chooseFire', { value: chooserCardDetails?.fire ?? '–' })}
+								aria-label={$t('duel.chooseFire', { value: chooserCardDetails?.fire ?? '–' })}
 							>
 								<img src="/icons/fire_icon.png" alt="Fire icon" loading="lazy" decoding="async" />
 								{#if chooserCardDetails}
@@ -1109,10 +1109,10 @@
 					</div>
 				{:else if duelStage === 'PICK_ATTRIBUTE'}
 					<div class="notice warn" style="margin-top:12px; text-align:center;">
-						Waiting for {chooserUsername} to choose the attribute…
+						{$t('duel.waitingForAttribute', { name: chooserUsername })}
 					</div>
 				{:else if duelStage === 'PICK_CARD'}
-					<div class="duel-hint">Select a card from your hand to send into battle.</div>
+					<div class="duel-hint">{$t('duel.selectCard')}</div>
 				{/if}
 
 				{#if roundBanner}
@@ -1127,7 +1127,7 @@
 				<DuelHistory
 					items={duelHistoryItems}
 					resolveCard={resolveDuelHistoryCard}
-					playerLabel="You"
+					playerLabel={$t('duel.you')}
 					opponentLabel={playerBUsername}
 					{cardBackImageUrl}
 				/>
@@ -1142,19 +1142,23 @@
 					{endOutcome === 'win' ? '🏆' : endOutcome === 'lose' ? '💀' : '🤝'}
 				</div>
 				<h2 class="endscreen-title">
-					{endOutcome === 'win' ? 'Victory!' : endOutcome === 'lose' ? 'Defeat' : 'Draw'}
+					{endOutcome === 'win'
+						? $t('duel.victory')
+						: endOutcome === 'lose'
+							? $t('duel.defeat')
+							: $t('duel.draw')}
 				</h2>
 				<p class="endscreen-sub">
 					{#if endOutcome === 'draw'}
-						The duel ended in a perfect tie.
+						{$t('duel.drawSub')}
 					{:else}
-						{winnerUsername} wins the match.
+						{$t('duel.winnerSub', { name: winnerUsername })}
 					{/if}
 				</p>
 				<div class="endscreen-scoreline">
 					<div class="score-side you">
 						<span class="score-num">{roundsWonA}</span>
-						<span class="score-lbl">You</span>
+						<span class="score-lbl">{$t('duel.you')}</span>
 					</div>
 					<span class="score-dash">–</span>
 					<div class="score-side opp">
@@ -1164,9 +1168,9 @@
 				</div>
 				<div class="endscreen-actions">
 					<button class="endscreen-btn primary" type="button" on:click={playAnotherDuel}>
-						⚔️ Play again
+						⚔️ {$t('duel.playAgain')}
 					</button>
-					<a class="endscreen-btn ghost" href="/">🏠 Home</a>
+					<a class="endscreen-btn ghost" href="/">🏠 {$t('duel.home')}</a>
 				</div>
 			</div>
 		</div>
@@ -1174,9 +1178,11 @@
 
 	<section class="zone player">
 		<div class="zone-header">
-			<span class="pill name">👤 {playerAUsername} <span class="you-tag">You</span></span>
-			<span class="pill score" title="Rounds won">🏆 {roundsWonA}</span>
-			<span class="pill deck" title="Cards left in deck">🃏 {deckA}</span>
+			<span class="pill name"
+				>👤 {playerAUsername} <span class="you-tag">{$t('duel.you')}</span></span
+			>
+			<span class="pill score" title={$t('duel.roundsWon')}>🏆 {roundsWonA}</span>
+			<span class="pill deck" title={$t('duel.cardsLeft')}>🃏 {deckA}</span>
 		</div>
 		<div class="zone-row two-cols">
 			<div class="deck-col" bind:this={playerDeckAnchorElement}>
@@ -1204,7 +1210,7 @@
 							class="card-socket focus:outline-none"
 							disabled={Boolean($gameStateStore?.winner)}
 							style={`width:${cardWidthCssValue}; --i:${i}; --n:${playerHandCardItems.length}; ${$gameStateStore?.winner ? 'opacity:.6;cursor:not-allowed;' : ''}${pendingHiddenUidSet.has(it.uid) ? ';visibility:hidden;' : ''}`}
-							title={`Play ${it.name ?? it.code}`}
+							title={$t('duel.play', { name: it.name ?? it.code })}
 							on:click={(e) => onHandCardClick(e, it.code)}
 						>
 							<div class="flip-wrap" data-cycle={autoFlipCycleCounter}>

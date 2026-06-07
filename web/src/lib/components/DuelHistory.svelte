@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { afterUpdate } from 'svelte';
 	import {
 		ATTRIBUTE_META,
@@ -44,7 +45,7 @@
 
 <div class="duel-history">
 	<div class="history-head">
-		<span class="history-title">Battle Log</span>
+		<span class="history-title">{$t('duel.historyTitle')}</span>
 		<span class="history-legend">
 			<span class="legend-you">{playerLabel}</span>
 			<span class="legend-sep">vs</span>
@@ -56,7 +57,7 @@
 		{#if items.length === 0}
 			<div class="history-empty">
 				<span class="history-empty-icon">⚔️</span>
-				<p>No rounds yet — pick a card to begin the duel.</p>
+				<p>{$t('duel.historyEmpty')}</p>
 			</div>
 		{:else}
 			{#each items as item (item.key)}
@@ -65,12 +66,12 @@
 					{@const meta = ATTRIBUTE_META[record.attribute]}
 					<div class="round-card" class:is-live={record.live}>
 						<div class="round-top">
-							<span class="round-badge">Round {record.round}</span>
+							<span class="round-badge">{$t('duel.historyRound', { n: record.round })}</span>
 							<span class={`attr-chip ${meta.cssClass}`}>
 								<img src={meta.icon} alt="" />
-								<span>{meta.label}</span>
+								<span>{$t('attributes.' + record.attribute)}</span>
 							</span>
-							{#if record.live}<span class="live-tag">LIVE</span>{/if}
+							{#if record.live}<span class="live-tag">{$t('duel.historyLive')}</span>{/if}
 						</div>
 
 						<div class="clash">
@@ -115,11 +116,13 @@
 
 						<div class="round-result">
 							{#if record.outcome === 'draw'}
-								<span class="result-pill draw">Tie</span>
+								<span class="result-pill draw">{$t('duel.historyTie')}</span>
 							{:else if record.outcome === 'a'}
-								<span class="result-pill win">{playerLabel} win the round</span>
+								<span class="result-pill win">{$t('duel.historyYouWinRound')}</span>
 							{:else}
-								<span class="result-pill lose">{opponentLabel} wins the round</span>
+								<span class="result-pill lose"
+									>{$t('duel.historyOppWinsRound', { name: opponentLabel })}</span
+								>
 							{/if}
 						</div>
 					</div>

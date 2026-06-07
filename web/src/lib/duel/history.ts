@@ -26,6 +26,8 @@ export function outcomeFromValues(aVal: number | null, bVal: number | null): Due
 export interface HistoryLogContext {
 	resolveCodeByName: (name: string | null | undefined) => string | null;
 	getLogPresentation: (line: string) => { category: DuelLogTone; icon: string; text: string };
+	/** Localized text for the "a player surrendered" note. */
+	surrenderedText: string;
 }
 
 /** Parse the backend log into structured timeline items (survives reloads). */
@@ -70,7 +72,7 @@ export function buildHistoryFromLog(logs: string[], ctx: HistoryLogContext): Due
 				key: `log-${index}`,
 				tone: 'neutral',
 				icon: '🏳️',
-				text: 'A player surrendered.'
+				text: ctx.surrenderedText
 			});
 			return;
 		}

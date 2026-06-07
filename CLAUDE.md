@@ -149,8 +149,10 @@ web/                         SvelteKit frontend
   `+layout.svelte` calls `initLocale(data.locale)` so SSR renders the chosen language; `app.html` uses
   `<html lang="%lang%">` (replaced in the hook). `setLocale()` (the header `LanguageSelector`) updates
   the store + cookie + `<html lang>`. To add a string: add the key to **all three** `locales/*.ts`
-  (en is the canonical shape) and use `$t('...')`. Translated so far: top bar, footer, home, gallery
-  + card modal, register. Still English-only: `/privacy`, `/terms`, the duel board, the friends panel.
+  (en is the canonical shape) and use `$t('...')`. Translated: top bar, footer, home, gallery + card
+  modal, register, the duel board + battle log (`DuelHistory`), and the friends panel. Card names/lore
+  come from the backend (DB) and stay in their source language; backend log lines likewise. Still
+  English-only: the `/privacy` and `/terms` prose.
 - **Google sign-in is scaffolded, not live.** Frontend only so far: a `GoogleAuthButton` on the login
   card + register page, plus SvelteKit endpoints `web/src/routes/auth/google/+server.ts` (consent
   redirect) and `.../callback/+server.ts` (stub). It comes to life once these are set:
