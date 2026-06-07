@@ -12,13 +12,17 @@ const dictionaries: Record<Locale, typeof en> = { en, pt, es };
 /** The active locale. Driven from the server-resolved value in the root layout. */
 export const locale = writable<Locale>(DEFAULT_LOCALE);
 
-function lookup(dictionary: unknown, key: string): string | undefined {
-	const value = key.split('.').reduce<unknown>((accumulator, part) => {
+function lookupRaw(dictionary: unknown, key: string): unknown {
+	return key.split('.').reduce<unknown>((accumulator, part) => {
 		if (accumulator && typeof accumulator === 'object' && part in accumulator) {
 			return (accumulator as Record<string, unknown>)[part];
 		}
 		return undefined;
 	}, dictionary);
+}
+
+function lookup(dictionary: unknown, key: string): string | undefined {
+	const value = lookupRaw(dictionary, key);
 	return typeof value === 'string' ? value : undefined;
 }
 
@@ -47,6 +51,17 @@ export const t = derived(
 		(key: string, vars?: TranslationVars): string =>
 			translate($locale, key, vars)
 );
+
+/**
+ * Reactive getter for non-string translation values (objects/arrays), e.g. the
+ * structured legal documents. Falls back to English. Usage: `$td('legal.privacy')`.
+ */
+export const td = derived(locale, ($locale) => <T = unknown>(key: string): T | undefined => {
+	const value = lookupRaw(dictionaries[$locale], key);
+	return (value !== undefined ? value : lookupRaw(dictionaries[DEFAULT_LOCALE], key)) as
+		| T
+		| undefined;
+});
 
 /** Set the initial locale (called from the root layout with the SSR value). */
 export function initLocale(value: Locale): void {

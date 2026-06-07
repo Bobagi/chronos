@@ -204,6 +204,178 @@ const pt: typeof en = {
 		messageSendFail: 'Não foi possível enviar a mensagem.',
 		matchCreated: 'Partida criada.',
 		matchStartFail: 'Não foi possível iniciar a partida com o amigo.'
+	},
+	legal: {
+		back: 'Voltar ao Chronos',
+		kicker: 'Legal',
+		updated: 'Última atualização: {date}',
+		contactLink: 'repositório no GitHub',
+		disclaimer:
+			'O Chronos é um projeto pessoal de portfólio, não um serviço comercial. Esta página é fornecida por transparência e não constitui aconselhamento jurídico.',
+		privacy: {
+			title: 'Política de Privacidade',
+			intro:
+				'O Chronos é um projeto de portfólio gratuito e não comercial — um jogo de cartas colecionáveis digital criado para apresentar a coleção Dracomania. Esta página explica, em linguagem simples, quais informações o jogo manipula e por quê. Coletamos o mínimo possível e nunca vendemos seus dados.',
+			contactHeading: 'Contato',
+			contactText: 'Dúvidas sobre privacidade? Entre em contato pelo',
+			sections: [
+				{
+					heading: 'Informações que coletamos',
+					paragraphs: [],
+					items: [
+						{
+							strong: 'Dados da conta',
+							text: 'o nome de usuário que você escolhe e sua senha. As senhas são armazenadas apenas como um hash com sal; nunca guardamos nem exibimos o texto puro.'
+						},
+						{
+							strong: 'Dados de jogo',
+							text: 'as partidas que você joga, seus resultados e estatísticas agregadas como partidas jogadas, vencidas e empatadas.'
+						},
+						{
+							strong: 'Dados sociais',
+							text: 'pedidos de amizade, sua lista de amigos e as mensagens que você envia pelo painel de amigos do jogo.'
+						},
+						{
+							strong: 'Dados técnicos',
+							text: 'um cookie de sessão que mantém você conectado e um cookie que lembra seu idioma. Não usamos cookies de publicidade ou de rastreamento entre sites.'
+						}
+					]
+				},
+				{
+					heading: 'Como usamos suas informações',
+					paragraphs: [],
+					items: [
+						{ strong: '', text: 'Para criar sua conta e manter você conectado.' },
+						{
+							strong: '',
+							text: 'Para executar partidas, conectar você com amigos e registrar resultados e estatísticas.'
+						},
+						{ strong: '', text: 'Para manter o serviço funcionando, seguro e livre de abusos.' }
+					]
+				},
+				{
+					heading: 'Cookies',
+					paragraphs: [
+						'O Chronos usa apenas cookies essenciais e próprios: um para lembrar que você está conectado e outro para lembrar o idioma escolhido. O jogo não define cookies de análise ou publicidade de terceiros.'
+					],
+					items: []
+				},
+				{
+					heading: 'Compartilhamento e terceiros',
+					paragraphs: [
+						'Não vendemos, alugamos nem trocamos suas informações pessoais. As artes das cartas são servidas a partir de bobagi.space, então carregá-las envolve uma requisição web padrão a esse host. O jogo roda na infraestrutura do próprio dono.'
+					],
+					items: []
+				},
+				{
+					heading: 'Retenção de dados',
+					paragraphs: [
+						'Jogos inativos expiram e são limpos automaticamente. Os dados de conta e de jogo são mantidos enquanto sua conta existir. Você pode solicitar a exclusão da sua conta e dos dados associados a qualquer momento.'
+					],
+					items: []
+				},
+				{
+					heading: 'Seus direitos',
+					paragraphs: [
+						'Você pode solicitar acesso, correção ou exclusão das informações associadas à sua conta. Por se tratar de um pequeno projeto pessoal, os pedidos são tratados manualmente, da melhor forma possível.'
+					],
+					items: []
+				},
+				{
+					heading: 'Crianças',
+					paragraphs: [
+						'O Chronos não é direcionado a crianças menores de 13 anos, e não coletamos informações delas de forma consciente.'
+					],
+					items: []
+				},
+				{
+					heading: 'Alterações nesta política',
+					paragraphs: [
+						'Podemos atualizar esta política conforme o projeto evolui. Mudanças relevantes são refletidas na data de “última atualização” acima.'
+					],
+					items: []
+				}
+			]
+		},
+		terms: {
+			title: 'Termos de Serviço',
+			intro:
+				'Bem-vindo ao Chronos, um jogo de cartas colecionáveis digital gratuito e projeto pessoal de portfólio. Ao criar uma conta ou jogar, você concorda com estes termos. Se você não concordar, por favor não use o serviço.',
+			contactHeading: 'Contato',
+			contactText: 'Dúvidas sobre estes termos? Entre em contato pelo',
+			sections: [
+				{
+					heading: 'O serviço',
+					paragraphs: [
+						'O Chronos é fornecido gratuitamente, “no estado em que se encontra”, para fins de entretenimento e demonstração. É um projeto de hobby em evolução: recursos podem mudar e o jogo pode ficar indisponível ou ser descontinuado a qualquer momento, sem aviso.'
+					],
+					items: []
+				},
+				{
+					heading: 'Sua conta',
+					paragraphs: [],
+					items: [
+						{ strong: '', text: 'Você é responsável por manter sua senha e sua conta seguras.' },
+						{ strong: '', text: 'Forneça informações precisas e não se passe por outras pessoas.' },
+						{ strong: '', text: 'Você é responsável pela atividade que ocorre na sua conta.' }
+					]
+				},
+				{
+					heading: 'Uso aceitável',
+					paragraphs: ['Você concorda em não:'],
+					items: [
+						{
+							strong: '',
+							text: 'Trapacear, explorar bugs ou usar bots ou scripts automatizados para jogar ou coletar dados do jogo.'
+						},
+						{
+							strong: '',
+							text: 'Assediar, ameaçar ou abusar de outros jogadores pelo chat ou qualquer outro recurso.'
+						},
+						{
+							strong: '',
+							text: 'Tentar interromper, sobrecarregar ou obter acesso não autorizado ao serviço ou a outras contas.'
+						},
+						{ strong: '', text: 'Usar o serviço para qualquer finalidade ilegal.' }
+					]
+				},
+				{
+					heading: 'Propriedade intelectual',
+					paragraphs: [
+						'O nome Chronos, a coleção Dracomania e as artes das cartas pertencem ao seu dono. Fontes e outros recursos de terceiros continuam sendo propriedade de seus respectivos donos. O código-fonte do projeto é regido pela licença em seu repositório no GitHub. Você recebe um direito pessoal, não exclusivo e intransferível de jogar; nada aqui transfere a propriedade de qualquer conteúdo a você.'
+					],
+					items: []
+				},
+				{
+					heading: 'Isenção de garantias',
+					paragraphs: [
+						'O serviço é fornecido sem garantias de qualquer tipo, expressas ou implícitas, incluindo adequação a um fim específico e operação ininterrupta ou livre de erros. Você o usa por sua conta e risco.'
+					],
+					items: []
+				},
+				{
+					heading: 'Limitação de responsabilidade',
+					paragraphs: [
+						'Na máxima extensão permitida por lei, o projeto e seu dono não se responsabilizam por quaisquer danos indiretos, incidentais ou consequentes, nem por qualquer perda de dados decorrente do uso do serviço.'
+					],
+					items: []
+				},
+				{
+					heading: 'Encerramento',
+					paragraphs: [
+						'Você pode parar de usar o Chronos e solicitar a exclusão da conta a qualquer momento. Podemos suspender ou remover contas que violem estes termos ou para proteger o serviço e seus jogadores.'
+					],
+					items: []
+				},
+				{
+					heading: 'Alterações nestes termos',
+					paragraphs: [
+						'Podemos atualizar estes termos conforme o projeto muda. O uso continuado após uma atualização significa que você aceita os termos revisados; a data de “última atualização” acima reflete a versão mais recente.'
+					],
+					items: []
+				}
+			]
+		}
 	}
 };
 

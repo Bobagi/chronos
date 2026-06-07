@@ -92,8 +92,9 @@ web/                         SvelteKit frontend
                                      (hero shows real CardComposite cards, SSR'd via +page.server.ts)
   src/routes/gallery/+page.svelte    card collection showcase
   src/routes/register/+page.svelte
-  src/routes/privacy/+page.svelte    generic Privacy Policy (linked from the footer)
-  src/routes/terms/+page.svelte      generic Terms of Service (linked from the footer)
+  src/routes/privacy/+page.svelte    Privacy Policy — thin wrapper: <LegalDocument docKey="privacy" />
+  src/routes/terms/+page.svelte      Terms of Service — thin wrapper: <LegalDocument docKey="terms" />
+  src/lib/components/LegalDocument.svelte  renders a structured legal doc from the i18n dictionaries
   src/lib/styles/routes/legalPage.css      shared styling for /privacy and /terms
   src/lib/services/featuredHeroCards.ts    picks the 3 cards the landing hero renders
   src/lib/i18n/                            multilanguage system (en / pt / es):
@@ -149,10 +150,12 @@ web/                         SvelteKit frontend
   `+layout.svelte` calls `initLocale(data.locale)` so SSR renders the chosen language; `app.html` uses
   `<html lang="%lang%">` (replaced in the hook). `setLocale()` (the header `LanguageSelector`) updates
   the store + cookie + `<html lang>`. To add a string: add the key to **all three** `locales/*.ts`
-  (en is the canonical shape) and use `$t('...')`. Translated: top bar, footer, home, gallery + card
-  modal, register, the duel board + battle log (`DuelHistory`), and the friends panel. Card names/lore
-  come from the backend (DB) and stay in their source language; backend log lines likewise. Still
-  English-only: the `/privacy` and `/terms` prose.
+  (en is the canonical shape) and use `$t('...')`. For non-string values (objects/arrays) use the
+  `$td('key')` getter — the `/privacy` + `/terms` pages are data-driven: each doc is a structured
+  `legal.{privacy,terms}` object (title/intro/sections/items) rendered by the shared
+  `LegalDocument.svelte`. **All UI is translated** (top bar, footer, home, gallery + modal, register,
+  duel board + battle log, friends panel, legal pages). Only backend-sourced text stays in its source
+  language by design: card names/lore (DB) and server-generated battle-log lines.
 - **Google sign-in is scaffolded, not live.** Frontend only so far: a `GoogleAuthButton` on the login
   card + register page, plus SvelteKit endpoints `web/src/routes/auth/google/+server.ts` (consent
   redirect) and `.../callback/+server.ts` (stub). It comes to life once these are set:
