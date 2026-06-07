@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { loginChronosUserAccount, registerChronosUserAccount } from '$lib/api/GameClient';
+	import GoogleAuthButton from '$lib/components/GoogleAuthButton.svelte';
 	import { t } from '$lib/i18n';
 	import '../mainpage.css';
 
@@ -84,6 +85,9 @@
 				>
 			</div>
 		</form>
+
+		<div class="auth-divider">{$t('home.auth.or')}</div>
+		<GoogleAuthButton />
 
 		{#if registrationErrorKey}
 			<p class="empty-text" style="color:#ffbdbd">{$t(registrationErrorKey)}</p>

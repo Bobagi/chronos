@@ -151,6 +151,15 @@ web/                         SvelteKit frontend
   the store + cookie + `<html lang>`. To add a string: add the key to **all three** `locales/*.ts`
   (en is the canonical shape) and use `$t('...')`. Translated so far: top bar, footer, home, gallery
   + card modal, register. Still English-only: `/privacy`, `/terms`, the duel board, the friends panel.
+- **Google sign-in is scaffolded, not live.** Frontend only so far: a `GoogleAuthButton` on the login
+  card + register page, plus SvelteKit endpoints `web/src/routes/auth/google/+server.ts` (consent
+  redirect) and `.../callback/+server.ts` (stub). It comes to life once these are set:
+    - `PUBLIC_GOOGLE_AUTH_ENABLED=true` (web — shows/enables the button; otherwise it shows "coming soon")
+    - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` (web server — the OAuth client;
+      redirect URI e.g. `https://chronos.bobagi.space/auth/google/callback`)
+  Still TODO (documented inline in the callback): the token exchange, `id_token` verification, a backend
+  find-or-create-Player-by-Google-identity endpoint (needs a `googleId`/`email` column on Player via a
+  Prisma migration), then `setChronosSessionCookie`.
 - **Prettier:** the repo's `prettier-plugin-svelte` crashes on Prettier **3.8** (`getVisitorKeys`).
   Format with a compatible version: `npx --yes prettier@3.6.2 --write .` (run inside `web/` and at the
   repo root). `web/pnpm-lock.yaml` is untracked by design — don't commit it.

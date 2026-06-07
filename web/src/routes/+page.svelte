@@ -9,6 +9,7 @@
 	} from '$lib/api/GameClient';
 	import CardComposite from '$lib/components/CardComposite.svelte';
 	import FriendsPanel from '$lib/components/FriendsPanel.svelte';
+	import GoogleAuthButton from '$lib/components/GoogleAuthButton.svelte';
 	import {
 		extractLastActivityTimestamp,
 		formatRelativeLastActivity,
@@ -220,6 +221,7 @@
 					<button class="button button-primary" type="submit">⚔️ {$t('home.auth.login')}</button>
 				</form>
 				<div class="auth-divider">{$t('home.auth.or')}</div>
+				<GoogleAuthButton />
 				<div class="auth-actions">
 					<button class="button button-ghost" type="button" on:click={() => goto('/gallery')}>
 						🖼️ {$t('home.auth.browseGallery')}
