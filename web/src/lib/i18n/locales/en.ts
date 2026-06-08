@@ -12,7 +12,7 @@ const en = {
 		community: 'Community',
 		privacy: 'Privacy',
 		terms: 'Terms',
-		rights: '© {year} Chronos'
+		rights: '© {year} Cartomania'
 	},
 	home: {
 		kicker: 'Digital Collectible Card Duel',
@@ -185,9 +185,9 @@ const en = {
 		statusPending: 'Pending',
 		statusDeclined: 'Declined',
 		statusBlocked: 'Blocked',
-		sessionExpired: 'Your Chronos session expired. Please sign in again to manage friends.',
+		sessionExpired: 'Your Cartomania session expired. Please sign in again to manage friends.',
 		missingTables:
-			'Chronos backend is missing the friendship tables. Execute the latest Prisma migrations in Chronos (e.g. pnpm prisma migrate deploy) and seed the database before testing the friends features.',
+			'Cartomania backend is missing the friendship tables. Execute the latest Prisma migrations in Cartomania (e.g. pnpm prisma migrate deploy) and seed the database before testing the friends features.',
 		loadFail: 'Unable to load friend data.',
 		searchFail: 'Failed to search players.',
 		requestSent: 'Friend request sent.',
@@ -205,16 +205,16 @@ const en = {
 		matchStartFail: 'Unable to start match with friend.'
 	},
 	legal: {
-		back: 'Back to Chronos',
+		back: 'Back to Cartomania',
 		kicker: 'Legal',
 		updated: 'Last updated: {date}',
 		contactLink: 'GitHub repository',
 		disclaimer:
-			'Chronos is a personal portfolio project, not a commercial service. This page is provided for transparency and does not constitute legal advice.',
+			'Cartomania is a personal portfolio project, not a commercial service. This page is provided for transparency and does not constitute legal advice.',
 		privacy: {
 			title: 'Privacy Policy',
 			intro:
-				'Chronos is a free, non-commercial portfolio project — a digital collectible card game built to showcase the Dracomania collection. This page explains, in plain language, what information the game handles and why. We collect as little as possible and never sell your data.',
+				'Cartomania is a free, non-commercial portfolio project — a digital collectible card game built to showcase the Dracomania collection. This page explains, in plain language, what information the game handles and why. We collect as little as possible and never sell your data.',
 			contactHeading: 'Contact',
 			contactText: 'Questions about privacy? Reach out through the project’s',
 			sections: [
@@ -255,7 +255,7 @@ const en = {
 				{
 					heading: 'Cookies',
 					paragraphs: [
-						'Chronos uses essential, first-party cookies only: one to remember that you are logged in, and one to remember your chosen language. No third-party analytics or advertising cookies are set by the game itself.'
+						'Cartomania uses essential, first-party cookies only: one to remember that you are logged in, and one to remember your chosen language. No third-party analytics or advertising cookies are set by the game itself.'
 					],
 					items: []
 				},
@@ -283,7 +283,7 @@ const en = {
 				{
 					heading: 'Children',
 					paragraphs: [
-						'Chronos is not directed at children under 13, and we do not knowingly collect information from them.'
+						'Cartomania is not directed at children under 13, and we do not knowingly collect information from them.'
 					],
 					items: []
 				},
@@ -299,14 +299,14 @@ const en = {
 		terms: {
 			title: 'Terms of Service',
 			intro:
-				'Welcome to Chronos, a free digital collectible card game and personal portfolio project. By creating an account or playing, you agree to these terms. If you do not agree, please don’t use the service.',
+				'Welcome to Cartomania, a free digital collectible card game and personal portfolio project. By creating an account or playing, you agree to these terms. If you do not agree, please don’t use the service.',
 			contactHeading: 'Contact',
 			contactText: 'Questions about these terms? Reach out through the project’s',
 			sections: [
 				{
 					heading: 'The service',
 					paragraphs: [
-						'Chronos is provided free of charge, “as is”, for entertainment and demonstration purposes. It is an evolving hobby project: features may change, and the game may be unavailable or discontinued at any time without notice.'
+						'Cartomania is provided free of charge, “as is”, for entertainment and demonstration purposes. It is an evolving hobby project: features may change, and the game may be unavailable or discontinued at any time without notice.'
 					],
 					items: []
 				},
@@ -347,7 +347,7 @@ const en = {
 				{
 					heading: 'Intellectual property',
 					paragraphs: [
-						'The Chronos name, the Dracomania collection and its card artwork belong to their owner. Fonts and other third-party assets remain the property of their respective owners. The project’s source code is governed by the license in its GitHub repository. You receive a personal, non-exclusive, non-transferable right to play the game; nothing here transfers ownership of any content to you.'
+						'The Cartomania name, the Dracomania collection and its card artwork belong to their owner. Fonts and other third-party assets remain the property of their respective owners. The project’s source code is governed by the license in its GitHub repository. You receive a personal, non-exclusive, non-transferable right to play the game; nothing here transfers ownership of any content to you.'
 					],
 					items: []
 				},
@@ -368,7 +368,7 @@ const en = {
 				{
 					heading: 'Termination',
 					paragraphs: [
-						'You may stop using Chronos and request account deletion at any time. We may suspend or remove accounts that violate these terms or to protect the service and its players.'
+						'You may stop using Cartomania and request account deletion at any time. We may suspend or remove accounts that violate these terms or to protect the service and its players.'
 					],
 					items: []
 				},

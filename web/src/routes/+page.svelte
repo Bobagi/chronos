@@ -157,7 +157,7 @@
 		<div class="landing">
 			<div class="landing-hero">
 				<p class="hero-kicker">{$t('home.kicker')}</p>
-				<h1 class="hero-title">Chronos</h1>
+				<h1 class="hero-title">Cartomania</h1>
 				<p class="hero-tagline">{$t('home.tagline')}</p>
 				{#if featuredCards.length}
 					<div class="hero-art" aria-hidden="true">

@@ -18,7 +18,7 @@
 	const lastUpdatedDate = new Date(2026, 5, 7); // 7 June 2026 (month is 0-indexed)
 	const githubUrl =
 		SOCIAL_LINKS.find((link) => link.label === 'GitHub')?.url ??
-		'https://github.com/bobagi/chronos';
+		'https://github.com/bobagi/cartomania';
 
 	// Format the "last updated" date in the active language (e.g. "7 de junho de 2026").
 	$: lastUpdated = lastUpdatedDate.toLocaleDateString($locale, {

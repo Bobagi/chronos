@@ -12,11 +12,11 @@
 	const brandLogoUrl = `${assets}/world_icon.png`;
 </script>
 
-<header class="site-topbar" aria-label="Chronos top bar">
+<header class="site-topbar" aria-label="Cartomania top bar">
 	<div class="topbar-inner">
 		<a href="/" class="brand-link">
-			<img class="brand-logo" src={brandLogoUrl} alt="Chronos" />
-			<span class="brand-name">Chronos</span>
+			<img class="brand-logo" src={brandLogoUrl} alt="Cartomania" />
+			<span class="brand-name">Cartomania</span>
 		</a>
 		<nav class="topbar-nav" aria-label="Primary">
 			<LanguageSelector />

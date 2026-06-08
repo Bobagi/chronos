@@ -13,7 +13,7 @@ const pt: typeof en = {
 		community: 'Comunidade',
 		privacy: 'Privacidade',
 		terms: 'Termos',
-		rights: '© {year} Chronos'
+		rights: '© {year} Cartomania'
 	},
 	home: {
 		kicker: 'Duelo de Cartas Colecionáveis',
@@ -186,9 +186,9 @@ const pt: typeof en = {
 		statusPending: 'Pendente',
 		statusDeclined: 'Recusado',
 		statusBlocked: 'Bloqueado',
-		sessionExpired: 'Sua sessão do Chronos expirou. Faça login novamente para gerenciar amigos.',
+		sessionExpired: 'Sua sessão do Cartomania expirou. Faça login novamente para gerenciar amigos.',
 		missingTables:
-			'O backend do Chronos está sem as tabelas de amizade. Execute as migrations mais recentes do Prisma no Chronos (ex.: pnpm prisma migrate deploy) e popule o banco antes de testar os recursos de amigos.',
+			'O backend do Cartomania está sem as tabelas de amizade. Execute as migrations mais recentes do Prisma no Cartomania (ex.: pnpm prisma migrate deploy) e popule o banco antes de testar os recursos de amigos.',
 		loadFail: 'Não foi possível carregar os dados de amigos.',
 		searchFail: 'Falha ao buscar jogadores.',
 		requestSent: 'Pedido de amizade enviado.',
@@ -206,16 +206,16 @@ const pt: typeof en = {
 		matchStartFail: 'Não foi possível iniciar a partida com o amigo.'
 	},
 	legal: {
-		back: 'Voltar ao Chronos',
+		back: 'Voltar ao Cartomania',
 		kicker: 'Legal',
 		updated: 'Última atualização: {date}',
 		contactLink: 'repositório no GitHub',
 		disclaimer:
-			'O Chronos é um projeto pessoal de portfólio, não um serviço comercial. Esta página é fornecida por transparência e não constitui aconselhamento jurídico.',
+			'O Cartomania é um projeto pessoal de portfólio, não um serviço comercial. Esta página é fornecida por transparência e não constitui aconselhamento jurídico.',
 		privacy: {
 			title: 'Política de Privacidade',
 			intro:
-				'O Chronos é um projeto de portfólio gratuito e não comercial — um jogo de cartas colecionáveis digital criado para apresentar a coleção Dracomania. Esta página explica, em linguagem simples, quais informações o jogo manipula e por quê. Coletamos o mínimo possível e nunca vendemos seus dados.',
+				'O Cartomania é um projeto de portfólio gratuito e não comercial — um jogo de cartas colecionáveis digital criado para apresentar a coleção Dracomania. Esta página explica, em linguagem simples, quais informações o jogo manipula e por quê. Coletamos o mínimo possível e nunca vendemos seus dados.',
 			contactHeading: 'Contato',
 			contactText: 'Dúvidas sobre privacidade? Entre em contato pelo',
 			sections: [
@@ -256,7 +256,7 @@ const pt: typeof en = {
 				{
 					heading: 'Cookies',
 					paragraphs: [
-						'O Chronos usa apenas cookies essenciais e próprios: um para lembrar que você está conectado e outro para lembrar o idioma escolhido. O jogo não define cookies de análise ou publicidade de terceiros.'
+						'O Cartomania usa apenas cookies essenciais e próprios: um para lembrar que você está conectado e outro para lembrar o idioma escolhido. O jogo não define cookies de análise ou publicidade de terceiros.'
 					],
 					items: []
 				},
@@ -284,7 +284,7 @@ const pt: typeof en = {
 				{
 					heading: 'Crianças',
 					paragraphs: [
-						'O Chronos não é direcionado a crianças menores de 13 anos, e não coletamos informações delas de forma consciente.'
+						'O Cartomania não é direcionado a crianças menores de 13 anos, e não coletamos informações delas de forma consciente.'
 					],
 					items: []
 				},
@@ -300,14 +300,14 @@ const pt: typeof en = {
 		terms: {
 			title: 'Termos de Serviço',
 			intro:
-				'Bem-vindo ao Chronos, um jogo de cartas colecionáveis digital gratuito e projeto pessoal de portfólio. Ao criar uma conta ou jogar, você concorda com estes termos. Se você não concordar, por favor não use o serviço.',
+				'Bem-vindo ao Cartomania, um jogo de cartas colecionáveis digital gratuito e projeto pessoal de portfólio. Ao criar uma conta ou jogar, você concorda com estes termos. Se você não concordar, por favor não use o serviço.',
 			contactHeading: 'Contato',
 			contactText: 'Dúvidas sobre estes termos? Entre em contato pelo',
 			sections: [
 				{
 					heading: 'O serviço',
 					paragraphs: [
-						'O Chronos é fornecido gratuitamente, “no estado em que se encontra”, para fins de entretenimento e demonstração. É um projeto de hobby em evolução: recursos podem mudar e o jogo pode ficar indisponível ou ser descontinuado a qualquer momento, sem aviso.'
+						'O Cartomania é fornecido gratuitamente, “no estado em que se encontra”, para fins de entretenimento e demonstração. É um projeto de hobby em evolução: recursos podem mudar e o jogo pode ficar indisponível ou ser descontinuado a qualquer momento, sem aviso.'
 					],
 					items: []
 				},
@@ -342,7 +342,7 @@ const pt: typeof en = {
 				{
 					heading: 'Propriedade intelectual',
 					paragraphs: [
-						'O nome Chronos, a coleção Dracomania e as artes das cartas pertencem ao seu dono. Fontes e outros recursos de terceiros continuam sendo propriedade de seus respectivos donos. O código-fonte do projeto é regido pela licença em seu repositório no GitHub. Você recebe um direito pessoal, não exclusivo e intransferível de jogar; nada aqui transfere a propriedade de qualquer conteúdo a você.'
+						'O nome Cartomania, a coleção Dracomania e as artes das cartas pertencem ao seu dono. Fontes e outros recursos de terceiros continuam sendo propriedade de seus respectivos donos. O código-fonte do projeto é regido pela licença em seu repositório no GitHub. Você recebe um direito pessoal, não exclusivo e intransferível de jogar; nada aqui transfere a propriedade de qualquer conteúdo a você.'
 					],
 					items: []
 				},
@@ -363,7 +363,7 @@ const pt: typeof en = {
 				{
 					heading: 'Encerramento',
 					paragraphs: [
-						'Você pode parar de usar o Chronos e solicitar a exclusão da conta a qualquer momento. Podemos suspender ou remover contas que violem estes termos ou para proteger o serviço e seus jogadores.'
+						'Você pode parar de usar o Cartomania e solicitar a exclusão da conta a qualquer momento. Podemos suspender ou remover contas que violem estes termos ou para proteger o serviço e seus jogadores.'
 					],
 					items: []
 				},

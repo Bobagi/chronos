@@ -4,10 +4,10 @@
 	const currentYear = new Date().getFullYear();
 </script>
 
-<footer class="site-footer" aria-label="Chronos site footer">
+<footer class="site-footer" aria-label="Cartomania site footer">
 	<div class="footer-inner footer-grid">
 		<div class="footer-brand">
-			<h2 class="footer-title">Chronos</h2>
+			<h2 class="footer-title">Cartomania</h2>
 			<p class="footer-tagline">{$t('footer.tagline')}</p>
 		</div>
 

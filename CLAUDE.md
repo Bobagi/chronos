@@ -1,4 +1,10 @@
-# CLAUDE.md — Chronos
+# CLAUDE.md — Cartomania (internal name: Chronos)
+
+> **BRANDING:** the product is branded **Cartomania** (the user-facing name + the GitHub repo
+> `Bobagi/cartomania`); it's meant to host multiple collections (Dracomania, Mythomania, custom
+> player collections). The **codebase identifiers** (`Chronos*` functions/types, the `chronos` proxy
+> path), the **domain** (`chronos.bobagi.space`), and the **infra** names (Docker `chronos-*`, PM2
+> `chronos-web`, the DB) still use `chronos` on purpose — so "Chronos" below = the internal/infra name.
 
 > **SESSION PROTOCOL — follow automatically, every time, without being reminded:**
 >
