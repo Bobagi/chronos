@@ -228,7 +228,7 @@
 
 	<div
 		class="card-corner-number"
-		style="position:absolute;top:7.5cqh;right:8.5cqw;width:4.2cqh;height:3.2cqh;display:flex;align-items:center;justify-content:center;z-index:3;font-size:2.5cqh;pointer-events:none;letter-spacing:-0.12em;text-rendering:optimizeLegibility;font-kerning:normal;"
+		style="position:absolute;top:7.5cqh;right:8.5cqw;width:4.2cqh;height:3.2cqh;display:flex;align-items:center;justify-content:center;z-index:3;font-size:4.8cqh;pointer-events:none;letter-spacing:-0.12em;text-rendering:optimizeLegibility;font-kerning:normal;"
 	>
 		{cornerNumberValue}
 	</div>
