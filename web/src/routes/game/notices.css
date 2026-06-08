@@ -80,6 +80,10 @@
 }
 
 .notice.chooser {
+	/* The attribute picker must sit above the fanned hand cards (z-index up to
+	   999 on hover); without this it renders behind the hand and is unclickable. */
+	position: relative;
+	z-index: 1600;
 	background: linear-gradient(180deg, rgba(10, 12, 18, 0.75), rgba(10, 12, 18, 0.55));
 	border-color: rgba(255, 255, 255, 0.18);
 	color: #eef3f8;

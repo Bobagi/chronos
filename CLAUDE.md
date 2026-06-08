@@ -136,6 +136,10 @@ web/                         SvelteKit frontend
 - **Game routes are chromeless.** `+layout.svelte` hides the global TopBar/footer on `/game/*`; the
   board owns the viewport (`height: 100dvh`, no page scroll). Card sizes are viewport-height based so
   both hands + the battlefield fit one screen; the battle log scrolls inside its own panel.
+- **Duel stacking order.** The fanned hand cards carry `z-index` up to ~999 (on hover) and fan upward
+  into the center, so any interactive center-zone UI must sit above them. The attribute picker
+  (`.notice.chooser` in `game/notices.css`) is `position: relative; z-index: 1600` for exactly this —
+  without it the picker renders behind the hand and its buttons are unclickable.
 - **CardComposite is sized with container-query units.** Its root sets `container-type:size`, so
   inner sizes/fonts use `cqh`/`cqw` and scale with the card. Don't size card text in `px` or via
   `inherit` from the root — a past bug left the corner number on `font-size:var(--corner-number-font-cqh)`
