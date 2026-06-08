@@ -376,6 +376,33 @@ const pt: typeof en = {
 				}
 			]
 		}
+	},
+	account: {
+		navLabel: 'Conta',
+		title: 'Configurações da conta',
+		back: 'Voltar',
+		chooseAvatar: 'Escolha seu avatar',
+		save: 'Salvar',
+		cancel: 'Cancelar',
+		usernameTitle: 'Usuário',
+		usernameHint: 'Seu nome de exibição e de login (3–50 caracteres).',
+		newUsername: 'Novo nome de usuário',
+		changeUsername: 'Alterar nome de usuário',
+		passwordTitle: 'Senha',
+		currentPassword: 'Senha atual',
+		newPassword: 'Nova senha',
+		confirmNewPassword: 'Confirmar nova senha',
+		changePassword: 'Alterar senha',
+		dangerTitle: 'Zona de perigo',
+		deleteWarning:
+			'Isto exclui permanentemente sua conta e todos os dados relacionados (jogos, amigos, mensagens). Não pode ser desfeito.',
+		deleteAccount: 'Excluir conta',
+		deleteConfirm: 'Sim, excluir minha conta',
+		usernameUpdated: 'Nome de usuário atualizado.',
+		passwordUpdated: 'Senha alterada.',
+		avatarUpdated: 'Avatar atualizado.',
+		passwordsDoNotMatch: 'As novas senhas não coincidem.',
+		genericError: 'Algo deu errado. Tente novamente.'
 	}
 };
 

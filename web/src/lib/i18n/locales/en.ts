@@ -381,6 +381,33 @@ const en = {
 				}
 			]
 		}
+	},
+	account: {
+		navLabel: 'Account',
+		title: 'Account settings',
+		back: 'Back',
+		chooseAvatar: 'Choose your avatar',
+		save: 'Save',
+		cancel: 'Cancel',
+		usernameTitle: 'Username',
+		usernameHint: 'Your display and login name (3–50 characters).',
+		newUsername: 'New username',
+		changeUsername: 'Change username',
+		passwordTitle: 'Password',
+		currentPassword: 'Current password',
+		newPassword: 'New password',
+		confirmNewPassword: 'Confirm new password',
+		changePassword: 'Change password',
+		dangerTitle: 'Danger zone',
+		deleteWarning:
+			'This permanently deletes your account and all related data (games, friends, messages). It cannot be undone.',
+		deleteAccount: 'Delete account',
+		deleteConfirm: 'Yes, delete my account',
+		usernameUpdated: 'Username updated.',
+		passwordUpdated: 'Password changed.',
+		avatarUpdated: 'Avatar updated.',
+		passwordsDoNotMatch: 'The new passwords do not match.',
+		genericError: 'Something went wrong. Please try again.'
 	}
 };
 

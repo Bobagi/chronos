@@ -7,9 +7,11 @@
 		loginChronosUserAccount,
 		startAttributeDuelChronosGameForPlayer
 	} from '$lib/api/GameClient';
+	import AvatarPicker from '$lib/components/AvatarPicker.svelte';
 	import CardComposite from '$lib/components/CardComposite.svelte';
 	import FriendsPanel from '$lib/components/FriendsPanel.svelte';
 	import GoogleAuthButton from '$lib/components/GoogleAuthButton.svelte';
+	import { DEFAULT_AVATAR_URL } from '$lib/config/avatarOptions';
 	import {
 		extractLastActivityTimestamp,
 		formatRelativeLastActivity,
@@ -33,7 +35,6 @@
 	};
 
 	const avatarFallbackImageUrl = '/avatars/placeholder.png';
-	const avatarPrimaryImageUrl = 'https://bobagi.space/images/cards/23.png';
 
 	// Same frame + title overlays the gallery and the duel board use, so the hero
 	// shows the exact cards as they appear in-game (not bare art tiles).
@@ -45,9 +46,17 @@
 	let passwordInputValue = '';
 	let loginErrorKey: string | null = null;
 	let showFriendsPanel = false;
+	let showAvatarPicker = false;
 
 	$: currentUser = data.authUser;
 	$: setAuthState(currentUser ?? null);
+	$: avatarPrimaryImageUrl = currentUser?.avatarUrl || DEFAULT_AVATAR_URL;
+
+	function handleAvatarUpdated(event: CustomEvent<{ user: AuthenticatedChronosUser }>) {
+		setAuthState(event.detail.user);
+		showAvatarPicker = false;
+		void refreshChronosDashboardData();
+	}
 
 	$: featuredCards = data.featuredCards ?? [];
 
@@ -235,14 +244,19 @@
 	{:else}
 		<div class="dashboard">
 			<div class="profile-card">
-				<div class="avatar-wrap" aria-hidden="true">
+				<button
+					type="button"
+					class="avatar-wrap"
+					on:click={() => (showAvatarPicker = true)}
+					title={$t('account.chooseAvatar')}
+				>
 					<img
 						src={avatarPrimaryImageUrl}
 						alt="User avatar"
 						loading="lazy"
 						on:error={replaceBrokenAvatarWithFallbackImage}
 					/>
-				</div>
+				</button>
 
 				<div class="profile-main">
 					<div class="profile-top">
@@ -257,6 +271,9 @@
 							</button>
 							<button class="button button-neutral" on:click={() => (showFriendsPanel = true)}>
 								👥 {$t('home.dashboard.friends')}
+							</button>
+							<button class="button button-neutral" on:click={() => goto('/account')}>
+								⚙️ {$t('account.navLabel')}
 							</button>
 							{#if isAdmin}
 								<button
@@ -415,6 +432,14 @@
 					on:close={() => (showFriendsPanel = false)}
 					on:navigateToGame={handleFriendMatchSelection}
 					on:refreshDashboard={refreshDashboardAfterFriendPanelInteraction}
+				/>
+			{/if}
+
+			{#if showAvatarPicker}
+				<AvatarPicker
+					currentAvatarUrl={currentUser.avatarUrl ?? null}
+					on:close={() => (showAvatarPicker = false)}
+					on:updated={handleAvatarUpdated}
 				/>
 			{/if}
 		</div>

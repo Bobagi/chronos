@@ -4,6 +4,7 @@ export interface AuthenticatedChronosUser {
 	id: string;
 	username: string;
 	role: ChronosUserRole;
+	avatarUrl?: string | null;
 }
 
 export interface ChronosGameStatistics {

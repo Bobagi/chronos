@@ -376,6 +376,33 @@ const es: typeof en = {
 				}
 			]
 		}
+	},
+	account: {
+		navLabel: 'Cuenta',
+		title: 'Configuración de la cuenta',
+		back: 'Volver',
+		chooseAvatar: 'Elige tu avatar',
+		save: 'Guardar',
+		cancel: 'Cancelar',
+		usernameTitle: 'Usuario',
+		usernameHint: 'Tu nombre visible y de inicio de sesión (3–50 caracteres).',
+		newUsername: 'Nuevo nombre de usuario',
+		changeUsername: 'Cambiar nombre de usuario',
+		passwordTitle: 'Contraseña',
+		currentPassword: 'Contraseña actual',
+		newPassword: 'Nueva contraseña',
+		confirmNewPassword: 'Confirmar nueva contraseña',
+		changePassword: 'Cambiar contraseña',
+		dangerTitle: 'Zona de peligro',
+		deleteWarning:
+			'Esto elimina permanentemente tu cuenta y todos los datos relacionados (partidas, amigos, mensajes). No se puede deshacer.',
+		deleteAccount: 'Eliminar cuenta',
+		deleteConfirm: 'Sí, eliminar mi cuenta',
+		usernameUpdated: 'Nombre de usuario actualizado.',
+		passwordUpdated: 'Contraseña cambiada.',
+		avatarUpdated: 'Avatar actualizado.',
+		passwordsDoNotMatch: 'Las nuevas contraseñas no coinciden.',
+		genericError: 'Algo salió mal. Inténtalo de nuevo.'
 	}
 };
 

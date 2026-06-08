@@ -87,7 +87,8 @@ src/                         NestJS backend
     card.repository.ts        card catalog reads + image-base rewriting + per-locale name/description
     game-collection.repository.ts  collection reads
     game.types.ts            DuelCenterState + serialize/deserializeDuelCenter (JSON <-> Prisma)
-  auth/ friends/ health/ prisma/   feature modules
+  auth/                    register/login/me + PATCH avatar|username|password, DELETE me (account mgmt)
+  friends/ health/ prisma/   feature modules
 prisma/schema.prisma         Postgres schema (Card + CardTranslation side table for i18n);
 prisma/seed.ts               idempotent seed: Dracomania (32 cards) + their pt/es CardTranslations + users
 web/                         SvelteKit frontend
@@ -110,6 +111,10 @@ web/                         SvelteKit frontend
       locales/{en,pt,es}.ts  string dictionaries (en is the canonical shape)
   src/lib/components/LanguageSelector.svelte  header language dropdown (flags + native names)
   src/lib/components/FlagIcon.svelte          inline SVG flags (BR / ES / GB)
+  src/lib/components/AvatarPicker.svelte      profile avatar picker (card art + custom folder)
+  src/lib/config/avatarOptions.ts             avatar choices (card art now; web/static/avatars/ for custom)
+  src/routes/account/+page.svelte             account settings: username / password / delete account
+  src/routes/api/auth/{avatar,username,password,delete}/  session-managed account mutation endpoints
   src/lib/components/FriendsPanel.svelte   friends modal (search/requests/roster/chat)
   src/lib/components/CardComposite.svelte  renders one card (art + frame + MAGIC/MIGHT/FIRE badges)
   src/lib/components/DeckStack.svelte      stacked deck of card backs
@@ -223,6 +228,10 @@ web/                         SvelteKit frontend
   page was decomposed into `web/src/lib/duel/*` modules.
 - The logged-out landing hero now renders the actual in-game cards (CardComposite, SSR'd) instead of
   bare art tiles; the footer's Privacy/Terms links resolve to real `/privacy` and `/terms` pages.
+- Account management: clickable profile avatar → picker (curated card art + a `web/static/avatars/`
+  folder for custom images); an `/account` page to change username / password / delete the account.
+  The `/api/auth/{avatar,username}` web endpoints re-set the `chronos_session` cookie with the updated
+  user (so SSR stays in sync); `/api/auth/delete` clears it. Player has an `avatarUrl` column.
 - Multilanguage (en / pt / es) with a flag language selector in the top bar; persisted via cookie and
   SSR-resolved. The whole UI is translated, and **card name/description are localized in the gallery**
   via the `CardTranslation` table (the duel keeps canonical English by design — see the gotcha).
