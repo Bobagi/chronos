@@ -1,6 +1,20 @@
-# Chronos – Mythological Card Game (Backend + Web)
+# Cartomania – Digital Collectible Card Game (Backend + Web)
 
-**Chronos** is a multiplayer online card game inspired by mythology and classic battle-card mechanics (inspired by Dracomania). It is now a **single project**: the NestJS game engine (this repo root) plus the SvelteKit browser frontend in [`web/`](./web) — login, card library, profile and matches. The former separate `kairos` frontend was merged in here and retired.
+**Cartomania** (formerly _Chronos_) is a digital collectible card game. The current set is the
+**Dracomania** collection (dragons & fantasy), and the project is built to host multiple collections
+(Dracomania, Mythomania, and custom player collections). It is **one project**: the NestJS game engine
+(this repo root) plus the SvelteKit browser frontend in [`web/`](./web) — landing/login, card gallery,
+player dashboard (avatars + account settings), friends and matches. The former separate `kairos`
+frontend was merged in here and retired.
+
+> The product is branded **Cartomania** (repo `cartomania`), but the code identifiers, the live domain
+> (`chronos.bobagi.space`) and the infra names (Docker `chronos-*`, PM2 `chronos-web`, the DB, the
+> `/api/chronos/*` proxy) still use `chronos` internally.
+
+The main mode is **Attribute Duel**: each round both duelists reveal a card and clash on one attribute
+(magic / might / fire); the round winner captures both cards into their discard pile, and whoever
+captured more cards when a hand empties wins the match. A legacy `CLASSIC` mode also exists. The UI is
+available in English, Portuguese and Spanish.
 
 This backend handles all game rules, player logic, turn rotation, card resolution, and battle flow.
 
@@ -17,9 +31,9 @@ This backend handles all game rules, player logic, turn rotation, card resolutio
 ## 🌐 Web frontend (`web/`)
 
 The browser app (SvelteKit, `@sveltejs/adapter-node`) lives in [`web/`](./web). It serves the
-login page, card library/gallery, profile and matches, and talks to this backend **server-side**
-via its `/api/chronos/*` proxy (default base `http://localhost:3053`) — so the browser only ever
-hits the front's own origin.
+landing/login, card gallery, player dashboard (avatars + account settings), friends and matches, and
+talks to this backend **server-side** via its `/api/chronos/*` proxy (default base
+`http://localhost:3053`) — so the browser only ever hits the front's own origin.
 
 ```bash
 # dev (two terminals)

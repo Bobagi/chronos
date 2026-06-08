@@ -43,20 +43,16 @@ const defaultClientOptions: Pick<
 	ChronosClientInternal,
 	'friendGamePath' | 'respondFriendRequest' | 'removeFriend'
 > = {
-	friendGamePath: '/friends/start',
+	// These must match the NestJS friends/game controllers:
+	//   POST /game/start-with-friend, POST /friends/request/:id/{accept,reject}, DELETE /friends/:id
+	friendGamePath: '/game/start-with-friend',
 	respondFriendRequest: (friendshipId, accept) => ({
-		path: '/friends/respond',
-		init: {
-			method: 'POST',
-			body: JSON.stringify({ friendshipId, accept })
-		}
+		path: `/friends/request/${encodeURIComponent(friendshipId)}/${accept ? 'accept' : 'reject'}`,
+		init: { method: 'POST' }
 	}),
 	removeFriend: (friendshipId) => ({
-		path: '/friends/remove',
-		init: {
-			method: 'POST',
-			body: JSON.stringify({ friendshipId })
-		}
+		path: `/friends/${encodeURIComponent(friendshipId)}`,
+		init: { method: 'DELETE' }
 	})
 };
 

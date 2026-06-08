@@ -98,26 +98,10 @@ async function performChronosApiRequestReturningJson<T = unknown>(
 	return null as unknown as T;
 }
 
-const chronosClient = createChronosClient(
-	{
-		rawFetch: performChronosApiRequest,
-		requestJson: performChronosApiRequestReturningJson
-	},
-	{
-		friendGamePath: '/game/start-with-friend',
-		respondFriendRequest: (friendshipId, accept) => {
-			const action = accept ? 'accept' : 'reject';
-			return {
-				path: `/friends/request/${encodeURIComponent(friendshipId)}/${action}`,
-				init: { method: 'POST' }
-			};
-		},
-		removeFriend: (friendshipId) => ({
-			path: `/friends/${encodeURIComponent(friendshipId)}`,
-			init: { method: 'DELETE' }
-		})
-	}
-);
+const chronosClient = createChronosClient({
+	rawFetch: performChronosApiRequest,
+	requestJson: performChronosApiRequestReturningJson
+});
 
 const {
 	registerChronosUserAccount,

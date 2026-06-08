@@ -83,13 +83,10 @@ async function performKairosApiRequestReturningJson<T = unknown>(
 	return null as unknown as T;
 }
 
-const chronosClient = createChronosClient(
-	{
-		rawFetch: performKairosApiRequest,
-		requestJson: performKairosApiRequestReturningJson
-	},
-	{ friendGamePath: '/friends/start' }
-);
+const chronosClient = createChronosClient({
+	rawFetch: performKairosApiRequest,
+	requestJson: performKairosApiRequestReturningJson
+});
 
 const {
 	checkChronosHealthStatus,

@@ -151,6 +151,15 @@ web/                         SvelteKit frontend
   into the center, so any interactive center-zone UI must sit above them. The attribute picker
   (`.notice.chooser` in `game/notices.css`) is `position: relative; z-index: 1600` for exactly this —
   without it the picker renders behind the hand and its buttons are unclickable.
+- **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
+  `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
+  reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults
+  (`/friends/respond`, `/friends/remove`, `/friends/start`) that the browser client used → "Cannot POST
+  /friends/respond" when accepting a request. Both clients now rely on the (correct) defaults.
+- **Responsive landing title.** The brand hero title is sized with container-query units
+  (`.hero-title { font-size: clamp(34px, 10.5cqw, 82px) }`, with `.landing-hero { container-type:
+  inline-size }`) so the long word "CARTOMANIA" always fits one line; the auth column is a fixed
+  `minmax(300px, 360px)`. The top bar shrinks the brand on phones and hides the brand text below 430px.
 - **CardComposite is sized with container-query units.** Its root sets `container-type:size`, so
   inner sizes/fonts use `cqh`/`cqw` and scale with the card. Don't size card text in `px` or via
   `inherit` from the root — a past bug left the corner number on `font-size:var(--corner-number-font-cqh)`
