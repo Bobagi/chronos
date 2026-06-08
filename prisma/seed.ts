@@ -418,6 +418,355 @@ async function main() {
   });
 
   console.log('✅ Cards inserted');
+
+  // ---------- Traduções das cartas (pt / es) ----------
+  // The base Card row holds the canonical English text; these populate the
+  // CardTranslation side table per (card, locale). Idempotent via upsert.
+  const cardTranslations: Record<
+    string,
+    Record<string, { name: string; description: string }>
+  > = {
+    master_dragon: {
+      pt: {
+        name: 'Dragão Mestre',
+        description: 'Dragão supremo que comanda todos os outros.',
+      },
+      es: {
+        name: 'Dragón Maestro',
+        description: 'Dragón supremo que comanda a todos los demás.',
+      },
+    },
+    golden_dragon: {
+      pt: {
+        name: 'Dragão Dourado',
+        description: 'Dragão radiante coberto de ouro fundido.',
+      },
+      es: {
+        name: 'Dragón Dorado',
+        description: 'Dragón radiante revestido de oro fundido.',
+      },
+    },
+    silver_dragon: {
+      pt: {
+        name: 'Dragão Prateado',
+        description: 'Dragão veloz cujas escamas brilham como prata.',
+      },
+      es: {
+        name: 'Dragón Plateado',
+        description: 'Dragón veloz cuyas escamas brillan como la plata.',
+      },
+    },
+    bronze_dragon: {
+      pt: {
+        name: 'Dragão de Bronze',
+        description: 'Dragão guardião forjado em armadura de bronze.',
+      },
+      es: {
+        name: 'Dragón de Bronce',
+        description: 'Dragón guardián forjado con armadura de bronce.',
+      },
+    },
+    copper_dragon: {
+      pt: {
+        name: 'Dragão de Cobre',
+        description: 'Dragão ancião com asas revestidas de cobre.',
+      },
+      es: {
+        name: 'Dragón de Cobre',
+        description: 'Dragón anciano con alas recubiertas de cobre.',
+      },
+    },
+    white_dragon: {
+      pt: {
+        name: 'Dragão Branco',
+        description: 'Dragão gélido que cospe chamas geladas.',
+      },
+      es: {
+        name: 'Dragón Blanco',
+        description: 'Dragón helado que exhala llamas heladas.',
+      },
+    },
+    black_dragon: {
+      pt: {
+        name: 'Dragão Negro',
+        description: 'Dragão das sombras coberto por escamas da meia-noite.',
+      },
+      es: {
+        name: 'Dragón Negro',
+        description: 'Dragón de las sombras cubierto de escamas de medianoche.',
+      },
+    },
+    red_dragon: {
+      pt: {
+        name: 'Dragão Vermelho',
+        description: 'Dragão feroz que incinera o campo de batalha.',
+      },
+      es: {
+        name: 'Dragón Rojo',
+        description: 'Dragón feroz que calcina el campo de batalla.',
+      },
+    },
+    blue_dragon: {
+      pt: {
+        name: 'Dragão Azul',
+        description:
+          'Dragão que cospe tempestades, envolto em névoa de safira.',
+      },
+      es: {
+        name: 'Dragón Azul',
+        description:
+          'Dragón que exhala tormentas, envuelto en niebla de zafiro.',
+      },
+    },
+    green_dragon: {
+      pt: {
+        name: 'Dragão Verde',
+        description: 'Guardião da floresta que comanda ventos de esmeralda.',
+      },
+      es: {
+        name: 'Dragón Verde',
+        description: 'Guardián del bosque que comanda vientos de esmeralda.',
+      },
+    },
+    knight: {
+      pt: {
+        name: 'Cavaleiro',
+        description: 'Cavaleiro valente que jurou proteger o reino.',
+      },
+      es: {
+        name: 'Caballero',
+        description: 'Caballero valiente que juró proteger el reino.',
+      },
+    },
+    colossus: {
+      pt: {
+        name: 'Colosso',
+        description: 'Sentinela colossal feito de pedra viva.',
+      },
+      es: {
+        name: 'Coloso',
+        description: 'Centinela colosal construido de piedra viva.',
+      },
+    },
+    sorceress: {
+      pt: {
+        name: 'Feiticeira',
+        description: 'Heroína mística que domina rituais ancestrais.',
+      },
+      es: {
+        name: 'Hechicera',
+        description: 'Heroína mística que domina rituales ancestrales.',
+      },
+    },
+    warrioress: {
+      pt: {
+        name: 'Guerreira',
+        description: 'Guerreira destemida que lidera a linha de frente.',
+      },
+      es: {
+        name: 'Guerrera',
+        description: 'Guerrera intrépida que lidera la primera línea.',
+      },
+    },
+    warrior: {
+      pt: {
+        name: 'Guerreiro',
+        description: 'Veterano experiente empunhando lâminas gêmeas.',
+      },
+      es: {
+        name: 'Guerrero',
+        description: 'Veterano curtido que empuña espadas gemelas.',
+      },
+    },
+    hero: {
+      pt: {
+        name: 'Herói',
+        description: 'Campeão lendário de incontáveis batalhas.',
+      },
+      es: {
+        name: 'Héroe',
+        description: 'Campeón legendario de incontables batallas.',
+      },
+    },
+    werewolf: {
+      pt: {
+        name: 'Lobisomem',
+        description: 'Caçador lupino que ataca sob a lua cheia.',
+      },
+      es: {
+        name: 'Hombre Lobo',
+        description: 'Cazador lobuno que ataca bajo la luna llena.',
+      },
+    },
+    mage: {
+      pt: {
+        name: 'Mago',
+        description: 'Erudito arcano que dobra o fogo à sua vontade.',
+      },
+      es: {
+        name: 'Mago',
+        description: 'Erudito arcano que doblega el fuego a su voluntad.',
+      },
+    },
+    merlin: {
+      pt: {
+        name: 'Merlin',
+        description: 'Mago icônico de lendas e histórias.',
+      },
+      es: {
+        name: 'Merlín',
+        description: 'Mago icónico de leyendas y relatos.',
+      },
+    },
+    mummy: {
+      pt: {
+        name: 'Múmia',
+        description: 'Guardião amaldiçoado envolto em linho eterno.',
+      },
+      es: {
+        name: 'Momia',
+        description: 'Guardián maldito envuelto en lino eterno.',
+      },
+    },
+    pegasus: {
+      pt: { name: 'Pégaso', description: 'Corcel alado que cruza os céus.' },
+      es: { name: 'Pegaso', description: 'Corcel alado que surca los cielos.' },
+    },
+    sorcerer: {
+      pt: {
+        name: 'Feiticeiro',
+        description: 'Conjurador devoto que canaliza fogo celestial.',
+      },
+      es: {
+        name: 'Hechicero',
+        description: 'Hechicero devoto que canaliza fuego celestial.',
+      },
+    },
+    shadow: {
+      pt: { name: 'Sombra', description: 'Aparição etérea vinda do vazio.' },
+      es: {
+        name: 'Sombra',
+        description: 'Aparición etérea surgida del vacío.',
+      },
+    },
+    barbarian: {
+      pt: {
+        name: 'Bárbaro',
+        description: 'Guerreiro selvagem do norte gélido.',
+      },
+      es: {
+        name: 'Bárbaro',
+        description: 'Guerrero salvaje del norte helado.',
+      },
+    },
+    viking: {
+      pt: {
+        name: 'Viking',
+        description: 'Saqueador dos mares de espírito indomável.',
+      },
+      es: {
+        name: 'Vikingo',
+        description: 'Saqueador de los mares con espíritu indomable.',
+      },
+    },
+    witch: {
+      pt: {
+        name: 'Bruxa',
+        description: 'Bruxa enigmática que tece maldições e fogo.',
+      },
+      es: {
+        name: 'Bruja',
+        description: 'Bruja enigmática que teje maleficios y fuego.',
+      },
+    },
+    elf: {
+      pt: {
+        name: 'Elfo',
+        description: 'Arqueiro ágil dotado de graça atemporal.',
+      },
+      es: {
+        name: 'Elfo',
+        description: 'Arquero ágil dotado de una gracia atemporal.',
+      },
+    },
+    angel: {
+      pt: {
+        name: 'Anjo',
+        description: 'Arauto radiante que empunha a luz sagrada.',
+      },
+      es: {
+        name: 'Ángel',
+        description: 'Heraldo radiante que empuña la luz sagrada.',
+      },
+    },
+    lava_giant: {
+      pt: {
+        name: 'Gigante de Lava',
+        description: 'Colosso de lava nascido dos vulcões.',
+      },
+      es: {
+        name: 'Gigante de Lava',
+        description: 'Coloso de lava nacido de los volcanes.',
+      },
+    },
+    skeleton: {
+      pt: {
+        name: 'Esqueleto',
+        description: 'Guerreiro reanimado que chocalha com malícia.',
+      },
+      es: {
+        name: 'Esqueleto',
+        description: 'Guerrero reanimado que traquetea con malicia.',
+      },
+    },
+    ogre: {
+      pt: {
+        name: 'Ogro',
+        description: 'Ogro brutal que depende da força bruta.',
+      },
+      es: {
+        name: 'Ogro',
+        description: 'Ogro brutal que confía en la fuerza bruta.',
+      },
+    },
+    unicorn: {
+      pt: {
+        name: 'Unicórnio',
+        description: 'Unicórnio mítico que cura a terra.',
+      },
+      es: {
+        name: 'Unicornio',
+        description: 'Unicornio mítico que sana la tierra.',
+      },
+    },
+  };
+
+  const seededCards = await prisma.card.findMany({
+    where: { collectionId: dracomaniaCollection.id },
+    select: { id: true, code: true },
+  });
+  const cardIdByCode = new Map(seededCards.map((card) => [card.code, card.id]));
+
+  let translationCount = 0;
+  for (const [code, byLocale] of Object.entries(cardTranslations)) {
+    const cardId = cardIdByCode.get(code);
+    if (!cardId) continue;
+    for (const [locale, value] of Object.entries(byLocale)) {
+      await prisma.cardTranslation.upsert({
+        where: { cardId_locale: { cardId, locale } },
+        update: { name: value.name, description: value.description },
+        create: {
+          cardId,
+          locale,
+          name: value.name,
+          description: value.description,
+        },
+      });
+      translationCount += 1;
+    }
+  }
+
+  console.log(`✅ Card translations seeded: ${translationCount}`);
 }
 
 main()

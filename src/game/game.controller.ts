@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Logger,
   NotFoundException,
   Param,
@@ -194,6 +195,8 @@ export class GameController {
   @Get('collections/:identifier/cards')
   async getCollectionCards(
     @Param('identifier') identifier: string,
+    @Query('locale') queryLocale?: string,
+    @Headers('x-chronos-locale') headerLocale?: string,
   ): Promise<PrismaCard[]> {
     const collection =
       await this.gameService.getCollectionByIdentifier(identifier);
@@ -202,7 +205,10 @@ export class GameController {
         `Collection with id or slug "${identifier}" was not found`,
       );
     }
-    return this.gameService.getCardsByCollectionId(collection.id);
+    return this.gameService.getCardsByCollectionId(
+      collection.id,
+      queryLocale ?? headerLocale,
+    );
   }
 
   /** Undo pick */

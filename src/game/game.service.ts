@@ -59,8 +59,11 @@ export class GameService {
     return this.cardRepository.findAll();
   }
 
-  async getCardsByCollectionId(collectionId: string): Promise<PrismaCard[]> {
-    return this.cardRepository.findByCollectionId(collectionId);
+  async getCardsByCollectionId(
+    collectionId: string,
+    locale?: string,
+  ): Promise<PrismaCard[]> {
+    return this.cardRepository.findByCollectionId(collectionId, locale);
   }
 
   async getCardByCode(code: string): Promise<PrismaCard | null> {

@@ -78,11 +78,12 @@ src/                         NestJS backend
     game.service.ts          facade: game lifecycle, delegates to the services below
     duel-game.service.ts     ATTRIBUTE_DUEL rules (choose card/attribute, reveal, advance, bot AI)
     classic-game.service.ts  CLASSIC mode
-    card.repository.ts        card catalog reads + image-base rewriting (repository pattern)
+    card.repository.ts        card catalog reads + image-base rewriting + per-locale name/description
     game-collection.repository.ts  collection reads
     game.types.ts            DuelCenterState + serialize/deserializeDuelCenter (JSON <-> Prisma)
   auth/ friends/ health/ prisma/   feature modules
-prisma/schema.prisma         Postgres schema;  prisma/seed.ts  idempotent seed (Dracomania, users)
+prisma/schema.prisma         Postgres schema (Card + CardTranslation side table for i18n);
+prisma/seed.ts               idempotent seed: Dracomania (32 cards) + their pt/es CardTranslations + users
 web/                         SvelteKit frontend
   src/lib/styles/appShell.css        GLOBAL design system: tokens, atmospheric bg, Draco font,
                                      themed top bar/footer, shared .button/.input. Loaded by +layout.
@@ -154,8 +155,15 @@ web/                         SvelteKit frontend
   `$td('key')` getter — the `/privacy` + `/terms` pages are data-driven: each doc is a structured
   `legal.{privacy,terms}` object (title/intro/sections/items) rendered by the shared
   `LegalDocument.svelte`. **All UI is translated** (top bar, footer, home, gallery + modal, register,
-  duel board + battle log, friends panel, legal pages). Only backend-sourced text stays in its source
-  language by design: card names/lore (DB) and server-generated battle-log lines.
+  duel board + battle log, friends panel, legal pages).
+- **Card content (name/description) is localized via a normalized `CardTranslation` table** (base `Card`
+  keeps canonical English; one row per `(cardId, locale)` for pt/es; seeded idempotently). ONLY the
+  collection-cards endpoint localizes: `GET /game/collections/:id/cards` reads the locale from
+  `?locale=` or the `x-chronos-locale` header (the web proxy sets it from the locale cookie), so the
+  **gallery** is localized with zero per-call threading. `getAllCards`/`findByCode` (the `/game/cards`
+  paths the duel uses) stay **canonical** on purpose — the duel + server battle-log lines need English
+  names so the log's name→code parsing keeps working. The logged-out hero (SSR, direct to backend, no
+  proxy header) also stays canonical.
 - **Google sign-in is scaffolded, not live.** Frontend only so far: a `GoogleAuthButton` on the login
   card + register page, plus SvelteKit endpoints `web/src/routes/auth/google/+server.ts` (consent
   redirect) and `.../callback/+server.ts` (stub). It comes to life once these are set:
@@ -185,8 +193,10 @@ web/                         SvelteKit frontend
 
 ## Conventions & rules
 
-- **Don't reset the database.** It's seeded (idempotent) with the Dracomania collection (32 cards) and
-  users `admin` (ADMIN) / `alice`. Creating throwaway test games/users is fine; they age out (admin
+- **Don't reset the database** (default). It's seeded (idempotent) with the Dracomania collection
+  (32 cards + their pt/es `CardTranslation` rows) and users `admin` (ADMIN) / `alice`. Adding the
+  translations was an additive migration (`20260608000000_add_card_translations`) — `migrate deploy`
+  + seed on a normal `docker compose up` applied it with no wipe. Creating throwaway test games/users is fine; they age out (admin
   "Expire old games" button) — but direct DB mutations are restricted, so prefer the app's own endpoints.
 - **Secrets:** `.env` (backend) and `web/.env` hold DB creds / API base. Never print, echo, or commit them.
 - **Don't touch other VPS services** (rhyme, umami, todo, etc.) — see `/root/CLAUDE.md` for the machine map.
@@ -204,4 +214,5 @@ web/                         SvelteKit frontend
 - The logged-out landing hero now renders the actual in-game cards (CardComposite, SSR'd) instead of
   bare art tiles; the footer's Privacy/Terms links resolve to real `/privacy` and `/terms` pages.
 - Multilanguage (en / pt / es) with a flag language selector in the top bar; persisted via cookie and
-  SSR-resolved. Main surfaces translated (see the i18n gotcha for what's covered / still English).
+  SSR-resolved. The whole UI is translated, and **card name/description are localized in the gallery**
+  via the `CardTranslation` table (the duel keeps canonical English by design — see the gotcha).

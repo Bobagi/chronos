@@ -118,8 +118,24 @@ model Card {
   magic       Int      @default(0)
   collectionId String   @db.Uuid
   collection   Collection @relation(fields: [collectionId], references: [id])
+  translations CardTranslation[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// Localized name/description for a Card. The base Card row keeps the canonical
+/// (English) text; one row here per (card, locale) for each translated language.
+model CardTranslation {
+  id          String   @id @default(uuid()) @db.Uuid
+  cardId      String   @db.Uuid
+  card        Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  locale      String   @db.VarChar(8)
+  name        String   @db.VarChar(150)
+  description String   @db.VarChar(1000)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([cardId, locale])
 }
 
 model CardTemplate {

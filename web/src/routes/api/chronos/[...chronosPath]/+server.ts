@@ -29,6 +29,12 @@ async function proxyChronosRequest(event: RequestEvent): Promise<Response> {
 		headers.delete('Authorization');
 	}
 
+	// Forward the visitor's chosen language so the backend can localize card
+	// content (the gallery catalog). Resolved in hooks from the locale cookie.
+	if (event.locals.locale) {
+		headers.set('x-chronos-locale', event.locals.locale);
+	}
+
 	const method = event.request.method.toUpperCase();
 	const init: RequestInit = { method, headers };
 
