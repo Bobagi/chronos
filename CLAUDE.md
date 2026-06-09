@@ -121,7 +121,10 @@ web/                         SvelteKit frontend
   src/lib/components/DuelHistory.svelte    Hearthstone-style scrollable battle log
   src/routes/game/duel/[id]/+page.svelte   THE DUEL SCREEN (orchestration + template)
   src/routes/game/*.css                    duel board styles (board/zones/hands/effects/...)
-  src/lib/styles/routes/gameDuelPage.css   duel page-specific styles (battlefield, banners, endscreen)
+  src/lib/styles/routes/gameDuelPage.css   duel card/flip/chooser/banner/endscreen styles
+  src/lib/styles/routes/duelBoardLayout.css  the immersive board LAYOUT (.lb): opponent strip on top,
+                                     felt table (arcane ring + VS medallion + vertical card column),
+                                     battle log overlaid right, hand fan + HUD + timer/surrender bottom
   src/lib/duel/                            pure duel logic extracted from the page:
       defeatAnimation.ts   canvas particle "defeat" effect (fire/magic/might)
       duelCenter.ts        normalizeDuelCenterForView + detectChosenAttributeMode
@@ -151,6 +154,12 @@ web/                         SvelteKit frontend
   into the center, so any interactive center-zone UI must sit above them. The attribute picker
   (`.notice.chooser` in `game/notices.css`) is `position: relative; z-index: 1600` for exactly this —
   without it the picker renders behind the hand and its buttons are unclickable.
+- **Duel board layout = the designer's "mesa".** The board is `.lb` (a 3-row grid in
+  `duelBoardLayout.css`). The vertical card column uses `.lb__cards { flex-direction: column-reverse }`
+  so the OPPONENT card shows on top while the binding-heavy YOUR-card markup stays first in source
+  (slot A = `aCardCode` = you, slot B = `bCardCode` = opponent — don't swap those). The old `.zone`/
+  `.fixed-top-bar` CSS is now unused. Cards/flip/chooser/round-banner/endscreen styling and the
+  `.hand.my-hand.fan` are unchanged — only the page layout moved.
 - **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
   `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
   reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults

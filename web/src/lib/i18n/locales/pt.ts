@@ -119,6 +119,8 @@ const pt: typeof en = {
 		chooseFire: 'Escolher fogo ({value})',
 		waitingForAttribute: 'Aguardando {name} escolher o atributo…',
 		selectCard: 'Selecione uma carta da sua mão para enviar à batalha.',
+		waiting: 'Aguardando…',
+		yourCardHere: 'Sua carta entra aqui',
 		you: 'Você',
 		play: 'Jogar {name}',
 		playAgain: 'Jogar de novo',

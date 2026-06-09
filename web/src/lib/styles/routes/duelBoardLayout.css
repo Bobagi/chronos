@@ -1,0 +1,333 @@
+/*
+ * Duel board layout — the immersive vertical "mesa" from the design handoff,
+ * mapped onto Cartomania's tokens (gold theme, Exocet display font, CardComposite).
+ * Only LAYOUT lives here; cards/flip/chooser/hand-fan/round-banner/endscreen come
+ * from game.css + gameDuelPage.css.
+ *
+ *   ┌ opponent strip (hud + score orbs + deck arc) ┐  auto
+ *   │ felt table: opp card / VS / your card        │  1fr   (log overlaid right)
+ *   └ your strip: HUD · hand fan · timer+surrender ┘  auto
+ */
+
+.lb {
+	position: relative;
+	height: 100dvh;
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	overflow: hidden;
+	color: var(--text);
+}
+
+/* ---------- shared HUD bits ---------- */
+.hud-id {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	min-width: 0;
+}
+.hud-id .avatar {
+	width: 40px;
+	height: 40px;
+	flex: 0 0 auto;
+	border-radius: 50%;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	font-size: 20px;
+	background: #0f131b;
+	box-shadow:
+		0 0 0 2px var(--gold-2),
+		0 0 0 5px rgba(231, 178, 74, 0.14);
+}
+.hud-id .avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center 22%;
+}
+.hud-id .nm {
+	font-weight: 800;
+	font-size: 15px;
+	color: var(--heading);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.hud-tag {
+	display: inline-block;
+	margin-top: 2px;
+	padding: 1px 7px;
+	border-radius: 6px;
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+.hud-tag--op {
+	color: #ffc1a3;
+	border: 1px solid rgba(255, 130, 80, 0.45);
+	background: rgba(255, 110, 50, 0.12);
+}
+.hud-tag--you {
+	color: #aee4ff;
+	border: 1px solid rgba(90, 180, 230, 0.45);
+	background: rgba(74, 208, 255, 0.12);
+}
+
+.score-orb {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 56px;
+	height: 56px;
+	flex: 0 0 auto;
+	border-radius: 50%;
+	background: radial-gradient(circle at 35% 30%, var(--surface-3), rgba(0, 0, 0, 0.45));
+	border: 1px solid var(--border);
+}
+.score-orb .v {
+	font-size: 24px;
+	font-weight: 800;
+	line-height: 1;
+	color: var(--gold-1);
+	font-variant-numeric: tabular-nums;
+}
+.score-orb .k {
+	margin-top: 2px;
+	font-size: 8px;
+	font-weight: 800;
+	letter-spacing: 0.1em;
+	color: var(--muted);
+	text-transform: uppercase;
+}
+
+/* ---------- row 1: opponent strip ---------- */
+.lb__opp {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 26px;
+	background: linear-gradient(180deg, rgba(120, 40, 40, 0.22), transparent);
+	border-bottom: 1px solid var(--border-soft);
+}
+.lb__opp .spacer {
+	flex: 1;
+}
+.lb__home {
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	flex: 0 0 auto;
+	border-radius: 50%;
+	border: 1px solid var(--border);
+	background: rgba(255, 255, 255, 0.05);
+	color: var(--text);
+	text-decoration: none;
+	font-size: 18px;
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease;
+}
+.lb__home:hover {
+	background: rgba(231, 178, 74, 0.16);
+	border-color: var(--border-strong);
+}
+.lb__oparc {
+	position: relative;
+	width: clamp(150px, 18vw, 230px);
+	flex: 0 0 auto;
+}
+
+/* the card stack is reversed so the opponent card shows on top while the
+   binding-heavy your-card markup stays first in the source. */
+.lb__cards {
+	display: flex;
+	flex-direction: column-reverse;
+	align-items: center;
+	gap: 6px;
+	min-height: 0;
+}
+
+/* ---------- row 2: the felt table ---------- */
+.lb__table {
+	position: relative;
+	display: grid;
+	place-items: center;
+	padding: 8px 0;
+	overflow: hidden;
+	background:
+		radial-gradient(58% 60% at 50% 50%, rgba(64, 128, 72, 0.16), transparent 70%),
+		radial-gradient(40% 44% at 50% 50%, rgba(231, 178, 74, 0.1), transparent 72%);
+}
+.lb__felt-ring {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: min(46vh, 440px);
+	height: min(46vh, 440px);
+	border-radius: 50%;
+	border: 1.5px dashed rgba(231, 178, 74, 0.22);
+	pointer-events: none;
+}
+.lb__felt-ring::after {
+	content: '';
+	position: absolute;
+	inset: 26px;
+	border-radius: 50%;
+	border: 1px solid rgba(231, 178, 74, 0.12);
+}
+.lb__column {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	min-height: 0;
+}
+.lb__seat-label {
+	font-family: var(--font-display);
+	font-size: 13px;
+	font-weight: 800;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+.lb__seat-label--op {
+	color: #ffb38f;
+}
+.lb__seat-label--you {
+	color: #8fe7ff;
+}
+
+/* VS medallion + flanking lines */
+.lb__vsrow {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+	margin: 2px 0;
+}
+.lb__vsrow .line {
+	width: clamp(40px, 7vw, 72px);
+	height: 1px;
+	background: linear-gradient(90deg, transparent, var(--gold-2), transparent);
+}
+.vs {
+	position: relative;
+	width: 64px;
+	height: 64px;
+	flex: 0 0 auto;
+	display: grid;
+	place-items: center;
+}
+.vs__disc {
+	width: 50px;
+	height: 50px;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	font-family: var(--font-display);
+	font-size: 18px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	color: #2a1d00;
+	background: radial-gradient(circle at 35% 30%, var(--gold-1), var(--gold-2) 55%, var(--gold-3));
+	box-shadow:
+		0 0 18px rgba(231, 178, 74, 0.5),
+		inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+.vs__spark {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	opacity: 0;
+	pointer-events: none;
+}
+.vs.clash .vs__disc {
+	animation: vsClashPop 0.45s ease;
+}
+.vs.clash .vs__spark {
+	animation: vsSparkRing 0.5s ease-out;
+	box-shadow: 0 0 0 2px rgba(240, 212, 136, 0.8);
+}
+@keyframes vsClashPop {
+	0% {
+		transform: scale(0.6);
+	}
+	45% {
+		transform: scale(1.32);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+@keyframes vsSparkRing {
+	from {
+		opacity: 0.9;
+		transform: scale(0.6);
+	}
+	to {
+		opacity: 0;
+		transform: scale(1.7);
+	}
+}
+
+/* battle log overlaid on the right of the felt (doesn't shift the duel) */
+.lb__log {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	bottom: 16px;
+	width: clamp(240px, 24vw, 300px);
+	z-index: 4;
+}
+
+/* slot placeholder text in the design ("Waiting…" / "Your card goes here") */
+.lb__slot-text {
+	display: grid;
+	place-items: center;
+	padding: 0 14px;
+	text-align: center;
+	color: var(--muted);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+/* ---------- row 3: your hand + HUD + actions ---------- */
+.lb__you {
+	position: relative;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	padding: 0 26px 12px;
+	min-height: 196px;
+}
+.lb__you-hud {
+	position: absolute;
+	left: 26px;
+	bottom: 18px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.lb__you-actions {
+	position: absolute;
+	right: 26px;
+	bottom: 18px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+/* keep the (already-styled) my-hand fan centred within the row */
+.lb__you .hand.my-hand.fan {
+	max-width: 600px;
+}
+
+@media (max-width: 920px) {
+	.lb__log {
+		display: none;
+	}
+}

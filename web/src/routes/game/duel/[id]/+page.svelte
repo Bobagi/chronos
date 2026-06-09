@@ -24,6 +24,7 @@
 	import { authUser } from '$lib/stores/authStore';
 	import { game as gameStateStore, type GameState } from '$lib/stores/game';
 	import '$lib/styles/routes/gameDuelPage.css';
+	import '$lib/styles/routes/duelBoardLayout.css';
 	import { onDestroy, onMount } from 'svelte';
 	import '../../game.css';
 
@@ -864,275 +865,243 @@
 
 <div class="duel-stage-bg" aria-hidden="true"></div>
 
-<div class="fixed-top-bar">
-	<div class="topbar-left">
-		<a href="/" class="home-btn">← {$t('duel.home')}</a>
-		<div class="mode-pill"><strong>⚔️ {$t('duel.mode')}</strong></div>
-	</div>
-	<div class="topbar-right">
-		{#if showDuelCountdown}
-			<div class={`turn-timer ${duelCountdownCritical ? 'critical' : ''}`}>
-				<span class="label">{duelTimerLabel}</span>
-				<span class="time">{duelCountdownText}</span>
+<div class="lb">
+	<header class="lb__opp">
+		<a href="/" class="lb__home" title={$t('duel.home')} aria-label={$t('duel.home')}>←</a>
+		<div class="hud-id">
+			<div class="avatar">{opponentLooksLikeBot ? '🤖' : '👤'}</div>
+			<div>
+				<div class="nm">{playerBUsername}</div>
+				{#if opponentLooksLikeBot}<span class="hud-tag hud-tag--op">BOT</span>{/if}
 			</div>
-		{/if}
-		{#if resolvedWinner === null}
-			<div class="surrender-row">
-				<button
-					type="button"
-					class="surrender-button"
-					on:click={surrenderDuelGame}
-					disabled={!$authUser}
-				>
-					🏳️ {$t('duel.surrender')}
-				</button>
-				{#if !$authUser}
-					<span class="surrender-hint">{$t('duel.loginToSurrender')}</span>
-				{/if}
-			</div>
-		{/if}
-	</div>
-</div>
-
-<div class="board">
-	<section class="zone opponent">
-		<div class="zone-header">
-			<span class="pill name">{opponentLooksLikeBot ? '🤖' : '👤'} {playerBUsername}</span>
-			<span class="pill score" title={$t('duel.roundsWon')}>🏆 {roundsWonB}</span>
-			<span class="pill deck" title={$t('duel.cardsLeft')}>🃏 {deckB}</span>
 		</div>
-		<div class="zone-row two-cols">
-			<div class="deck-col" bind:this={opponentDeckAnchorElement}>
-				<DeckStack
-					deckCount={deckB}
-					cardBackImageUrl="/frames/card-back.png"
-					aspectWidth={430}
-					aspectHeight={670}
-					cardWidthCss={cardWidthCssValue}
-					maxVisible={7}
-					offsetXPx={2}
-					offsetYPx={1.5}
-					direction="right"
-				/>
-			</div>
-			<div class="hand opp-hand fan" bind:this={opponentHandContainerElement}>
-				{#each Array.from({ length: oppHandCount }) as _, i}
-					<div
-						class="card-socket"
-						style={`width:${cardWidthCssValue}; --i:${i}; --n:${oppHandCount}`}
-					>
-						<div class="card-back-wrap" title={$t('duel.opponentCard')}>
-							<img
-								src="/frames/card-back.png"
-								alt="card-back"
-								style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"
-								loading="lazy"
-								decoding="async"
+		<div class="score-orb">
+			<div class="v">{roundsWonB}</div>
+			<div class="k">{$t('duel.roundsWon')}</div>
+		</div>
+		<div class="score-orb">
+			<div class="v">{deckB}</div>
+			<div class="k">{$t('duel.cardsLeft')}</div>
+		</div>
+		<div class="spacer"></div>
+		<div class="lb__oparc" bind:this={opponentDeckAnchorElement}>
+			<div
+				bind:this={opponentHandContainerElement}
+				style="position:absolute;inset:0;pointer-events:none;"
+			></div>
+			<DeckStack
+				deckCount={deckB}
+				cardBackImageUrl="/frames/card-back.png"
+				aspectWidth={430}
+				aspectHeight={670}
+				cardWidthCss={cardWidthCssValue}
+				maxVisible={7}
+				offsetXPx={6}
+				offsetYPx={1}
+				direction="right"
+			/>
+		</div>
+	</header>
+
+	<section class="lb__table">
+		<div class="lb__felt-ring" aria-hidden="true"></div>
+		<div class="lb__column">
+			<div class="lb__cards">
+				<div
+					class="duel-slot"
+					class:slot-removable={canReturnSelectedCardToHand}
+					style={`width:${cardWidthCssValue}; height:calc(${cardWidthCssValue} * 1.55);`}
+				>
+					{#if currentDuelCenter?.aCardCode}
+						<div
+							bind:this={centerSlotAElement}
+							class={`result-wrap ${currentDuelStage === 'REVEAL' && currentDuelRoundWinner === playerA ? 'winner-glow' : currentDuelStage === 'REVEAL' && currentDuelRoundWinner && currentDuelRoundWinner !== playerA ? 'loser-shake' : ''}`}
+							on:click={onCenterCardReturnToHand}
+							title={$t('duel.returnCard')}
+						>
+							<CardComposite
+								artImageUrl={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
+									?.imageUrl ?? ''}
+								frameImageUrl={frameOverlayImageUrl ?? '/frames/default.png'}
+								titleImageUrl={titleOverlayImageUrl}
+								titleText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)?.name ??
+									$gameStateStore.duelCenter.aCardCode}
+								aspectWidth={430}
+								aspectHeight={670}
+								artObjectFit="cover"
+								enableTilt={false}
+								descriptionText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
+									?.description ?? ''}
+								magicValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
+									?.magic ?? 0}
+								mightValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
+									?.might ?? 0}
+								fireValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)?.fire ??
+									0}
+								cornerNumberValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
+									?.number ?? 0}
 							/>
 						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
-	</section>
+					{:else}
+						<div class="slot-empty">
+							<span class="lb__slot-text">{$t('duel.yourCardHere')}</span>
+						</div>
+					{/if}
+				</div>
 
-	<section class="zone center">
-		<div class="center-content">
-			<div class="center-left">
+				<span class="lb__seat-label lb__seat-label--you">{$t('duel.you')}</span>
+
+				<div class="lb__vsrow">
+					<span class="line"></span>
+					<div class="vs" class:clash={currentDuelStage === 'REVEAL'}>
+						<span class="vs__spark"></span>
+						<span class="vs__disc">VS</span>
+					</div>
+					<span class="line"></span>
+				</div>
+
 				<div
-					class="zone-row battlefield"
-					style="gap:20px; align-items:center; justify-content:center; grid-template-columns:auto auto auto;"
+					class="duel-slot"
+					style={`width:${cardWidthCssValue}; height:calc(${cardWidthCssValue} * 1.55);`}
 				>
-					<div
-						class="duel-slot"
-						class:slot-removable={canReturnSelectedCardToHand}
-						style={`width:${cardWidthCssValue}; height:calc(${cardWidthCssValue} * 1.55);`}
-					>
-						{#if currentDuelCenter?.aCardCode}
+					{#if currentDuelCenter?.bCardCode}
+						<div class="flip-wrap" data-cycle={centerRevealCycle}>
 							<div
-								bind:this={centerSlotAElement}
-								class={`result-wrap ${currentDuelStage === 'REVEAL' && currentDuelRoundWinner === playerA ? 'winner-glow' : currentDuelStage === 'REVEAL' && currentDuelRoundWinner && currentDuelRoundWinner !== playerA ? 'loser-shake' : ''}`}
-								on:click={onCenterCardReturnToHand}
-								title={$t('duel.returnCard')}
+								class="flipper"
+								class:start-back={currentDuelStage !== 'REVEAL'}
+								class:animate={currentDuelStage === 'REVEAL'}
+								style={`--flip-ms:${FLIP_MS}ms;`}
 							>
-								<CardComposite
-									artImageUrl={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
-										?.imageUrl ?? ''}
-									frameImageUrl={frameOverlayImageUrl ?? '/frames/default.png'}
-									titleImageUrl={titleOverlayImageUrl}
-									titleText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
-										?.name ?? $gameStateStore.duelCenter.aCardCode}
-									aspectWidth={430}
-									aspectHeight={670}
-									artObjectFit="cover"
-									enableTilt={false}
-									descriptionText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
-										?.description ?? ''}
-									magicValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
-										?.magic ?? 0}
-									mightValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
-										?.might ?? 0}
-									fireValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
-										?.fire ?? 0}
-									cornerNumberValue={cardDetailsCacheByCode.get(
-										$gameStateStore.duelCenter.aCardCode
-									)?.number ?? 0}
-								/>
-							</div>
-						{:else}
-							<div class="slot-empty">
-								<span class="slot-icon">🃏</span>
-							</div>
-						{/if}
-					</div>
-
-					<div class="battle-divider" aria-hidden="true">
-						<span class="battle-divider-orb">VS</span>
-					</div>
-
-					<div
-						class="duel-slot"
-						style={`width:${cardWidthCssValue}; height:calc(${cardWidthCssValue} * 1.55);`}
-					>
-						{#if currentDuelCenter?.bCardCode}
-							<div class="flip-wrap" data-cycle={centerRevealCycle}>
-								<div
-									class="flipper"
-									class:start-back={currentDuelStage !== 'REVEAL'}
-									class:animate={currentDuelStage === 'REVEAL'}
-									style={`--flip-ms:${FLIP_MS}ms;`}
-								>
-									<div class="face front">
-										<div
-											bind:this={centerSlotBElement}
-											class={`result-wrap ${currentDuelStage === 'REVEAL' && currentDuelRoundWinner === playerB ? 'winner-glow' : currentDuelStage === 'REVEAL' && currentDuelRoundWinner && currentDuelRoundWinner !== playerB ? 'loser-shake' : ''}`}
-										>
-											<CardComposite
-												artImageUrl={cardDetailsCacheByCode.get(
-													$gameStateStore.duelCenter.bCardCode
-												)?.imageUrl ?? ''}
-												frameImageUrl={frameOverlayImageUrl ?? '/frames/default.png'}
-												titleImageUrl={titleOverlayImageUrl}
-												titleText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
-													?.name ?? $gameStateStore.duelCenter.bCardCode}
-												aspectWidth={430}
-												aspectHeight={670}
-												artObjectFit="cover"
-												enableTilt={false}
-												descriptionText={cardDetailsCacheByCode.get(
-													$gameStateStore.duelCenter.bCardCode
-												)?.description ?? ''}
-												magicValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
-													?.magic ?? 0}
-												mightValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
-													?.might ?? 0}
-												fireValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
-													?.fire ?? 0}
-												cornerNumberValue={cardDetailsCacheByCode.get(
-													$gameStateStore.duelCenter.bCardCode
-												)?.number ?? 0}
-											/>
-										</div>
-									</div>
-									<div class="face back">
-										<img
-											src={cardBackImageUrl}
-											alt="hidden"
-											style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"
-											loading="lazy"
-											decoding="async"
+								<div class="face front">
+									<div
+										bind:this={centerSlotBElement}
+										class={`result-wrap ${currentDuelStage === 'REVEAL' && currentDuelRoundWinner === playerB ? 'winner-glow' : currentDuelStage === 'REVEAL' && currentDuelRoundWinner && currentDuelRoundWinner !== playerB ? 'loser-shake' : ''}`}
+									>
+										<CardComposite
+											artImageUrl={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
+												?.imageUrl ?? ''}
+											frameImageUrl={frameOverlayImageUrl ?? '/frames/default.png'}
+											titleImageUrl={titleOverlayImageUrl}
+											titleText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
+												?.name ?? $gameStateStore.duelCenter.bCardCode}
+											aspectWidth={430}
+											aspectHeight={670}
+											artObjectFit="cover"
+											enableTilt={false}
+											descriptionText={cardDetailsCacheByCode.get(
+												$gameStateStore.duelCenter.bCardCode
+											)?.description ?? ''}
+											magicValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
+												?.magic ?? 0}
+											mightValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
+												?.might ?? 0}
+											fireValue={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
+												?.fire ?? 0}
+											cornerNumberValue={cardDetailsCacheByCode.get(
+												$gameStateStore.duelCenter.bCardCode
+											)?.number ?? 0}
 										/>
 									</div>
 								</div>
+								<div class="face back">
+									<img
+										src={cardBackImageUrl}
+										alt="hidden"
+										style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"
+										loading="lazy"
+										decoding="async"
+									/>
+								</div>
 							</div>
-						{:else if opponentLooksLikeBot && duelStage === 'PICK_CARD'}
-							<div class="slot-placeholder bot-card-back">
-								<img src={cardBackImageUrl} alt="Bot card hidden" loading="lazy" decoding="async" />
-							</div>
-						{:else}
-							<div class="slot-empty slot-empty-opp">
-								<span class="slot-icon">⚔️</span>
-							</div>
-						{/if}
+						</div>
+					{:else if opponentLooksLikeBot && duelStage === 'PICK_CARD'}
+						<div class="slot-placeholder bot-card-back">
+							<img src={cardBackImageUrl} alt="Bot card hidden" loading="lazy" decoding="async" />
+						</div>
+					{:else}
+						<div class="slot-empty slot-empty-opp">
+							<span class="lb__slot-text">{$t('duel.waiting')}</span>
+						</div>
+					{/if}
+				</div>
+				<span class="lb__seat-label lb__seat-label--op">{playerBUsername}</span>
+			</div>
+
+			{#if duelStage === 'PICK_ATTRIBUTE' && chooserId === playerA}
+				<div class="notice chooser" style="margin-top:12px; text-align:center;">
+					<span>{$t('duel.chooseAttribute')}</span>
+					<div>
+						<button
+							class="btn attribute-option"
+							class:attribute-highlight={isHighlightedAttribute('magic')}
+							disabled={isGameOver()}
+							on:click={() => chooseAttr('magic')}
+							title={$t('duel.chooseMagic', { value: chooserCardDetails?.magic ?? '–' })}
+							aria-label={$t('duel.chooseMagic', { value: chooserCardDetails?.magic ?? '–' })}
+						>
+							<img src="/icons/magic_icon.png" alt="Magic icon" loading="lazy" decoding="async" />
+							{#if chooserCardDetails}
+								<span class="attribute-value">{chooserCardDetails.magic}</span>
+							{/if}
+						</button>
+						<button
+							class="btn attribute-option"
+							class:attribute-highlight={isHighlightedAttribute('might')}
+							disabled={isGameOver()}
+							on:click={() => chooseAttr('might')}
+							title={$t('duel.chooseMight', { value: chooserCardDetails?.might ?? '–' })}
+							aria-label={$t('duel.chooseMight', { value: chooserCardDetails?.might ?? '–' })}
+						>
+							<img
+								src="/icons/strength_icon.png"
+								alt="Might icon"
+								loading="lazy"
+								decoding="async"
+							/>
+							{#if chooserCardDetails}
+								<span class="attribute-value">{chooserCardDetails.might}</span>
+							{/if}
+						</button>
+						<button
+							class="btn attribute-option"
+							class:attribute-highlight={isHighlightedAttribute('fire')}
+							disabled={isGameOver()}
+							on:click={() => chooseAttr('fire')}
+							title={$t('duel.chooseFire', { value: chooserCardDetails?.fire ?? '–' })}
+							aria-label={$t('duel.chooseFire', { value: chooserCardDetails?.fire ?? '–' })}
+						>
+							<img src="/icons/fire_icon.png" alt="Fire icon" loading="lazy" decoding="async" />
+							{#if chooserCardDetails}
+								<span class="attribute-value">{chooserCardDetails.fire}</span>
+							{/if}
+						</button>
 					</div>
 				</div>
+			{:else if duelStage === 'PICK_ATTRIBUTE'}
+				<div class="notice warn" style="margin-top:12px; text-align:center;">
+					{$t('duel.waitingForAttribute', { name: chooserUsername })}
+				</div>
+			{:else if duelStage === 'PICK_CARD'}
+				<div class="duel-hint">{$t('duel.selectCard')}</div>
+			{/if}
 
-				{#if duelStage === 'PICK_ATTRIBUTE' && chooserId === playerA}
-					<div class="notice chooser" style="margin-top:12px; text-align:center;">
-						<span>{$t('duel.chooseAttribute')}</span>
-						<div>
-							<button
-								class="btn attribute-option"
-								class:attribute-highlight={isHighlightedAttribute('magic')}
-								disabled={isGameOver()}
-								on:click={() => chooseAttr('magic')}
-								title={$t('duel.chooseMagic', { value: chooserCardDetails?.magic ?? '–' })}
-								aria-label={$t('duel.chooseMagic', { value: chooserCardDetails?.magic ?? '–' })}
-							>
-								<img src="/icons/magic_icon.png" alt="Magic icon" loading="lazy" decoding="async" />
-								{#if chooserCardDetails}
-									<span class="attribute-value">{chooserCardDetails.magic}</span>
-								{/if}
-							</button>
-							<button
-								class="btn attribute-option"
-								class:attribute-highlight={isHighlightedAttribute('might')}
-								disabled={isGameOver()}
-								on:click={() => chooseAttr('might')}
-								title={$t('duel.chooseMight', { value: chooserCardDetails?.might ?? '–' })}
-								aria-label={$t('duel.chooseMight', { value: chooserCardDetails?.might ?? '–' })}
-							>
-								<img
-									src="/icons/strength_icon.png"
-									alt="Might icon"
-									loading="lazy"
-									decoding="async"
-								/>
-								{#if chooserCardDetails}
-									<span class="attribute-value">{chooserCardDetails.might}</span>
-								{/if}
-							</button>
-							<button
-								class="btn attribute-option"
-								class:attribute-highlight={isHighlightedAttribute('fire')}
-								disabled={isGameOver()}
-								on:click={() => chooseAttr('fire')}
-								title={$t('duel.chooseFire', { value: chooserCardDetails?.fire ?? '–' })}
-								aria-label={$t('duel.chooseFire', { value: chooserCardDetails?.fire ?? '–' })}
-							>
-								<img src="/icons/fire_icon.png" alt="Fire icon" loading="lazy" decoding="async" />
-								{#if chooserCardDetails}
-									<span class="attribute-value">{chooserCardDetails.fire}</span>
-								{/if}
-							</button>
-						</div>
-					</div>
-				{:else if duelStage === 'PICK_ATTRIBUTE'}
-					<div class="notice warn" style="margin-top:12px; text-align:center;">
-						{$t('duel.waitingForAttribute', { name: chooserUsername })}
-					</div>
-				{:else if duelStage === 'PICK_CARD'}
-					<div class="duel-hint">{$t('duel.selectCard')}</div>
-				{/if}
-
-				{#if roundBanner}
-					<div class={`round-banner ${roundBanner.tone}`}>
-						<span class="round-banner-icon">{roundBanner.icon}</span>
-						<span class="round-banner-text">{roundBanner.text}</span>
-					</div>
-				{/if}
-			</div>
-
-			<div class="center-right">
-				<DuelHistory
-					items={duelHistoryItems}
-					resolveCard={resolveDuelHistoryCard}
-					playerLabel={$t('duel.you')}
-					opponentLabel={playerBUsername}
-					{cardBackImageUrl}
-				/>
-			</div>
+			{#if roundBanner}
+				<div class={`round-banner ${roundBanner.tone}`}>
+					<span class="round-banner-icon">{roundBanner.icon}</span>
+					<span class="round-banner-text">{roundBanner.text}</span>
+				</div>
+			{/if}
 		</div>
+
+		<aside class="lb__log">
+			<DuelHistory
+				items={duelHistoryItems}
+				resolveCard={resolveDuelHistoryCard}
+				playerLabel={$t('duel.you')}
+				opponentLabel={playerBUsername}
+				{cardBackImageUrl}
+			/>
+		</aside>
 	</section>
 
 	{#if resolvedWinner !== null && endOutcome}
@@ -1176,83 +1145,107 @@
 		</div>
 	{/if}
 
-	<section class="zone player">
-		<div class="zone-header">
-			<span class="pill name"
-				>👤 {playerAUsername} <span class="you-tag">{$t('duel.you')}</span></span
-			>
-			<span class="pill score" title={$t('duel.roundsWon')}>🏆 {roundsWonA}</span>
-			<span class="pill deck" title={$t('duel.cardsLeft')}>🃏 {deckA}</span>
-		</div>
-		<div class="zone-row two-cols">
-			<div class="deck-col" bind:this={playerDeckAnchorElement}>
-				<DeckStack
-					deckCount={deckA}
-					cardBackImageUrl="/frames/card-back.png"
-					aspectWidth={430}
-					aspectHeight={670}
-					cardWidthCss={cardWidthCssValue}
-					maxVisible={7}
-					offsetXPx={2}
-					offsetYPx={1.5}
-					direction="right"
-				/>
+	<section class="lb__you">
+		<div class="lb__you-hud">
+			<div class="hud-id">
+				<div class="avatar">
+					{#if $authUser?.avatarUrl}<img src={$authUser.avatarUrl} alt="" />{:else}🧙{/if}
+				</div>
+				<div>
+					<div class="nm">
+						{playerAUsername}
+						<span class="hud-tag hud-tag--you">{$t('duel.you')}</span>
+					</div>
+				</div>
 			</div>
-			<div
-				class="hand my-hand fan"
-				bind:this={myHandContainerElement}
-				style={`--spread-override:${myHandCardSpreadPixels ? myHandCardSpreadPixels + 'px' : ''}`}
-			>
-				{#each playerHandCardItems as it, i (it.uid)}
-					{#key it.uid}
-						<button
-							type="button"
-							class="card-socket focus:outline-none"
-							disabled={Boolean($gameStateStore?.winner)}
-							style={`width:${cardWidthCssValue}; --i:${i}; --n:${playerHandCardItems.length}; ${$gameStateStore?.winner ? 'opacity:.6;cursor:not-allowed;' : ''}${pendingHiddenUidSet.has(it.uid) ? ';visibility:hidden;' : ''}`}
-							title={$t('duel.play', { name: it.name ?? it.code })}
-							on:click={(e) => onHandCardClick(e, it.code)}
-						>
-							<div class="flip-wrap" data-cycle={autoFlipCycleCounter}>
-								<div
-									class="flipper"
-									class:animate={pendingCardRevealUidSet.has(it.uid)}
-									class:start-back={pendingCardRevealUidSet.has(it.uid)}
-									on:animationend={() => clearPendingFlipFor(it.uid)}
-									style={`--flip-ms:${FLIP_MS}ms;`}
-								>
-									<div class="face front">
-										<CardComposite
-											artImageUrl={it.imageUrl ?? ''}
-											frameImageUrl={frameOverlayImageUrl ?? '/frames/default.png'}
-											titleImageUrl={titleOverlayImageUrl}
-											titleText={it.name ?? it.code}
-											aspectWidth={430}
-											aspectHeight={670}
-											artObjectFit="cover"
-											enableTilt={true}
-											descriptionText={it.description ?? ''}
-											magicValue={it.magic ?? 0}
-											mightValue={it.might ?? 0}
-											fireValue={it.fire ?? 0}
-											cornerNumberValue={it.number ?? 0}
-										/>
-									</div>
-									<div class="face back">
-										<img
-											src="/frames/card-back.png"
-											alt="card-back"
-											style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"
-											loading="lazy"
-											decoding="async"
-										/>
-									</div>
+			<div class="score-orb">
+				<div class="v">{roundsWonA}</div>
+				<div class="k">{$t('duel.roundsWon')}</div>
+			</div>
+			<div class="score-orb">
+				<div class="v">{deckA}</div>
+				<div class="k">{$t('duel.cardsLeft')}</div>
+			</div>
+		</div>
+
+		<div
+			bind:this={playerDeckAnchorElement}
+			style="position:absolute;left:30px;bottom:30px;width:1px;height:1px;"
+		></div>
+
+		<div
+			class="hand my-hand fan"
+			bind:this={myHandContainerElement}
+			style={`--spread-override:${myHandCardSpreadPixels ? myHandCardSpreadPixels + 'px' : ''}`}
+		>
+			{#each playerHandCardItems as it, i (it.uid)}
+				{#key it.uid}
+					<button
+						type="button"
+						class="card-socket focus:outline-none"
+						disabled={Boolean($gameStateStore?.winner)}
+						style={`width:${cardWidthCssValue}; --i:${i}; --n:${playerHandCardItems.length}; ${$gameStateStore?.winner ? 'opacity:.6;cursor:not-allowed;' : ''}${pendingHiddenUidSet.has(it.uid) ? ';visibility:hidden;' : ''}`}
+						title={$t('duel.play', { name: it.name ?? it.code })}
+						on:click={(e) => onHandCardClick(e, it.code)}
+					>
+						<div class="flip-wrap" data-cycle={autoFlipCycleCounter}>
+							<div
+								class="flipper"
+								class:animate={pendingCardRevealUidSet.has(it.uid)}
+								class:start-back={pendingCardRevealUidSet.has(it.uid)}
+								on:animationend={() => clearPendingFlipFor(it.uid)}
+								style={`--flip-ms:${FLIP_MS}ms;`}
+							>
+								<div class="face front">
+									<CardComposite
+										artImageUrl={it.imageUrl ?? ''}
+										frameImageUrl={frameOverlayImageUrl ?? '/frames/default.png'}
+										titleImageUrl={titleOverlayImageUrl}
+										titleText={it.name ?? it.code}
+										aspectWidth={430}
+										aspectHeight={670}
+										artObjectFit="cover"
+										enableTilt={true}
+										descriptionText={it.description ?? ''}
+										magicValue={it.magic ?? 0}
+										mightValue={it.might ?? 0}
+										fireValue={it.fire ?? 0}
+										cornerNumberValue={it.number ?? 0}
+									/>
+								</div>
+								<div class="face back">
+									<img
+										src="/frames/card-back.png"
+										alt="card-back"
+										style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"
+										loading="lazy"
+										decoding="async"
+									/>
 								</div>
 							</div>
-						</button>
-					{/key}
-				{/each}
-			</div>
+						</div>
+					</button>
+				{/key}
+			{/each}
+		</div>
+
+		<div class="lb__you-actions">
+			{#if showDuelCountdown}
+				<div class={`turn-timer ${duelCountdownCritical ? 'critical' : ''}`}>
+					<span class="label">{duelTimerLabel}</span>
+					<span class="time">{duelCountdownText}</span>
+				</div>
+			{/if}
+			{#if resolvedWinner === null}
+				<button
+					type="button"
+					class="surrender-button"
+					on:click={surrenderDuelGame}
+					disabled={!$authUser}
+				>
+					🏳️ {$t('duel.surrender')}
+				</button>
+			{/if}
 		</div>
 	</section>
 </div>

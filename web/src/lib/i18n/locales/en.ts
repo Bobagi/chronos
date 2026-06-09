@@ -118,6 +118,8 @@ const en = {
 		chooseFire: 'Choose fire ({value})',
 		waitingForAttribute: 'Waiting for {name} to choose the attribute…',
 		selectCard: 'Select a card from your hand to send into battle.',
+		waiting: 'Waiting…',
+		yourCardHere: 'Your card goes here',
 		you: 'You',
 		play: 'Play {name}',
 		playAgain: 'Play again',
