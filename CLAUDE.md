@@ -126,10 +126,19 @@ web/                         SvelteKit frontend
                                      felt table (arcane ring + VS medallion + vertical card column),
                                      battle log overlaid right, hand fan + HUD + timer/surrender bottom
   src/lib/duel/                            pure duel logic extracted from the page:
-      defeatAnimation.ts   canvas particle "defeat" effect (fire/magic/might)
+      defeatAnimation.ts   OLD canvas "defeat" effect — replaced by lib/cards (kept, unused)
       duelCenter.ts        normalizeDuelCenterForView + detectChosenAttributeMode
       history.ts           battle-log parsing + live-round synthesis
       historyTypes.ts      shared types
+  src/lib/cards/                           CARD FX (designer handoff, adapted to our raster art):
+      cardDestruction.ts   CardDestroyer: burn/dissolve (SVG #fx-destroy threshold shader +
+                           canvas embers) + crush (#fx-crush displacement dent + debris); takes
+                           {card, wrap, canvas}; strictly confined to the card (kills shadow/halo)
+      CardFxFilters.svelte the two SVG filters (#fx-destroy/#fx-crush); render ONCE per page
+      holoTilt.ts          tilt rAF loop → foil CSS vars; foil palettes + foilStyleVars()
+      cardFx.css           foil layers (irid/sheen/specular/glow) + destruction CSS
+  src/routes/cards-lab/+page.svelte        TUNING screen: real card + holo foil + Burn/Crush/
+                           Dissolve, every param adjustable (localStorage), Export JSON to bake
   src/lib/api/                             client + proxy to the backend
 ```
 
@@ -271,6 +280,13 @@ web/                         SvelteKit frontend
 
 ## Status (update as you go)
 
+- **Server-authoritative duel** (anti-cheat): `DuelProgressionService` drives every active duel to
+  completion on its own (`@nestjs/schedule`), so a match continues & finishes even with no browser open;
+  the client is a pure renderer (polls state, `CLIENT_DRIVES_TIMEOUTS=false`, only sends real moves).
+- **Card FX** (designer handoff in `web/src/lib/cards`): holographic foil tilt-shine + burn/dissolve/
+  crush destruction, strictly confined to the card. The duel round-loss effect is now the destruction
+  (fire→burn, magic→dissolve, might→crush via `playDuelDestruction` on the losing card). Tune everything
+  at **`/cards-lab`** and Export the JSON; baked-in defaults live in `cardDestruction.ts` / `holoTilt.ts`.
 - Attribute Duel is fully playable end-to-end (the round-winner bug is fixed; matches resolve a winner).
 - Whole-app UI redesign done (dark-fantasy gold theme): landing/login, dashboard, friends modal,
   gallery, and the single-screen duel board with a scrollable battle log and Hearthstone-style hand

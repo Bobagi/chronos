@@ -15,7 +15,13 @@
 	} from '$lib/api/GameClient';
 	import CardComposite from '$lib/components/CardComposite.svelte';
 	import DuelHistory from '$lib/components/DuelHistory.svelte';
-	import { startAttributeThemedDefeatAnimation } from '$lib/duel/defeatAnimation';
+	import CardFxFilters from '$lib/cards/CardFxFilters.svelte';
+	import {
+		CardDestroyer,
+		DESTRUCTION_DEFAULTS,
+		type DestructionType
+	} from '$lib/cards/cardDestruction';
+	import '$lib/cards/cardFx.css';
 	import { detectChosenAttributeMode, normalizeDuelCenterForView } from '$lib/duel/duelCenter';
 	import { buildHistoryFromLog, buildLiveRound } from '$lib/duel/history';
 	import { t } from '$lib/i18n';
@@ -565,6 +571,31 @@
 		await loadGameStateOrFinalResult();
 	}
 
+	// Round-loss destruction: the losing card burns (fire) / dissolves (magic) /
+	// crushes (might), strictly on the card. Tunable in /cards-lab.
+	const DUEL_DESTRUCTION_DELAY_MS = 650;
+	function playDuelDestruction(loserEl: HTMLElement, mode: 'fire' | 'magic' | 'might') {
+		const wrap = loserEl.parentElement as HTMLElement | null;
+		if (!wrap) return;
+		loserEl.style.animation = 'none';
+		loserEl.classList.add('cardfx-card');
+		wrap.classList.add('cardfx-wrap');
+		const canvas = document.createElement('canvas');
+		canvas.className = 'fx-canvas';
+		wrap.appendChild(canvas);
+		const type: DestructionType =
+			mode === 'magic' ? 'dissolve' : mode === 'might' ? 'crush' : 'burn';
+		const destroyer = new CardDestroyer({ card: loserEl, wrap, canvas });
+		destroyer.play(type, { ...DESTRUCTION_DEFAULTS, destructDuration: 1.8 });
+		const cleanupMs = type === 'crush' ? 2000 : 1.8 * 1000 + 1400;
+		window.setTimeout(() => {
+			destroyer.reset(true);
+			canvas.remove();
+			loserEl.classList.remove('cardfx-card');
+			wrap.classList.remove('cardfx-wrap');
+		}, cleanupMs);
+	}
+
 	function findLoserCenterElement(): HTMLElement | null {
 		const winner = currentDuelRoundWinner;
 		if (!winner) return null;
@@ -838,13 +869,8 @@
 			lastDefeatEffectCycleId = centerRevealCycle;
 			if (loserEl) {
 				window.setTimeout(() => {
-					(loserEl as HTMLElement).style.animation = 'none';
-					startAttributeThemedDefeatAnimation(
-						loserEl as HTMLElement,
-						mode,
-						DEFEAT_EFFECT_DURATION_MS
-					);
-				}, LOSER_SHAKE_BEFORE_DEFEAT_EFFECT_MS);
+					playDuelDestruction(loserEl as HTMLElement, mode);
+				}, DUEL_DESTRUCTION_DELAY_MS);
 			}
 		}
 	}
@@ -893,6 +919,8 @@
 </script>
 
 <div class="duel-stage-bg" aria-hidden="true"></div>
+
+<CardFxFilters />
 
 <div class="lb">
 	<header class="lb__opp">
