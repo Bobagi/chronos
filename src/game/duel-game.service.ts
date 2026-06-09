@@ -16,6 +16,12 @@ import {
 } from './game.types';
 
 const TURN_DURATION_MS = 10_000;
+// Server-authoritative autonomous progression (so a match keeps going and finishes
+// even when no browser is open). The server steps in a little AFTER the client's own
+// turn deadline, and holds REVEAL long enough for an open client's animation — so an
+// active player is never disrupted, while abandoned games still play out to the end.
+const SERVER_PICK_GRACE_MS = 3_000;
+const SERVER_REVEAL_HOLD_MS = 6_000;
 
 interface DuelParticipants {
   playerAId: string;
@@ -518,6 +524,84 @@ export class DuelGameService {
     );
 
     return updatedGame;
+  }
+
+  /**
+   * Server-authoritative tick for a single duel. If the current turn's deadline (or
+   * the reveal hold) has elapsed, it resolves/advances the game exactly like the
+   * client does on a timeout — auto-picking the pending card/attribute, letting the
+   * bot respond, and advancing the round. Safe to call repeatedly: every step is
+   * stage-guarded inside its own transaction, so it can't double-resolve a turn even
+   * if an open client acts at the same time. Returns true if it advanced the game.
+   */
+  async progressDueDuel(gameId: string): Promise<boolean> {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      select: {
+        id: true,
+        mode: true,
+        duelStage: true,
+        duelCenter: true,
+        playerAId: true,
+        playerBId: true,
+        winner: true,
+        updatedAt: true,
+      },
+    });
+
+    if (
+      game === null ||
+      game.mode !== 'ATTRIBUTE_DUEL' ||
+      game.duelStage === 'RESOLVED' ||
+      game.winner !== null
+    ) {
+      return false;
+    }
+
+    const duelCenterState = this.normalizeDuelCenter(game.duelCenter);
+    const now = Date.now();
+
+    if (game.duelStage === 'REVEAL') {
+      // REVEAL carries no deadline; the moment it was entered is updatedAt.
+      if (now - game.updatedAt.getTime() < SERVER_REVEAL_HOLD_MS) {
+        return false;
+      }
+      await this.advanceDuelRound(gameId);
+      return true;
+    }
+
+    const deadline = duelCenterState.deadlineAt;
+    if (deadline === null || now < deadline + SERVER_PICK_GRACE_MS) {
+      return false;
+    }
+
+    if (game.duelStage === 'PICK_CARD') {
+      // chooseCardForDuel runs the pick-phase timeout, which auto-fills any un-played
+      // hand and then auto-resolves the attribute (and the bot's move). The dummy
+      // action is ignored because the timeout fills both cards first.
+      await this.chooseCardForDuel(gameId, {
+        playerId: game.playerAId,
+        cardCode: '__server_timeout__',
+      });
+      return true;
+    }
+
+    if (game.duelStage === 'PICK_ATTRIBUTE') {
+      const chooserId = duelCenterState.chooserId ?? game.playerAId;
+      const attribute =
+        (await this.determineStrongestAttributeForChooser(
+          { playerAId: game.playerAId, playerBId: game.playerBId },
+          duelCenterState,
+          chooserId,
+        )) ?? this.randomAttribute();
+      await this.chooseAttributeForDuel(gameId, {
+        playerId: chooserId,
+        attribute,
+      });
+      return true;
+    }
+
+    return false;
   }
 
   async unchooseCardForDuel(gameId: string, action: { playerId: string }) {

@@ -144,9 +144,21 @@ web/                         SvelteKit frontend
   `deserializeDuelCenter` must read/write the SAME keys. A past bug read `roundWinner` while writing
   `roundWinnerId`, so every round scored as a draw and matches were unwinnable. Deserialize now reads
   `roundWinnerId` (with `roundWinner` fallback).
-- **Client auto-resolves on a 10s turn timer.** The duel page auto-picks a card/attribute when the
-  per-turn deadline passes (`TURN_DURATION_MS = 10_000`). For manual/browser testing, act within ~10s
-  of creating the game or it will auto-advance through rounds on its own.
+- **Server-authoritative duel progression.** The duel state machine lives entirely on the server
+  (`duel-game.service.ts`). `DuelProgressionService` (`duel-progression.service.ts`) is a
+  `@nestjs/schedule` `@Interval(1500)` loop that calls `DuelGameService.progressDueDuel(gameId)` for
+  every active `ATTRIBUTE_DUEL` (`winner` null, `duelStage` ≠ `RESOLVED`): when a turn's deadline (or
+  the REVEAL hold) elapses it auto-resolves/advances it exactly like a timeout — **so a match keeps
+  going and finishes even with no browser open** (it stops "pausing" when a player leaves the screen).
+  Each step is stage-guarded inside its own transaction, so it never double-resolves even if an open
+  client acts at the same time. The server steps in a little AFTER the client's own deadline
+  (`SERVER_PICK_GRACE_MS = 3_000`) and holds REVEAL `SERVER_REVEAL_HOLD_MS = 6_000` so an active
+  player's countdown/animation is never cut short. Requires `ScheduleModule.forRoot()` in
+  `app.module.ts`. (Next step for full anti-cheat: push state to clients via the WS gateway and drop
+  the client-side timer so the client only sends intents.)
+- **Client also auto-resolves on a 10s turn timer.** The duel page still auto-picks a card/attribute
+  when the per-turn deadline passes (`TURN_DURATION_MS = 10_000`) — now a redundancy/snappiness layer
+  on top of the server loop. For manual/browser testing, act within ~10s or it auto-advances.
 - **Game routes are chromeless.** `+layout.svelte` hides the global TopBar/footer on `/game/*`; the
   board owns the viewport (`height: 100dvh`, no page scroll). Card sizes are viewport-height based so
   both hands + the battlefield fit one screen; the battle log scrolls inside its own panel.
