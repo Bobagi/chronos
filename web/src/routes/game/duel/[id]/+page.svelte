@@ -896,7 +896,7 @@
 				{@const off = i - (n - 1) / 2}
 				<div
 					class="lb__oparc-card"
-					style={`transform: translateX(calc(-50% + ${off * 15}px)); z-index:${20 - Math.round(Math.abs(off))};`}
+					style={`transform: translateX(calc(-50% + ${off * 19}px)); z-index:${i};`}
 					title={$t('duel.opponentCard')}
 				>
 					<img src="/frames/card-back.png" alt="" loading="lazy" decoding="async" />

@@ -86,10 +86,9 @@
 									{#if sideState(record, 'a') === 'win'}<span class="crown">👑</span>{/if}
 								</div>
 								<div class="fighter-meta">
-									<span class="owner you">{playerLabel}</span>
+									<span class={`stat ${meta.cssClass}`}>{record.aVal ?? '–'}</span>
 									<span class="card-name">{thumbName(record.aCode, record.aName)}</span>
 								</div>
-								<span class={`stat ${meta.cssClass}`}>{record.aVal ?? '–'}</span>
 							</div>
 
 							<div class="center-mark">
@@ -97,9 +96,8 @@
 							</div>
 
 							<div class={`fighter opp ${sideState(record, 'b')}`}>
-								<span class={`stat ${meta.cssClass}`}>{record.bVal ?? '–'}</span>
 								<div class="fighter-meta">
-									<span class="owner opp">{opponentLabel}</span>
+									<span class={`stat ${meta.cssClass}`}>{record.bVal ?? '–'}</span>
 									<span class="card-name">{thumbName(record.bCode, record.bName)}</span>
 								</div>
 								<div class="thumb">
@@ -372,46 +370,29 @@
 	.fighter-meta {
 		display: flex;
 		flex-direction: column;
-		gap: 1px;
+		align-items: flex-start;
+		gap: 2px;
 		min-width: 0;
 	}
 	.fighter.opp .fighter-meta {
 		align-items: flex-end;
 		text-align: right;
 	}
-	.owner {
-		font-size: 0.62rem;
-		font-weight: 800;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-	}
-	.owner.you {
-		color: #7fe3ff;
-	}
-	.owner.opp {
-		color: #ff9a9a;
-	}
 	.card-name {
-		font-size: 0.78rem;
+		font-size: 0.74rem;
 		font-weight: 600;
 		color: #f3f7ff;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		max-width: 96px;
+		max-width: 100%;
 	}
 
 	.stat {
-		flex: 0 0 auto;
-		min-width: 30px;
-		text-align: center;
 		font-variant-numeric: tabular-nums;
 		font-weight: 800;
-		font-size: 1.05rem;
-		border-radius: 8px;
-		padding: 3px 6px;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: rgba(0, 0, 0, 0.32);
+		font-size: 1.35rem;
+		line-height: 1;
 	}
 	.stat.attr-fire {
 		color: #ffb27a;
@@ -516,8 +497,7 @@
 			height: 45px;
 		}
 		.stat {
-			font-size: 0.95rem;
-			min-width: 26px;
+			font-size: 1.15rem;
 		}
 	}
 </style>
