@@ -58,7 +58,7 @@
 	$: currentDuelRoundWinner = currentDuelCenter?.roundWinner ?? null;
 	// Sized against viewport height so the whole board fits one screen without
 	// scrolling (both hands + the battlefield visible at once).
-	const cardWidthCssValue = 'clamp(76px, 13.5vh, 150px)';
+	const cardWidthCssValue = 'clamp(92px, 15.5vh, 178px)';
 
 	let now = Date.now();
 	let duelTimerHandle: ReturnType<typeof setInterval> | null = null;
@@ -893,7 +893,7 @@
 				{@const off = i - (n - 1) / 2}
 				<div
 					class="lb__oparc-card"
-					style={`transform: translateX(calc(-50% + ${off * 26}px)) rotate(${off * 7}deg); z-index:${20 - Math.round(Math.abs(off))};`}
+					style={`transform: translateX(calc(-50% + ${off * 15}px)); z-index:${20 - Math.round(Math.abs(off))};`}
 					title={$t('duel.opponentCard')}
 				>
 					<img src="/frames/card-back.png" alt="" loading="lazy" decoding="async" />

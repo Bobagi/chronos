@@ -154,15 +154,19 @@ web/                         SvelteKit frontend
   into the center, so any interactive center-zone UI must sit above them. The attribute picker
   (`.notice.chooser` in `game/notices.css`) is `position: relative; z-index: 1600` for exactly this —
   without it the picker renders behind the hand and its buttons are unclickable.
-- **Duel board layout = the designer's "mesa".** The board is `.lb` (a 3-row grid in
-  `duelBoardLayout.css`). The vertical card column uses `.lb__cards { flex-direction: column-reverse }`
-  so the OPPONENT card shows on top while the binding-heavy YOUR-card markup stays first in source
-  (slot A = `aCardCode` = you, slot B = `bCardCode` = opponent — don't swap those). The old `.zone`/
-  `.fixed-top-bar` CSS is now unused. Cards/flip/chooser/round-banner/endscreen styling and the
-  `.hand.my-hand.fan` are unchanged — only the page layout moved. The in-play cards are sized in `vh`
-  (`.lb__cards .duel-slot` ≈ `9.5vh`) and the chooser/hint/banner live in `.lb__notices` pinned
-  **absolute to the felt bottom**, so the column + chooser fit one screen (even short laptops) without
-  the felt clipping them. The opponent hand is a small fanned arc (`.lb__oparc-card`), not a deck pile.
+- **Duel board layout = the designer's "mesa".** The board is `.lb` (in `duelBoardLayout.css`): the
+  felt (`.lb__table`) fills the WHOLE viewport and everything else (opponent strip `.lb__opp`, hand+HUD
+  strip `.lb__you`, log `.lb__log`, chooser `.lb__notices`) is an absolute OVERLAY on top — so the big
+  card column is the focus and the hand sits on top at the bottom. The column uses
+  `.lb__cards { flex-direction: column-reverse }` so the OPPONENT card shows on top while the
+  binding-heavy YOUR-card markup stays first in source (slot A = `aCardCode` = you, slot B =
+  `bCardCode` = opponent — don't swap those). In-play cards are sized in `vh` (`.lb__cards .duel-slot`
+  ≈ `16vh`) and hand cards via `cardWidthCssValue` (≈ `15.5vh`); `.lb__table` reserves `8vh` top /
+  `26vh` bottom so the column never collides with the strips. The chooser (`.lb__notices`,
+  `z-index:1600`) sits just above the hand and stays clickable. The opponent hand is a small offset
+  stack of card backs (`.lb__oparc-card`, no fan rotation), not a deck pile. The old `.zone`/
+  `.fixed-top-bar` CSS is unused; cards/flip/chooser/round-banner/endscreen and `.hand.my-hand.fan`
+  are unchanged.
 - **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
   `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
   reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults

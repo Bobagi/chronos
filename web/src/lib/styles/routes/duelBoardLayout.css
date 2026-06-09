@@ -4,16 +4,17 @@
  * Only LAYOUT lives here; cards/flip/chooser/hand-fan/round-banner/endscreen come
  * from game.css + gameDuelPage.css.
  *
- *   ┌ opponent strip (hud + score orbs + deck arc) ┐  auto
- *   │ felt table: opp card / VS / your card        │  1fr   (log overlaid right)
- *   └ your strip: HUD · hand fan · timer+surrender ┘  auto
+ * The felt (.lb__table) fills the WHOLE viewport; the opponent strip, the hand +
+ * HUD strip, the battle log and the chooser are absolute OVERLAYS on top of it, so
+ * the big card column (opp card / VS / your card) is the focus and the hand sits on
+ * top at the bottom, always visible.
  */
 
+/* The felt fills the whole viewport; everything else (HUDs, opponent fan, hand,
+   timer, log) is an absolute overlay on top of it, so the card duel is the focus. */
 .lb {
 	position: relative;
 	height: 100dvh;
-	display: grid;
-	grid-template-rows: auto minmax(0, 1fr) auto;
 	overflow: hidden;
 	color: var(--text);
 }
@@ -104,12 +105,21 @@
 
 /* ---------- row 1: opponent strip ---------- */
 .lb__opp {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 5;
 	display: flex;
 	align-items: center;
 	gap: 16px;
 	padding: 12px 26px;
-	background: linear-gradient(180deg, rgba(120, 40, 40, 0.22), transparent);
-	border-bottom: 1px solid var(--border-soft);
+	background: linear-gradient(
+		180deg,
+		rgba(120, 40, 40, 0.28),
+		rgba(7, 10, 20, 0.5) 60%,
+		transparent
+	);
 }
 .lb__opp .spacer {
 	flex: 1;
@@ -152,10 +162,13 @@
 
 /* ---------- row 2: the felt table ---------- */
 .lb__table {
-	position: relative;
+	position: absolute;
+	inset: 0;
 	display: grid;
 	place-items: center;
-	padding: 6px 0 84px;
+	/* leave room at the top for the opponent strip and at the bottom for the hand,
+	   so the big card column sits in the middle and isn't covered. */
+	padding: 8vh 0 26vh;
 	overflow: hidden;
 	background:
 		radial-gradient(58% 60% at 50% 50%, rgba(64, 128, 72, 0.16), transparent 70%),
@@ -166,10 +179,10 @@
 	left: 50%;
 	top: 50%;
 	transform: translate(-50%, -50%);
-	width: min(46vh, 440px);
-	height: min(46vh, 440px);
+	width: min(68vh, 720px);
+	height: min(68vh, 720px);
 	border-radius: 50%;
-	border: 1.5px dashed rgba(231, 178, 74, 0.22);
+	border: 1.5px dashed rgba(231, 178, 74, 0.2);
 	pointer-events: none;
 }
 .lb__felt-ring::after {
@@ -297,12 +310,17 @@
 
 /* ---------- row 3: your hand + HUD + actions ---------- */
 .lb__you {
-	position: relative;
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 6;
 	display: flex;
 	align-items: flex-end;
 	justify-content: center;
 	padding: 0 26px 10px;
-	min-height: 158px;
+	height: 26vh;
+	min-height: 170px;
 }
 .lb__you-hud {
 	position: absolute;
@@ -330,8 +348,8 @@
    (opponent card + VS + your card) fits one screen — even short laptops — without
    the felt clipping the top card or hiding the chooser. */
 .lb__cards .duel-slot {
-	width: clamp(50px, 9.5vh, 104px) !important;
-	height: calc(clamp(50px, 9.5vh, 104px) * 1.55) !important;
+	width: clamp(90px, 16vh, 200px) !important;
+	height: calc(clamp(90px, 16vh, 200px) * 1.55) !important;
 }
 .lb__cards {
 	gap: 4px;
@@ -348,7 +366,7 @@
 .lb__notices {
 	position: absolute;
 	left: 50%;
-	bottom: 12px;
+	bottom: clamp(180px, 27.5vh, 300px);
 	transform: translateX(-50%);
 	z-index: 1600;
 	display: flex;
