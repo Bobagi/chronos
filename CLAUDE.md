@@ -159,7 +159,10 @@ web/                         SvelteKit frontend
   so the OPPONENT card shows on top while the binding-heavy YOUR-card markup stays first in source
   (slot A = `aCardCode` = you, slot B = `bCardCode` = opponent — don't swap those). The old `.zone`/
   `.fixed-top-bar` CSS is now unused. Cards/flip/chooser/round-banner/endscreen styling and the
-  `.hand.my-hand.fan` are unchanged — only the page layout moved.
+  `.hand.my-hand.fan` are unchanged — only the page layout moved. The in-play cards are sized in `vh`
+  (`.lb__cards .duel-slot` ≈ `9.5vh`) and the chooser/hint/banner live in `.lb__notices` pinned
+  **absolute to the felt bottom**, so the column + chooser fit one screen (even short laptops) without
+  the felt clipping them. The opponent hand is a small fanned arc (`.lb__oparc-card`), not a deck pile.
 - **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
   `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
   reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults

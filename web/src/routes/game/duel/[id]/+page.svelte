@@ -14,7 +14,6 @@
 		unchooseChronosDuelCard
 	} from '$lib/api/GameClient';
 	import CardComposite from '$lib/components/CardComposite.svelte';
-	import DeckStack from '$lib/components/DeckStack.svelte';
 	import DuelHistory from '$lib/components/DuelHistory.svelte';
 	import { startAttributeThemedDefeatAnimation } from '$lib/duel/defeatAnimation';
 	import { detectChosenAttributeMode, normalizeDuelCenterForView } from '$lib/duel/duelCenter';
@@ -889,17 +888,17 @@
 				bind:this={opponentHandContainerElement}
 				style="position:absolute;inset:0;pointer-events:none;"
 			></div>
-			<DeckStack
-				deckCount={deckB}
-				cardBackImageUrl="/frames/card-back.png"
-				aspectWidth={430}
-				aspectHeight={670}
-				cardWidthCss={cardWidthCssValue}
-				maxVisible={7}
-				offsetXPx={6}
-				offsetYPx={1}
-				direction="right"
-			/>
+			{#each Array.from({ length: Math.min(oppHandCount || 0, 7) }) as _, i (i)}
+				{@const n = Math.min(oppHandCount || 0, 7)}
+				{@const off = i - (n - 1) / 2}
+				<div
+					class="lb__oparc-card"
+					style={`transform: translateX(calc(-50% + ${off * 26}px)) rotate(${off * 7}deg); z-index:${20 - Math.round(Math.abs(off))};`}
+					title={$t('duel.opponentCard')}
+				>
+					<img src="/frames/card-back.png" alt="" loading="lazy" decoding="async" />
+				</div>
+			{/each}
 		</div>
 	</header>
 
@@ -1026,7 +1025,9 @@
 				</div>
 				<span class="lb__seat-label lb__seat-label--op">{playerBUsername}</span>
 			</div>
+		</div>
 
+		<div class="lb__notices">
 			{#if duelStage === 'PICK_ATTRIBUTE' && chooserId === playerA}
 				<div class="notice chooser" style="margin-top:12px; text-align:center;">
 					<span>{$t('duel.chooseAttribute')}</span>
