@@ -151,14 +151,24 @@ web/                         SvelteKit frontend
   the REVEAL hold) elapses it auto-resolves/advances it exactly like a timeout — **so a match keeps
   going and finishes even with no browser open** (it stops "pausing" when a player leaves the screen).
   Each step is stage-guarded inside its own transaction, so it never double-resolves even if an open
-  client acts at the same time. The server steps in a little AFTER the client's own deadline
-  (`SERVER_PICK_GRACE_MS = 3_000`) and holds REVEAL `SERVER_REVEAL_HOLD_MS = 6_000` so an active
-  player's countdown/animation is never cut short. Requires `ScheduleModule.forRoot()` in
-  `app.module.ts`. (Next step for full anti-cheat: push state to clients via the WS gateway and drop
-  the client-side timer so the client only sends intents.)
-- **Client also auto-resolves on a 10s turn timer.** The duel page still auto-picks a card/attribute
-  when the per-turn deadline passes (`TURN_DURATION_MS = 10_000`) — now a redundancy/snappiness layer
-  on top of the server loop. For manual/browser testing, act within ~10s or it auto-advances.
+  client acts at the same time. The server steps in just AFTER the per-turn deadline
+  (`SERVER_PICK_GRACE_MS = 1_500`, a small latency buffer) and holds REVEAL `SERVER_REVEAL_HOLD_MS =
+  4_800` (long enough for the flip/defeat animation). Requires `ScheduleModule.forRoot()` in
+  `app.module.ts`.
+- **The duel client is a pure renderer — it does NOT drive the game.** `CLIENT_DRIVES_TIMEOUTS = false`
+  in the duel page: the client never auto-picks on timeout and never calls `advance` (that logic is
+  kept behind the flag for local debugging only). Instead it **polls `GET state` every
+  `STATE_POLL_INTERVAL_MS = 1000`** and renders whatever the server returns, so it reflects the
+  server's own timeouts/advances and (in PvP) the opponent's moves. It still sends the player's real
+  moves over REST (`choose card/attribute`, surrender) — which the server validates — so a hacked
+  client can't stall a match or fake the clock; the server enforces everything. **Gotcha:** because the
+  reveal block re-runs on every poll, the flip/defeat animation is gated on a `previousDuelStage`
+  transition (only fires when the stage actually enters `REVEAL`), and the hand is reconciled
+  (`reconcile()` keeps existing card uids) so polling never re-animates or flickers. The `now`
+  interval (250ms) is now display-only (the countdown). `TURN_DURATION_MS = 10_000` is the server's
+  per-turn deadline. (Possible future polish: swap polling for the WS gateway `game` namespace —
+  handlers already emit `state` to room `game:<id>`; would need an nginx `location /socket.io/` →
+  `:3056` and a socket.io-client.)
 - **Game routes are chromeless.** `+layout.svelte` hides the global TopBar/footer on `/game/*`; the
   board owns the viewport (`height: 100dvh`, no page scroll). Card sizes are viewport-height based so
   both hands + the battlefield fit one screen; the battle log scrolls inside its own panel.

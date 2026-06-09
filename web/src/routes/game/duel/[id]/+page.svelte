@@ -34,6 +34,12 @@
 	export const DEFEAT_EFFECT_DURATION_MS = 2200;
 	export const REVEAL_EXTRA_BUFFER_MS = 400;
 
+	// The server (DuelProgressionService) is the single authority for turn timeouts and
+	// round advancement. The client never drives the game — it only renders the latest
+	// server state (polled) and sends real moves. Flip this on only to debug locally.
+	const CLIENT_DRIVES_TIMEOUTS = false;
+	const STATE_POLL_INTERVAL_MS = 1000;
+
 	type CardDetails = {
 		code: string;
 		name: string;
@@ -66,6 +72,7 @@
 
 	let now = Date.now();
 	let duelTimerHandle: ReturnType<typeof setInterval> | null = null;
+	let duelStatePollHandle: ReturnType<typeof setInterval> | null = null;
 	let duelTimeoutSignature: string | null = null;
 	let duelTimeoutHandledForSignature = false;
 	let duelTimeoutResolver: Promise<void> | null = null;
@@ -95,6 +102,7 @@
 	let autoFlipCycleCounter = 0;
 
 	let centerRevealCycle = 0;
+	let previousDuelStage: string | null = null;
 	let advanceTimer: number | null = null;
 
 	let fxLayerElement: HTMLDivElement | null = null;
@@ -424,27 +432,33 @@
 				const newOppCount = Array.isArray(state.hands?.[opp]) ? state.hands[opp].length : 0;
 
 				if (state.mode === 'ATTRIBUTE_DUEL' && state.duelStage === 'REVEAL') {
-					centerRevealCycle++;
+					// Animate the flip/defeat only once per reveal — polling re-runs this block.
+					if (previousDuelStage !== 'REVEAL') {
+						centerRevealCycle++;
+					}
 					if (advanceTimer) window.clearTimeout(advanceTimer);
-					advanceTimer = window.setTimeout(
-						async () => {
-							try {
-								await advanceChronosDuel(currentGameId);
-							} finally {
-								await loadGameStateOrFinalResult();
-							}
-						},
-						Math.max(
-							REVEAL_PAUSE_MS,
-							LOSER_SHAKE_BEFORE_DEFEAT_EFFECT_MS +
-								DEFEAT_EFFECT_DURATION_MS +
-								REVEAL_EXTRA_BUFFER_MS
-						)
-					);
+					if (CLIENT_DRIVES_TIMEOUTS) {
+						advanceTimer = window.setTimeout(
+							async () => {
+								try {
+									await advanceChronosDuel(currentGameId);
+								} finally {
+									await loadGameStateOrFinalResult();
+								}
+							},
+							Math.max(
+								REVEAL_PAUSE_MS,
+								LOSER_SHAKE_BEFORE_DEFEAT_EFFECT_MS +
+									DEFEAT_EFFECT_DURATION_MS +
+									REVEAL_EXTRA_BUFFER_MS
+							)
+						);
+					}
 				} else if (advanceTimer) {
 					window.clearTimeout(advanceTimer);
 					advanceTimer = null;
 				}
+				previousDuelStage = state.duelStage;
 
 				if (hasInitialStateLoaded) {
 					if (createdFromDeck.length) {
@@ -564,6 +578,13 @@
 			duelTimerHandle = window.setInterval(() => {
 				now = Date.now();
 			}, 250);
+			// Server-authoritative: poll the latest state so the client reflects the
+			// server's own timeouts/advances (and a live PvP opponent's moves).
+			duelStatePollHandle = window.setInterval(() => {
+				if (currentGameId && resolvedWinner === null && !duelTimeoutResolver) {
+					void loadGameStateOrFinalResult();
+				}
+			}, STATE_POLL_INTERVAL_MS);
 		}
 		await ensureCatalogLoaded();
 		await loadGameStateOrFinalResult();
@@ -575,6 +596,10 @@
 		if (duelTimerHandle) {
 			window.clearInterval(duelTimerHandle);
 			duelTimerHandle = null;
+		}
+		if (duelStatePollHandle) {
+			window.clearInterval(duelStatePollHandle);
+			duelStatePollHandle = null;
 		}
 	});
 
@@ -749,6 +774,7 @@
 			duelRemainingMs !== null ? duelRemainingMs <= 0 : deadline !== null && Date.now() >= deadline;
 
 		if (
+			CLIENT_DRIVES_TIMEOUTS &&
 			browser &&
 			!duelTimeoutHandledForSignature &&
 			deadlineReached &&

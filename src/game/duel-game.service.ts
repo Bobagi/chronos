@@ -20,8 +20,8 @@ const TURN_DURATION_MS = 10_000;
 // even when no browser is open). The server steps in a little AFTER the client's own
 // turn deadline, and holds REVEAL long enough for an open client's animation — so an
 // active player is never disrupted, while abandoned games still play out to the end.
-const SERVER_PICK_GRACE_MS = 3_000;
-const SERVER_REVEAL_HOLD_MS = 6_000;
+const SERVER_PICK_GRACE_MS = 1_500;
+const SERVER_REVEAL_HOLD_MS = 4_800;
 
 interface DuelParticipants {
   playerAId: string;
