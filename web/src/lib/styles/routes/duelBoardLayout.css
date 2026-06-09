@@ -80,19 +80,30 @@
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	width: 56px;
-	height: 56px;
+	width: 48px;
+	height: 48px;
 	flex: 0 0 auto;
 	border-radius: 50%;
 	background: radial-gradient(circle at 35% 30%, var(--surface-3), rgba(0, 0, 0, 0.45));
 	border: 1px solid var(--border);
 }
+.score-orb .orb-ic svg {
+	width: 14px;
+	height: 14px;
+}
 .score-orb .v {
-	font-size: 24px;
+	font-size: 16px;
 	font-weight: 800;
 	line-height: 1;
 	color: var(--gold-1);
 	font-variant-numeric: tabular-nums;
+}
+.score-orb .orb-ic {
+	display: grid;
+	place-items: center;
+	margin-bottom: 2px;
+	color: var(--gold-2);
+	line-height: 0;
 }
 .score-orb .k {
 	margin-top: 2px;
@@ -112,8 +123,8 @@
 	z-index: 5;
 	display: flex;
 	align-items: center;
-	gap: 16px;
-	padding: 12px 26px;
+	gap: 14px;
+	padding: 7px 22px;
 	background: linear-gradient(
 		180deg,
 		rgba(120, 40, 40, 0.28),
@@ -168,7 +179,7 @@
 	place-items: center;
 	/* leave room at the top for the opponent strip and at the bottom for the hand,
 	   so the big card column sits in the middle and isn't covered. */
-	padding: 8vh 0 26vh;
+	padding: 10vh 0 25vh;
 	overflow: hidden;
 	background:
 		radial-gradient(58% 60% at 50% 50%, rgba(64, 128, 72, 0.16), transparent 70%),
@@ -229,15 +240,15 @@
 }
 .vs {
 	position: relative;
-	width: 64px;
-	height: 64px;
+	width: 54px;
+	height: 54px;
 	flex: 0 0 auto;
 	display: grid;
 	place-items: center;
 }
 .vs__disc {
-	width: 50px;
-	height: 50px;
+	width: 44px;
+	height: 44px;
 	border-radius: 50%;
 	display: grid;
 	place-items: center;
@@ -290,9 +301,10 @@
 /* battle log overlaid on the right of the felt (doesn't shift the duel) */
 .lb__log {
 	position: absolute;
-	top: 16px;
-	right: 16px;
-	bottom: 16px;
+	top: 14px;
+	right: 14px;
+	/* stop above the timer + surrender so the log panel doesn't sit behind them */
+	bottom: clamp(66px, 9vh, 90px);
 	width: clamp(240px, 24vw, 300px);
 	z-index: 4;
 }
@@ -341,15 +353,15 @@
 
 /* keep the (already-styled) my-hand fan centred within the row */
 .lb__you .hand.my-hand.fan {
-	max-width: 600px;
+	max-width: 760px;
 }
 
 /* In-play cards are sized against viewport HEIGHT so the whole vertical column
    (opponent card + VS + your card) fits one screen — even short laptops — without
    the felt clipping the top card or hiding the chooser. */
 .lb__cards .duel-slot {
-	width: clamp(90px, 16vh, 200px) !important;
-	height: calc(clamp(90px, 16vh, 200px) * 1.55) !important;
+	width: clamp(92px, 17vh, 225px) !important;
+	height: calc(clamp(92px, 17vh, 225px) * 1.55) !important;
 }
 .lb__cards {
 	gap: 4px;
@@ -404,6 +416,15 @@
 	height: 100%;
 	object-fit: cover;
 	display: block;
+}
+
+/* The round-result banner overlays the VS medallion (nothing useful to see there)
+   instead of covering your card. It lives in .lb__column, so absolute top:50% =
+   the column's centre = the VS. */
+.lb__round-banner {
+	position: absolute;
+	top: 50%;
+	z-index: 1700;
 }
 
 @media (max-width: 920px) {

@@ -164,9 +164,13 @@ web/                         SvelteKit frontend
   ≈ `16vh`) and hand cards via `cardWidthCssValue` (≈ `15.5vh`); `.lb__table` reserves `8vh` top /
   `26vh` bottom so the column never collides with the strips. The chooser (`.lb__notices`,
   `z-index:1600`) sits just above the hand and stays clickable. The opponent hand is a small offset
-  stack of card backs (`.lb__oparc-card`, no fan rotation), not a deck pile. The old `.zone`/
-  `.fixed-top-bar` CSS is unused; cards/flip/chooser/round-banner/endscreen and `.hand.my-hand.fan`
-  are unchanged.
+  stack of card backs (`.lb__oparc-card`, no fan rotation) shown next to the score orbs, not a deck
+  pile. The round-result banner is `.lb__round-banner` inside `.lb__column` (absolute `top:50%` = the
+  VS) so it overlays the VS medallion instead of the player's card — note `.round-banner` is
+  `position:fixed`, which is why it must NOT live under a `transform`ed ancestor like `.lb__notices`.
+  Score orbs show an icon (`.orb-ic` trophy / card-stack SVG) + number with a `title` tooltip (no text
+  label). The old `.zone`/`.fixed-top-bar` CSS is unused; cards/flip/chooser/endscreen and
+  `.hand.my-hand.fan` are unchanged.
 - **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
   `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
   reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults

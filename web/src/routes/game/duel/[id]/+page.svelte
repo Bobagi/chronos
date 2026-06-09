@@ -58,7 +58,11 @@
 	$: currentDuelRoundWinner = currentDuelCenter?.roundWinner ?? null;
 	// Sized against viewport height so the whole board fits one screen without
 	// scrolling (both hands + the battlefield visible at once).
-	const cardWidthCssValue = 'clamp(92px, 15.5vh, 178px)';
+	const cardWidthCssValue = 'clamp(104px, 18vh, 214px)';
+	const trophyIconSvg =
+		'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18 4V2H6v2H2v4a4 4 0 0 0 4 4h.5A6 6 0 0 0 11 15.9V18H7v2h10v-2h-4v-2.1A6 6 0 0 0 17.5 12H18a4 4 0 0 0 4-4V4h-4ZM6 10a2 2 0 0 1-2-2V6h2v4Zm14-2a2 2 0 0 1-2 2V6h2v2Z"/></svg>';
+	const cardsIconSvg =
+		'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><rect x="8" y="3" width="11" height="15" rx="2" opacity=".5"/><rect x="4" y="6" width="11" height="15" rx="2"/></svg>';
 
 	let now = Date.now();
 	let duelTimerHandle: ReturnType<typeof setInterval> | null = null;
@@ -600,7 +604,7 @@
 	function computeSpread() {
 		const count = Math.max(1, playerHandCardItems.length);
 		const w = myHandContainerElement?.clientWidth ?? 0;
-		myHandCardSpreadPixels = Math.min(46, Math.max(10, (w / count) * 0.24));
+		myHandCardSpreadPixels = Math.min(132, Math.max(46, (w / count) * 0.62));
 	}
 	function setupMyHandResizeObserver() {
 		const ro = new ResizeObserver(() => computeSpread());
@@ -874,15 +878,14 @@
 				{#if opponentLooksLikeBot}<span class="hud-tag hud-tag--op">BOT</span>{/if}
 			</div>
 		</div>
-		<div class="score-orb">
+		<div class="score-orb" title={$t('duel.roundsWon')}>
+			<span class="orb-ic" aria-hidden="true">{@html trophyIconSvg}</span>
 			<div class="v">{roundsWonB}</div>
-			<div class="k">{$t('duel.roundsWon')}</div>
 		</div>
-		<div class="score-orb">
+		<div class="score-orb" title={$t('duel.cardsLeft')}>
+			<span class="orb-ic" aria-hidden="true">{@html cardsIconSvg}</span>
 			<div class="v">{deckB}</div>
-			<div class="k">{$t('duel.cardsLeft')}</div>
 		</div>
-		<div class="spacer"></div>
 		<div class="lb__oparc" bind:this={opponentDeckAnchorElement}>
 			<div
 				bind:this={opponentHandContainerElement}
@@ -947,8 +950,6 @@
 						</div>
 					{/if}
 				</div>
-
-				<span class="lb__seat-label lb__seat-label--you">{$t('duel.you')}</span>
 
 				<div class="lb__vsrow">
 					<span class="line"></span>
@@ -1023,8 +1024,14 @@
 						</div>
 					{/if}
 				</div>
-				<span class="lb__seat-label lb__seat-label--op">{playerBUsername}</span>
 			</div>
+
+			{#if roundBanner}
+				<div class={`round-banner lb__round-banner ${roundBanner.tone}`}>
+					<span class="round-banner-icon">{roundBanner.icon}</span>
+					<span class="round-banner-text">{roundBanner.text}</span>
+				</div>
+			{/if}
 		</div>
 
 		<div class="lb__notices">
@@ -1081,15 +1088,6 @@
 			{:else if duelStage === 'PICK_ATTRIBUTE'}
 				<div class="notice warn" style="margin-top:12px; text-align:center;">
 					{$t('duel.waitingForAttribute', { name: chooserUsername })}
-				</div>
-			{:else if duelStage === 'PICK_CARD'}
-				<div class="duel-hint">{$t('duel.selectCard')}</div>
-			{/if}
-
-			{#if roundBanner}
-				<div class={`round-banner ${roundBanner.tone}`}>
-					<span class="round-banner-icon">{roundBanner.icon}</span>
-					<span class="round-banner-text">{roundBanner.text}</span>
 				</div>
 			{/if}
 		</div>
@@ -1153,19 +1151,16 @@
 					{#if $authUser?.avatarUrl}<img src={$authUser.avatarUrl} alt="" />{:else}🧙{/if}
 				</div>
 				<div>
-					<div class="nm">
-						{playerAUsername}
-						<span class="hud-tag hud-tag--you">{$t('duel.you')}</span>
-					</div>
+					<div class="nm">{playerAUsername}</div>
 				</div>
 			</div>
-			<div class="score-orb">
+			<div class="score-orb" title={$t('duel.roundsWon')}>
+				<span class="orb-ic" aria-hidden="true">{@html trophyIconSvg}</span>
 				<div class="v">{roundsWonA}</div>
-				<div class="k">{$t('duel.roundsWon')}</div>
 			</div>
-			<div class="score-orb">
+			<div class="score-orb" title={$t('duel.cardsLeft')}>
+				<span class="orb-ic" aria-hidden="true">{@html cardsIconSvg}</span>
 				<div class="v">{deckA}</div>
-				<div class="k">{$t('duel.cardsLeft')}</div>
 			</div>
 		</div>
 
