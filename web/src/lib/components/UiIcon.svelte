@@ -10,7 +10,8 @@
 		| 'logout'
 		| 'play'
 		| 'home'
-		| 'surrender';
+		| 'surrender'
+		| 'layout';
 	export let size = '1.1em';
 </script>
 
@@ -61,6 +62,9 @@
 	{:else if name === 'surrender'}
 		<line x1="5" y1="3" x2="5" y2="21" />
 		<path d="M5 4h11l-1.6 3.2L16 11H5" />
+	{:else if name === 'layout'}
+		<rect x="3" y="4" width="18" height="16" rx="2" />
+		<line x1="14" y1="4" x2="14" y2="20" />
 	{/if}
 </svg>
 

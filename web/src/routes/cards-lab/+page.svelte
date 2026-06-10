@@ -34,11 +34,37 @@
 
 	const STORAGE_KEY = 'cardfx-tweaks-v1';
 
-	// One flat tweaks object: tilt + foil + destruction.
+	// Card-text styling defaults — must match the fallbacks in game/fonts.css and the
+	// prop defaults in CardComposite. Tune here, then bake the exported values there.
+	const CARD_TEXT_DEFAULTS = {
+		ccBaseStroke: 0.18, // cqh
+		ccStrokeColor: '#000000',
+		ccTextColor: '#ffffff',
+		ccTitleLs: -0.18, // em
+		titleBaseFontScale: 0.6,
+		titleMaxFontScale: 0.4,
+		titleStrokeFactor: 0.035,
+		titleTextLeftPercent: 32,
+		titleTextTopPercent: -1.5,
+		titleLeftPercent: 29,
+		titleTopPercent: 3,
+		titleHeightPercent: 18,
+		ccValSize: 10, // cqh
+		ccValStroke: 0.18,
+		ccLabelSize: 5,
+		ccLabelStroke: 0.25,
+		ccCornerSize: 4.8,
+		ccCornerStroke: 0.18,
+		ccCornerTop: 7.5, // cqh
+		ccCornerRight: 8.5 // cqw
+	};
+
+	// One flat tweaks object: tilt + foil + destruction + card text.
 	let t = {
 		...HOLO_TILT_DEFAULTS,
 		...FOIL_DEFAULTS,
 		...DESTRUCTION_DEFAULTS,
+		...CARD_TEXT_DEFAULTS,
 		foilOn: true
 	};
 
@@ -55,6 +81,20 @@
 
 	$: selectedCard = cards.find((c) => c.code === selectedCode) ?? null;
 	$: foilVars = t.foilOn ? foilStyleVars(t) : '';
+	$: cardTextVars = [
+		`--cc-base-stroke:${t.ccBaseStroke}cqh`,
+		`--cc-stroke-color:${t.ccStrokeColor}`,
+		`--cc-text-color:${t.ccTextColor}`,
+		`--cc-title-ls:${t.ccTitleLs}em`,
+		`--cc-val-size:${t.ccValSize}cqh`,
+		`--cc-val-stroke:${t.ccValStroke}cqh`,
+		`--cc-label-size:${t.ccLabelSize}cqh`,
+		`--cc-label-stroke:${t.ccLabelStroke}cqh`,
+		`--cc-corner-size:${t.ccCornerSize}cqh`,
+		`--cc-corner-stroke:${t.ccCornerStroke}cqh`,
+		`--cc-corner-top:${t.ccCornerTop}cqh`,
+		`--cc-corner-right:${t.ccCornerRight}cqw`
+	].join(';');
 
 	function loadSaved() {
 		try {
@@ -95,7 +135,13 @@
 		}
 	}
 	function resetDefaults() {
-		t = { ...HOLO_TILT_DEFAULTS, ...FOIL_DEFAULTS, ...DESTRUCTION_DEFAULTS, foilOn: true };
+		t = {
+			...HOLO_TILT_DEFAULTS,
+			...FOIL_DEFAULTS,
+			...DESTRUCTION_DEFAULTS,
+			...CARD_TEXT_DEFAULTS,
+			foilOn: true
+		};
 	}
 
 	onMount(async () => {
@@ -150,7 +196,11 @@
 		<div class="cardfx-scene" bind:this={sceneEl} style="perspective:1100px">
 			<div class="cardfx-wrap">
 				<div class="cardfx-glow"></div>
-				<div class="cardfx-card" bind:this={cardEl} style={`--cardfx-radius:14px;${foilVars}`}>
+				<div
+					class="cardfx-card"
+					bind:this={cardEl}
+					style={`--cardfx-radius:14px;${foilVars};${cardTextVars}`}
+				>
 					{#if selectedCard}
 						<CardComposite
 							artImageUrl={selectedCard.imageUrl}
@@ -163,6 +213,15 @@
 							fireValue={selectedCard.fire}
 							cornerNumberValue={selectedCard.number}
 							enableTilt={false}
+							titleBaseFontScale={t.titleBaseFontScale}
+							titleMaxFontScale={t.titleMaxFontScale}
+							titleStrokeFactor={t.titleStrokeFactor}
+							titleStrokeColor={t.ccStrokeColor}
+							titleTextLeftPercent={t.titleTextLeftPercent}
+							titleTextTopPercent={t.titleTextTopPercent}
+							titleLeftPercent={t.titleLeftPercent}
+							titleTopPercent={t.titleTopPercent}
+							titleHeightPercent={t.titleHeightPercent}
 						/>
 					{:else}
 						<div class="lab__placeholder">loading card…</div>
@@ -216,6 +275,28 @@
 			</select>
 		</div>
 		{#each [['iridIntensity', 'Foil intensity', 0, 1, 0.05], ['iridSat', 'Foil saturation', 0, 2.5, 0.05], ['iridBright', 'Foil brightness', 0.5, 2, 0.05], ['iridScale', 'Foil grain %', 80, 400, 10], ['sheenIntensity', 'Sheen sweep', 0, 0.8, 0.02], ['specIntensity', 'Specular', 0, 1, 0.05], ['specSize', 'Specular size', 80, 620, 10], ['glowIntensity', 'Ambient glow', 0, 1.2, 0.05], ['glowBlur', 'Glow blur', 0, 140, 4]] as [key, lbl, min, max, step]}
+			<div class="slider">
+				<span>{lbl}</span>
+				<input
+					type="range"
+					{min}
+					{max}
+					{step}
+					value={t[key]}
+					on:input={(e) => setTweak(key, +e.currentTarget.value)}
+				/>
+				<b>{t[key]}</b>
+			</div>
+		{/each}
+
+		<h2>Card text — size / outline / position</h2>
+		<div class="row">
+			<label for="tc">Text color</label>
+			<input id="tc" type="color" bind:value={t.ccTextColor} />
+			<label for="sc">Outline color</label>
+			<input id="sc" type="color" bind:value={t.ccStrokeColor} />
+		</div>
+		{#each [['ccBaseStroke', 'Base outline (cqh)', 0, 0.6, 0.01], ['titleBaseFontScale', 'Title size (base)', 0.2, 1.2, 0.02], ['titleMaxFontScale', 'Title size (cap)', 0.2, 1, 0.02], ['titleStrokeFactor', 'Title outline', 0, 0.12, 0.005], ['titleTextLeftPercent', 'Title X %', 0, 60, 0.5], ['titleTextTopPercent', 'Title Y %', -15, 18, 0.5], ['titleLeftPercent', 'Title plate X %', 0, 60, 0.5], ['titleTopPercent', 'Title plate Y %', -10, 25, 0.5], ['titleHeightPercent', 'Title plate height %', 8, 30, 0.5], ['ccValSize', 'Attr value size (cqh)', 4, 16, 0.2], ['ccValStroke', 'Attr value outline', 0, 0.6, 0.01], ['ccLabelSize', 'Attr label size (cqh)', 2, 9, 0.2], ['ccLabelStroke', 'Attr label outline', 0, 0.6, 0.01], ['ccCornerSize', 'Corner # size (cqh)', 2, 9, 0.2], ['ccCornerStroke', 'Corner # outline', 0, 0.6, 0.01], ['ccCornerTop', 'Corner # top (cqh)', 0, 20, 0.5], ['ccCornerRight', 'Corner # right (cqw)', 0, 20, 0.5]] as [key, lbl, min, max, step]}
 			<div class="slider">
 				<span>{lbl}</span>
 				<input

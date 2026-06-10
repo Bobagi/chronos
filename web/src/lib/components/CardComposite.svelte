@@ -24,6 +24,8 @@
 	export let cornerNumberValue: number = 1;
 	export let titleBaseFontScale = 0.6;
 	export let titleMaxFontScale = 0.4;
+	export let titleStrokeFactor = 0.035;
+	export let titleStrokeColor = '#000';
 
 	let wrapperEl: HTMLDivElement | null = null;
 	let cachedBoundingRect: DOMRect | null = null;
@@ -96,8 +98,8 @@
 			titleInnerEl.style.fontSize = `${fontPx}px`;
 			guard++;
 		}
-		const strokePx = Math.max(0.5, Math.min(1.6, fontPx * 0.035));
-		(titleInnerEl.style as any).webkitTextStroke = `${strokePx}px #000`;
+		const strokePx = Math.max(0, Math.min(6, fontPx * titleStrokeFactor));
+		(titleInnerEl.style as any).webkitTextStroke = `${strokePx}px ${titleStrokeColor}`;
 		titleFontSizePx = fontPx;
 	}
 
@@ -109,7 +111,15 @@
 		? `${titleText ?? 'Card'} — ${descriptionText}`
 		: (titleText ?? 'Card');
 
-	$: if (titleText && titleEl && titleInnerEl && titleBaseFontScale && titleMaxFontScale)
+	$: if (
+		titleText &&
+		titleEl &&
+		titleInnerEl &&
+		titleBaseFontScale &&
+		titleMaxFontScale &&
+		titleStrokeFactor !== undefined &&
+		titleStrokeColor
+	)
 		fitTitleTextToOneLine();
 
 	onMount(() => {
@@ -228,7 +238,7 @@
 
 	<div
 		class="card-corner-number"
-		style="position:absolute;top:7.5cqh;right:8.5cqw;width:4.2cqh;height:3.2cqh;display:flex;align-items:center;justify-content:center;z-index:3;font-size:4.8cqh;pointer-events:none;letter-spacing:-0.12em;text-rendering:optimizeLegibility;font-kerning:normal;"
+		style="position:absolute;top:var(--cc-corner-top,7.5cqh);right:var(--cc-corner-right,8.5cqw);width:4.2cqh;height:3.2cqh;display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none;letter-spacing:-0.12em;text-rendering:optimizeLegibility;font-kerning:normal;"
 	>
 		{cornerNumberValue}
 	</div>

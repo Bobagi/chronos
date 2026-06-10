@@ -6,6 +6,12 @@
 	font-style: normal;
 	font-display: swap;
 }
+/*
+ * Card text styling. Every size / outline / spacing / colour is a CSS var with the
+ * current value as the fallback, so it's tunable per-card (set the var on any ancestor,
+ * e.g. in /cards-lab) without changing the default look anywhere else. To bake new
+ * defaults for everyone, change the fallback values here.
+ */
 .card-font {
 	--card-font-size: 2.4cqh;
 	font-family:
@@ -17,33 +23,34 @@
 		sans-serif;
 	font-size: var(--card-font-size);
 	line-height: 1;
-	-webkit-text-stroke: 0.18cqh #000;
+	-webkit-text-stroke: var(--cc-base-stroke, 0.18cqh) var(--cc-stroke-color, #000);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
 .card-title-text {
-	color: #fff;
+	color: var(--cc-text-color, #fff);
 	text-shadow: none !important;
-	letter-spacing: -0.18em !important;
+	letter-spacing: var(--cc-title-ls, -0.18em) !important;
 	font-size: 8cqh !important;
 }
 .card-attribute-value {
-	color: #fff;
+	color: var(--cc-text-color, #fff);
 	text-shadow: none !important;
-	letter-spacing: -0.03em;
-	font-size: 10cqh !important;
+	letter-spacing: var(--cc-val-ls, -0.03em);
+	font-size: var(--cc-val-size, 10cqh) !important;
+	-webkit-text-stroke: var(--cc-val-stroke, 0.18cqh) var(--cc-stroke-color, #000) !important;
 }
 .card-attribute-label {
-	color: #fff;
+	color: var(--cc-text-color, #fff);
 	text-shadow: none !important;
-	letter-spacing: -0.18em !important;
-	-webkit-text-stroke: 0.25cqh #000 !important;
-	font-size: 5cqh !important;
+	letter-spacing: var(--cc-label-ls, -0.18em) !important;
+	-webkit-text-stroke: var(--cc-label-stroke, 0.25cqh) var(--cc-stroke-color, #000) !important;
+	font-size: var(--cc-label-size, 5cqh) !important;
 }
 .card-corner-number {
-	color: #fff;
+	color: var(--cc-text-color, #fff);
 	text-shadow: none !important;
 	letter-spacing: -0.03em;
-	/* font-size is set on the element in cqh so the number scales with the card
-	   (in the gallery grid and the enlarged modal alike). */
+	font-size: var(--cc-corner-size, 4.8cqh) !important;
+	-webkit-text-stroke: var(--cc-corner-stroke, 0.18cqh) var(--cc-stroke-color, #000) !important;
 }

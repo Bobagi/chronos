@@ -107,6 +107,7 @@ const en = {
 		home: 'Home',
 		mode: 'Attribute Duel',
 		surrender: 'Surrender',
+		toggleLayout: 'Toggle layout (hand to the side)',
 		surrenderConfirm: 'Are you sure you want to surrender?',
 		loginToSurrender: 'Login required to surrender.',
 		roundsWon: 'Rounds won',

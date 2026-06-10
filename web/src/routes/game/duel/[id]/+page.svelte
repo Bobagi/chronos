@@ -110,6 +110,19 @@
 
 	let centerRevealCycle = 0;
 	let previousDuelStage: string | null = null;
+
+	// Layout toggle: move the hand to the right rail and enlarge the battlefield.
+	let sideHand = false;
+	function toggleSideHand() {
+		sideHand = !sideHand;
+		if (browser) {
+			try {
+				localStorage.setItem('duel-side-hand', sideHand ? '1' : '0');
+			} catch {
+				/* ignore */
+			}
+		}
+	}
 	let advanceTimer: number | null = null;
 
 	let fxLayerElement: HTMLDivElement | null = null;
@@ -620,6 +633,7 @@
 
 	onMount(async () => {
 		if (browser) {
+			sideHand = localStorage.getItem('duel-side-hand') === '1';
 			duelTimerHandle = window.setInterval(() => {
 				now = Date.now();
 			}, 250);
@@ -937,7 +951,7 @@
 
 <CardFxFilters />
 
-<div class="lb">
+<div class="lb" class:lb--side-hand={sideHand}>
 	<header class="lb__opp">
 		<a href="/" class="lb__home" title={$t('duel.home')} aria-label={$t('duel.home')}>←</a>
 		<div class="hud-id">
@@ -1216,6 +1230,16 @@
 
 	<section class="lb__you">
 		<div class="lb__you-hud">
+			<button
+				class="lb__layout-toggle"
+				class:on={sideHand}
+				type="button"
+				on:click={toggleSideHand}
+				title={$t('duel.toggleLayout')}
+				aria-label={$t('duel.toggleLayout')}
+			>
+				<UiIcon name="layout" />
+			</button>
 			<div class="hud-id">
 				<div class="avatar">
 					{#if $authUser?.avatarUrl}<img src={$authUser.avatarUrl} alt="" />{:else}🧙{/if}

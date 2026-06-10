@@ -108,6 +108,7 @@ const es: typeof en = {
 		home: 'Inicio',
 		mode: 'Duelo de Atributos',
 		surrender: 'Rendirse',
+		toggleLayout: 'Cambiar diseño (mano al lado)',
 		surrenderConfirm: '¿Seguro que quieres rendirte?',
 		loginToSurrender: 'Inicia sesión para rendirte.',
 		roundsWon: 'Rondas ganadas',

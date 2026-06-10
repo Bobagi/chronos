@@ -427,6 +427,105 @@
 	z-index: 1700;
 }
 
+/* ---------- layout toggle button + SIDE-HAND layout ---------- */
+.lb__layout-toggle {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	flex: 0 0 auto;
+	border-radius: 9px;
+	border: 1px solid var(--border);
+	background: rgba(255, 255, 255, 0.05);
+	color: var(--text);
+	cursor: pointer;
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease,
+		color 0.15s ease;
+}
+.lb__layout-toggle:hover {
+	background: rgba(231, 178, 74, 0.16);
+	border-color: var(--border-strong);
+}
+.lb__layout-toggle.on {
+	color: #2a1d00;
+	background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
+	border-color: var(--gold-2);
+}
+
+/* Side-hand: the hand moves to the right rail, the battlefield grows and shifts left,
+   the log moves to the left rail. The bottom strip spans the whole board so the HUD
+   (bottom-left) and timer/surrender (bottom-right) keep their corners. */
+.lb--side-hand .lb__table {
+	padding: 8vh 18vh 7vh 2vh;
+}
+.lb--side-hand .lb__cards .duel-slot {
+	width: clamp(120px, 23vh, 300px) !important;
+	height: calc(clamp(120px, 23vh, 300px) * 1.55) !important;
+}
+.lb--side-hand .lb__notices {
+	bottom: 9vh;
+}
+.lb--side-hand .lb__you {
+	inset: 0;
+	height: auto;
+	min-height: 0;
+	padding: 0;
+	pointer-events: none;
+	justify-content: flex-end;
+	align-items: stretch;
+}
+.lb--side-hand .lb__you > * {
+	pointer-events: auto;
+}
+.lb--side-hand .lb__you-hud {
+	left: 26px;
+	bottom: 18px;
+}
+.lb--side-hand .lb__you-actions {
+	right: 26px;
+	bottom: 18px;
+}
+.lb--side-hand .hand.my-hand.fan {
+	align-self: stretch;
+	position: relative;
+	max-width: none;
+	width: clamp(104px, 15vh, 180px);
+	height: auto;
+	margin-right: 16px;
+	padding: 9vh 0 18vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+.lb--side-hand .hand.my-hand.fan .card-socket {
+	position: static !important;
+	transform: none !important;
+	left: auto !important;
+	top: auto !important;
+	width: 100% !important;
+	margin-top: -11vh;
+	transition:
+		transform 0.16s ease,
+		margin 0.16s ease;
+}
+.lb--side-hand .hand.my-hand.fan .card-socket:first-child {
+	margin-top: 0;
+}
+.lb--side-hand .hand.my-hand.fan .card-socket:hover {
+	transform: translateX(-20px) scale(1.08) !important;
+	z-index: 999 !important;
+}
+.lb--side-hand .lb__log {
+	left: 14px;
+	right: auto;
+	top: 11vh;
+	bottom: 92px;
+	width: clamp(210px, 22vw, 280px);
+}
+
 @media (max-width: 920px) {
 	.lb__log {
 		display: none;
