@@ -14,6 +14,7 @@
 		unchooseChronosDuelCard
 	} from '$lib/api/GameClient';
 	import CardComposite from '$lib/components/CardComposite.svelte';
+	import UiIcon from '$lib/components/UiIcon.svelte';
 	import DuelHistory from '$lib/components/DuelHistory.svelte';
 	import CardFxFilters from '$lib/cards/CardFxFilters.svelte';
 	import {
@@ -1204,9 +1205,10 @@
 				</div>
 				<div class="endscreen-actions">
 					<button class="endscreen-btn primary" type="button" on:click={playAnotherDuel}>
-						⚔️ {$t('duel.playAgain')}
+						<UiIcon name="play" />
+						{$t('duel.playAgain')}
 					</button>
-					<a class="endscreen-btn ghost" href="/">🏠 {$t('duel.home')}</a>
+					<a class="endscreen-btn ghost" href="/"><UiIcon name="home" /> {$t('duel.home')}</a>
 				</div>
 			</div>
 		</div>
@@ -1307,7 +1309,8 @@
 					on:click={surrenderDuelGame}
 					disabled={!$authUser}
 				>
-					🏳️ {$t('duel.surrender')}
+					<UiIcon name="surrender" />
+					{$t('duel.surrender')}
 				</button>
 			{/if}
 		</div>
