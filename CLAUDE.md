@@ -201,7 +201,16 @@ web/                         SvelteKit frontend
   `position:fixed`, which is why it must NOT live under a `transform`ed ancestor like `.lb__notices`.
   Score orbs show an icon (`.orb-ic` trophy / card-stack SVG) + number with a `title` tooltip (no text
   label). The old `.zone`/`.fixed-top-bar` CSS is unused; cards/flip/chooser/endscreen and
-  `.hand.my-hand.fan` are unchanged.
+  `.hand.my-hand.fan` are unchanged. A **layout toggle** (`.lb__layout-toggle` by the player HUD)
+  adds `.lb--side-hand` to `.lb`: the hand becomes a vertical column on the right rail, the log moves
+  to the left, and the battlefield cards grow (persisted in `localStorage['duel-side-hand']`).
+- **Card text is fully tunable via CSS vars** (`web/src/routes/game/fonts.css`): `--cc-base-stroke`,
+  `--cc-stroke-color`, `--cc-text-color`, `--cc-val-size`/`--cc-val-stroke`, `--cc-label-size`/
+  `--cc-label-stroke`, `--cc-corner-size`/`--cc-corner-stroke`/`--cc-corner-top`/`--cc-corner-right`
+  (all default to the current look). Title size/outline/position are CardComposite props
+  (`titleBaseFontScale`, `titleMaxFontScale`, `titleStrokeFactor`, `titleStrokeColor`,
+  `titleText{Left,Top}Percent`, `title{Left,Top,Height}Percent`). Tune them in the `/cards-lab`
+  "Card text" panel and Export; bake chosen values into `fonts.css` fallbacks + CardComposite defaults.
 - **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
   `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
   reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults
