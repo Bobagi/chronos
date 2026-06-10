@@ -37,6 +37,7 @@ const pt: typeof en = {
 			gallery: 'Galeria',
 			friends: 'Amigos',
 			expireOld: 'Expirar antigos',
+			cardsLab: 'Lab de Cartas',
 			readyTitle: 'Pronto para duelar?',
 			readySub: 'Inicie um Duelo de Atributos contra o bot e aumente sua coleção de vitórias.',
 			startDuel: 'Iniciar Duelo',

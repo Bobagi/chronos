@@ -17,6 +17,9 @@
 		type DestructionType
 	} from '$lib/cards/cardDestruction';
 	import '$lib/cards/cardFx.css';
+	// Same card styling the gallery/duel load, so the lab card renders identically.
+	import '../game/game.css';
+	import '$lib/styles/routes/gameDuelPage.css';
 
 	type LabCard = {
 		code: string;

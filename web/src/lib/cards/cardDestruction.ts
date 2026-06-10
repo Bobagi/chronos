@@ -43,7 +43,7 @@ export const DESTRUCTION_DEFAULTS: DestructionOptions = {
 	burnSpots: 3,
 	fireColor: '#ffcf7a',
 	dissolveColor: '#74e6ff',
-	particleCount: 170,
+	particleCount: 20,
 	crushViolence: 1,
 	autoReset: false
 };

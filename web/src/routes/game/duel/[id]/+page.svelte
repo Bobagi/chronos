@@ -573,10 +573,27 @@
 
 	// Round-loss destruction: the losing card burns (fire) / dissolves (magic) /
 	// crushes (might), strictly on the card. Tunable in /cards-lab.
-	const DUEL_DESTRUCTION_DELAY_MS = 650;
+	const DUEL_DESTRUCTION_DELAY_MS = 450;
+	let activeDestruction: {
+		destroyer: CardDestroyer;
+		canvas: HTMLCanvasElement;
+		card: HTMLElement;
+		wrap: HTMLElement;
+	} | null = null;
+	function clearActiveDestruction() {
+		if (!activeDestruction) return;
+		const { destroyer, canvas, card, wrap } = activeDestruction;
+		activeDestruction = null;
+		destroyer.reset(true);
+		canvas.remove();
+		card.classList.remove('cardfx-card');
+		wrap.classList.remove('cardfx-wrap');
+	}
 	function playDuelDestruction(loserEl: HTMLElement, mode: 'fire' | 'magic' | 'might') {
 		const wrap = loserEl.parentElement as HTMLElement | null;
 		if (!wrap) return;
+		// Clean up the previous round's effect; the current one stays until this round advances.
+		clearActiveDestruction();
 		loserEl.style.animation = 'none';
 		loserEl.classList.add('cardfx-card');
 		wrap.classList.add('cardfx-wrap');
@@ -586,14 +603,10 @@
 		const type: DestructionType =
 			mode === 'magic' ? 'dissolve' : mode === 'might' ? 'crush' : 'burn';
 		const destroyer = new CardDestroyer({ card: loserEl, wrap, canvas });
-		destroyer.play(type, { ...DESTRUCTION_DEFAULTS, destructDuration: 1.8 });
-		const cleanupMs = type === 'crush' ? 2000 : 1.8 * 1000 + 1400;
-		window.setTimeout(() => {
-			destroyer.reset(true);
-			canvas.remove();
-			loserEl.classList.remove('cardfx-card');
-			wrap.classList.remove('cardfx-wrap');
-		}, cleanupMs);
+		destroyer.play(type, { ...DESTRUCTION_DEFAULTS, destructDuration: 1.4 });
+		// Do NOT reset — the card stays consumed/crushed until the round advances and
+		// the slot clears it. (Resetting made it "reappear whole" before advancing.)
+		activeDestruction = { destroyer, canvas, card: loserEl, wrap };
 	}
 
 	function findLoserCenterElement(): HTMLElement | null {
@@ -632,6 +645,7 @@
 			window.clearInterval(duelStatePollHandle);
 			duelStatePollHandle = null;
 		}
+		clearActiveDestruction();
 	});
 
 	$: playerA = $gameStateStore?.players?.[0] ?? 'playerA';

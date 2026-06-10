@@ -36,6 +36,7 @@ const en = {
 			gallery: 'Gallery',
 			friends: 'Friends',
 			expireOld: 'Expire old',
+			cardsLab: 'Cards Lab',
 			readyTitle: 'Ready to duel?',
 			readySub: 'Start an Attribute Duel against the bot and grow your collection of victories.',
 			startDuel: 'Start Duel',

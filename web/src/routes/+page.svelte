@@ -10,6 +10,7 @@
 	import AvatarPicker from '$lib/components/AvatarPicker.svelte';
 	import CardComposite from '$lib/components/CardComposite.svelte';
 	import FriendsPanel from '$lib/components/FriendsPanel.svelte';
+	import UiIcon from '$lib/components/UiIcon.svelte';
 	import GoogleAuthButton from '$lib/components/GoogleAuthButton.svelte';
 	import { DEFAULT_AVATAR_URL } from '$lib/config/avatarOptions';
 	import {
@@ -233,7 +234,8 @@
 				<GoogleAuthButton />
 				<div class="auth-actions">
 					<button class="button button-ghost" type="button" on:click={() => goto('/gallery')}>
-						🖼️ {$t('home.auth.browseGallery')}
+						<UiIcon name="gallery" />
+						{$t('home.auth.browseGallery')}
 					</button>
 					<button class="button button-neutral" type="button" on:click={() => goto('/register')}>
 						{$t('home.auth.createAccount')}
@@ -267,20 +269,28 @@
 						</div>
 						<div class="profile-actions">
 							<button class="button button-neutral" on:click={() => goto('/gallery')}>
-								🖼️ {$t('home.dashboard.gallery')}
+								<UiIcon name="gallery" />
+								{$t('home.dashboard.gallery')}
 							</button>
 							<button class="button button-neutral" on:click={() => (showFriendsPanel = true)}>
-								👥 {$t('home.dashboard.friends')}
+								<UiIcon name="friends" />
+								{$t('home.dashboard.friends')}
 							</button>
 							<button class="button button-neutral" on:click={() => goto('/account')}>
-								⚙️ {$t('account.navLabel')}
+								<UiIcon name="settings" />
+								{$t('account.navLabel')}
 							</button>
 							{#if isAdmin}
+								<button class="button button-neutral" on:click={() => goto('/cards-lab')}>
+									<UiIcon name="flask" />
+									{$t('home.dashboard.cardsLab')}
+								</button>
 								<button
 									class="button button-ghost"
 									on:click={expireInactiveChronosGamesAndReloadDashboard}
 								>
-									⏳ {$t('home.dashboard.expireOld')}
+									<UiIcon name="hourglass" />
+									{$t('home.dashboard.expireOld')}
 								</button>
 							{/if}
 						</div>
