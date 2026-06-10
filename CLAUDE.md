@@ -204,13 +204,22 @@ web/                         SvelteKit frontend
   `.hand.my-hand.fan` are unchanged. A **layout toggle** (`.lb__layout-toggle` by the player HUD)
   adds `.lb--side-hand` to `.lb`: the hand becomes a vertical column on the right rail, the log moves
   to the left, and the battlefield cards grow (persisted in `localStorage['duel-side-hand']`).
-- **Card text is fully tunable via CSS vars** (`web/src/routes/game/fonts.css`): `--cc-base-stroke`,
-  `--cc-stroke-color`, `--cc-text-color`, `--cc-val-size`/`--cc-val-stroke`, `--cc-label-size`/
-  `--cc-label-stroke`, `--cc-corner-size`/`--cc-corner-stroke`/`--cc-corner-top`/`--cc-corner-right`
-  (all default to the current look). Title size/outline/position are CardComposite props
-  (`titleBaseFontScale`, `titleMaxFontScale`, `titleStrokeFactor`, `titleStrokeColor`,
-  `titleText{Left,Top}Percent`, `title{Left,Top,Height}Percent`). Tune them in the `/cards-lab`
+- **CardComposite title = elastic 3-slice banner.** The title ribbon is built from
+  `/frames/title-{left,mid,right}.png` (cut from the old `title.png`): fixed caps + a middle that
+  stretches with the name. It's a flex row anchored RIGHT (`.cc-banner` z-index 4, ABOVE the frame),
+  so long names grow the ribbon leftward like the printed cards; `fitBannerName()` only shrinks the
+  font once the name overflows the banner's max width (`midEl.scrollWidth > clientWidth`). The card
+  number rides in the right ornament (`.cc-num`). Name/number outlines are **text-shadows** (a centred
+  `-webkit-text-stroke` thins the glyph — the print outline is external). Banner tunables (CSS vars on
+  the card / props): `--cc-banner-h` (cqw), `--cc-banner-top/right` (%), `--cc-banner-min`,
+  `--cc-name-factor`, `--cc-num-factor`, `--cc-num-x/y`. NOTE the card is still rendered at 430/670 but
+  `default.png` is 1444/1920 (a full designer-faithful rebuild + the real attribute layout is in
+  `/root/prints/design_handoff_dracomania_card_withtitle/` if we want to go further).
+- **Other card text is tunable via CSS vars** (`web/src/routes/game/fonts.css`): `--cc-base-stroke`,
+  `--cc-stroke-color`, `--cc-text-color`, `--cc-val-size`/`--cc-val-stroke`/`--cc-val-x`/`--cc-val-y`,
+  `--cc-label-size`/`--cc-label-stroke` (all default to the current look). Tune in the `/cards-lab`
   "Card text" panel and Export; bake chosen values into `fonts.css` fallbacks + CardComposite defaults.
+- **Hand-hover selection glow is green** (Hearthstone-style, `hands.css`), no drop shadow / pedestal.
 - **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
   `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
   reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults
