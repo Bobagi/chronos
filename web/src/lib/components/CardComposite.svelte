@@ -79,14 +79,18 @@
 	// The flexbox grows the ribbon with the name; JS only handles the edge case where
 	// even at the banner's max width the name overflows — then shrink the font to fit.
 	async function fitBannerName() {
-		await tick();
-		if (!nameEl || !midEl) return;
-		nameEl.style.fontSize = '';
-		let guard = 24;
-		while (guard-- > 0 && midEl.scrollWidth > midEl.clientWidth + 1) {
-			const current = parseFloat(getComputedStyle(nameEl).fontSize);
-			if (!current || current < 5) break;
-			nameEl.style.fontSize = (current * 0.94).toFixed(2) + 'px';
+		try {
+			await tick();
+			if (!nameEl || !midEl) return;
+			nameEl.style.fontSize = '';
+			let guard = 24;
+			while (guard-- > 0 && midEl.scrollWidth > midEl.clientWidth + 1) {
+				const current = parseFloat(getComputedStyle(nameEl).fontSize);
+				if (!current || current < 5) break;
+				nameEl.style.fontSize = (current * 0.94).toFixed(2) + 'px';
+			}
+		} catch {
+			/* never let title sizing break the card render */
 		}
 	}
 
@@ -107,7 +111,7 @@
 		});
 		if (wrapperEl) ro.observe(wrapperEl);
 		if ((document as any).fonts && (document as any).fonts.ready) {
-			(document as any).fonts.ready.then(() => fitTitleTextToOneLine());
+			(document as any).fonts.ready.then(() => fitBannerName());
 		}
 		return () => ro.disconnect();
 	});
