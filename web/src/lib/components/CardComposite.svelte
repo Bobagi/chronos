@@ -212,7 +212,7 @@
 
 <style>
 	.cc-banner {
-		--hb: var(--cc-banner-h, 19.6cqw);
+		--hb: var(--cc-banner-h, 16cqh);
 		position: absolute;
 		top: var(--cc-banner-top, 3.4%);
 		right: var(--cc-banner-right, 4.6%);
@@ -232,7 +232,7 @@
 	}
 	.cc-mid {
 		flex: 0 1 auto;
-		min-width: var(--cc-banner-min, 16cqw);
+		min-width: var(--cc-banner-min, 20cqw);
 		background: url('/frames/title-mid.png');
 		background-size: 100% 100%;
 		display: flex;
@@ -249,9 +249,10 @@
 		background-size: 100% 100%;
 	}
 	.cc-name {
-		/* cqw-based so it scales with the card; --name-shrink is a 0..1 multiplier the JS
-		   only lowers for the rare name that overflows even the max-width ribbon. */
-		font-size: calc(var(--hb) * var(--cc-name-factor, 0.3) * var(--name-shrink, 1));
+		/* Sized off the banner height (cqh) so it matches the printed proportions on our
+		   taller card; --name-shrink is a 0..1 multiplier the JS only lowers for the rare
+		   name that overflows even the max-width ribbon. */
+		font-size: calc(var(--hb) * var(--cc-name-factor, 0.34) * var(--name-shrink, 1));
 		letter-spacing: 0.04em;
 		color: var(--cc-text-color, #fff);
 		text-transform: uppercase;
@@ -267,7 +268,7 @@
 			calc(var(--hb) * 0.016) calc(var(--hb) * -0.016) 0 #000,
 			calc(var(--hb) * -0.016) calc(var(--hb) * 0.016) 0 #000,
 			calc(var(--hb) * 0.016) calc(var(--hb) * 0.016) 0 #000,
-			0 calc(var(--hb) * 0.05) calc(var(--hb) * 0.04) rgba(0, 0, 0, 0.6);
+			0 calc(var(--hb) * 0.026) calc(var(--hb) * 0.018) rgba(0, 0, 0, 0.45);
 	}
 	.cc-num {
 		position: absolute;
