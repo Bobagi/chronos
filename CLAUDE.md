@@ -204,13 +204,22 @@ web/                         SvelteKit frontend
   `.hand.my-hand.fan` are unchanged. A **layout toggle** (`.lb__layout-toggle` by the player HUD)
   adds `.lb--side-hand` to `.lb`: the hand becomes a vertical column on the right rail, the log moves
   to the left, and the battlefield cards grow (persisted in `localStorage['duel-side-hand']`).
-- **Card text is fully tunable via CSS vars** (`web/src/routes/game/fonts.css`): `--cc-base-stroke`,
+- **CardComposite title = elastic 3-slice banner** (`/frames/title-{left,mid,right}.png`): fixed caps +
+  a middle that STRETCHES with the name (anchored RIGHT, so long names grow the ribbon leftward like the
+  printed cards). The stretch is **pure CSS** (flexbox) — keep it that way. The card number rides in the
+  right ornament (`.cc-num`); name/number outlines are text-shadows. A name only shrinks if it overflows
+  the max-width ribbon: a **synchronous, bounded** `fitBannerName()` lowers a CSS `--name-shrink`
+  multiplier (so the name still scales with the card), run from `afterUpdate` (guarded by
+  `nameEl.dataset.fitted`, only on real name changes) + once on `fonts.ready`. Banner CSS vars:
+  `--cc-banner-h/top/right/min`, `--cc-name-factor`, `--cc-num-factor`, `--cc-num-x/y`.
+  **PITFALL (this caused real "page not responding" freezes on every card page):** never drive the fit
+  from an `async`/`await tick()` reactive or a `ResizeObserver` on the card — the flex-grow middle + an
+  observer feed back into an infinite layout loop. Keep it synchronous + observer-free.
+- **Hand-hover selection glow is green** (Hearthstone-style, `hands.css`); the elliptical golden pedestal
+  under the lifted card was removed.
+- **Other card text is tunable via CSS vars** (`web/src/routes/game/fonts.css`): `--cc-base-stroke`,
   `--cc-stroke-color`, `--cc-text-color`, `--cc-val-size`/`--cc-val-stroke`, `--cc-label-size`/
-  `--cc-label-stroke`, `--cc-corner-size`/`--cc-corner-stroke`/`--cc-corner-top`/`--cc-corner-right`
-  (all default to the current look). Title size/outline/position are CardComposite props
-  (`titleBaseFontScale`, `titleMaxFontScale`, `titleStrokeFactor`, `titleStrokeColor`,
-  `titleText{Left,Top}Percent`, `title{Left,Top,Height}Percent`). Tune them in the `/cards-lab`
-  "Card text" panel and Export; bake chosen values into `fonts.css` fallbacks + CardComposite defaults.
+  `--cc-label-stroke` (all default to the current look). Tune in `/cards-lab` and bake into `fonts.css`.
 - **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
   `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
   reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults
