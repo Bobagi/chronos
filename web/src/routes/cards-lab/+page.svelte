@@ -37,25 +37,26 @@
 	// Card-text styling defaults — must match the fallbacks in game/fonts.css and the
 	// prop defaults in CardComposite. Tune here, then bake the exported values there.
 	const CARD_TEXT_DEFAULTS = {
-		ccBaseStroke: 0.18, // cqh — attribute text outline base
+		ccBaseStroke: 0.18, // cqh
 		ccStrokeColor: '#000000',
 		ccTextColor: '#ffffff',
-		// elastic title banner
-		ccBannerH: 19.6, // cqw — banner height
-		ccBannerTop: 3.4, // %
-		ccBannerRight: 4.6, // %
-		ccBannerMin: 16, // cqw — min ribbon width (short names)
-		ccNameFactor: 0.3, // name font = banner height * this
-		ccNumFactor: 0.56, // number font = banner height * this
-		ccNumX: 46, // % within the right ornament
-		ccNumY: 39, // %
-		// attribute values + labels
+		ccTitleLs: -0.18, // em
+		titleBaseFontScale: 0.6,
+		titleMaxFontScale: 0.4,
+		titleStrokeFactor: 0.035,
+		titleTextLeftPercent: 32,
+		titleTextTopPercent: -1.5,
+		titleLeftPercent: 29,
+		titleTopPercent: 3,
+		titleHeightPercent: 18,
 		ccValSize: 10, // cqh
 		ccValStroke: 0.18,
-		ccValX: 0, // cqw — power-number offset
-		ccValY: 0, // cqh
 		ccLabelSize: 5,
-		ccLabelStroke: 0.25
+		ccLabelStroke: 0.25,
+		ccCornerSize: 4.8,
+		ccCornerStroke: 0.18,
+		ccCornerTop: 7.5, // cqh
+		ccCornerRight: 8.5 // cqw
 	};
 
 	// One flat tweaks object: tilt + foil + destruction + card text.
@@ -84,20 +85,15 @@
 		`--cc-base-stroke:${t.ccBaseStroke}cqh`,
 		`--cc-stroke-color:${t.ccStrokeColor}`,
 		`--cc-text-color:${t.ccTextColor}`,
-		`--cc-banner-h:${t.ccBannerH}cqw`,
-		`--cc-banner-top:${t.ccBannerTop}%`,
-		`--cc-banner-right:${t.ccBannerRight}%`,
-		`--cc-banner-min:${t.ccBannerMin}cqw`,
-		`--cc-name-factor:${t.ccNameFactor}`,
-		`--cc-num-factor:${t.ccNumFactor}`,
-		`--cc-num-x:${t.ccNumX}%`,
-		`--cc-num-y:${t.ccNumY}%`,
+		`--cc-title-ls:${t.ccTitleLs}em`,
 		`--cc-val-size:${t.ccValSize}cqh`,
 		`--cc-val-stroke:${t.ccValStroke}cqh`,
-		`--cc-val-x:${t.ccValX}cqw`,
-		`--cc-val-y:${t.ccValY}cqh`,
 		`--cc-label-size:${t.ccLabelSize}cqh`,
-		`--cc-label-stroke:${t.ccLabelStroke}cqh`
+		`--cc-label-stroke:${t.ccLabelStroke}cqh`,
+		`--cc-corner-size:${t.ccCornerSize}cqh`,
+		`--cc-corner-stroke:${t.ccCornerStroke}cqh`,
+		`--cc-corner-top:${t.ccCornerTop}cqh`,
+		`--cc-corner-right:${t.ccCornerRight}cqw`
 	].join(';');
 
 	function loadSaved() {
@@ -217,6 +213,15 @@
 							fireValue={selectedCard.fire}
 							cornerNumberValue={selectedCard.number}
 							enableTilt={false}
+							titleBaseFontScale={t.titleBaseFontScale}
+							titleMaxFontScale={t.titleMaxFontScale}
+							titleStrokeFactor={t.titleStrokeFactor}
+							titleStrokeColor={t.ccStrokeColor}
+							titleTextLeftPercent={t.titleTextLeftPercent}
+							titleTextTopPercent={t.titleTextTopPercent}
+							titleLeftPercent={t.titleLeftPercent}
+							titleTopPercent={t.titleTopPercent}
+							titleHeightPercent={t.titleHeightPercent}
 						/>
 					{:else}
 						<div class="lab__placeholder">loading card…</div>
@@ -291,7 +296,7 @@
 			<label for="sc">Outline color</label>
 			<input id="sc" type="color" bind:value={t.ccStrokeColor} />
 		</div>
-		{#each [['ccBannerH', 'Banner height (cqw)', 12, 28, 0.2], ['ccBannerTop', 'Banner top %', 0, 12, 0.2], ['ccBannerRight', 'Banner right %', 0, 12, 0.2], ['ccBannerMin', 'Ribbon min width (cqw)', 8, 40, 0.5], ['ccNameFactor', 'Name size ×height', 0.15, 0.5, 0.005], ['ccNumFactor', 'Number size ×height', 0.3, 0.9, 0.01], ['ccNumX', 'Number X %', 20, 70, 0.5], ['ccNumY', 'Number Y %', 15, 65, 0.5], ['ccBaseStroke', 'Attr outline base (cqh)', 0, 0.6, 0.01], ['ccValSize', 'Attr value size (cqh)', 4, 16, 0.2], ['ccValStroke', 'Attr value outline', 0, 0.6, 0.01], ['ccValX', 'Attr value X (cqw)', -6, 6, 0.2], ['ccValY', 'Attr value Y (cqh)', -6, 6, 0.2], ['ccLabelSize', 'Attr label size (cqh)', 2, 9, 0.2], ['ccLabelStroke', 'Attr label outline', 0, 0.6, 0.01]] as [key, lbl, min, max, step]}
+		{#each [['ccBaseStroke', 'Base outline (cqh)', 0, 0.6, 0.01], ['titleBaseFontScale', 'Title size (base)', 0.2, 1.2, 0.02], ['titleMaxFontScale', 'Title size (cap)', 0.2, 1, 0.02], ['titleStrokeFactor', 'Title outline', 0, 0.12, 0.005], ['titleTextLeftPercent', 'Title X %', 0, 60, 0.5], ['titleTextTopPercent', 'Title Y %', -15, 18, 0.5], ['titleLeftPercent', 'Title plate X %', 0, 60, 0.5], ['titleTopPercent', 'Title plate Y %', -10, 25, 0.5], ['titleHeightPercent', 'Title plate height %', 8, 30, 0.5], ['ccValSize', 'Attr value size (cqh)', 4, 16, 0.2], ['ccValStroke', 'Attr value outline', 0, 0.6, 0.01], ['ccLabelSize', 'Attr label size (cqh)', 2, 9, 0.2], ['ccLabelStroke', 'Attr label outline', 0, 0.6, 0.01], ['ccCornerSize', 'Corner # size (cqh)', 2, 9, 0.2], ['ccCornerStroke', 'Corner # outline', 0, 0.6, 0.01], ['ccCornerTop', 'Corner # top (cqh)', 0, 20, 0.5], ['ccCornerRight', 'Corner # right (cqw)', 0, 20, 0.5]] as [key, lbl, min, max, step]}
 			<div class="slider">
 				<span>{lbl}</span>
 				<input

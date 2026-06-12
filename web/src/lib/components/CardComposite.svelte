@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 
 	export let artImageUrl: string;
 	export let frameImageUrl: string;
@@ -32,9 +32,9 @@
 	let scheduledAnimationFrameId: number | null = null;
 	let pendingRotateXDeg = 0;
 	let pendingRotateYDeg = 0;
-	let bannerEl: HTMLDivElement | null = null;
-	let midEl: HTMLDivElement | null = null;
-	let nameEl: HTMLSpanElement | null = null;
+	let titleEl: HTMLDivElement | null = null;
+	let titleInnerEl: HTMLSpanElement | null = null;
+	let titleFontSizePx = 0;
 
 	function updateCachedBoundingRect() {
 		if (wrapperEl) cachedBoundingRect = wrapperEl.getBoundingClientRect();
@@ -76,22 +76,31 @@
 		return { iconPath, value, labelText };
 	}
 
-	// The flexbox grows the ribbon with the name; JS only handles the edge case where
-	// even at the banner's max width the name overflows — then shrink the font to fit.
-	async function fitBannerName() {
-		try {
-			await tick();
-			if (!nameEl || !midEl) return;
-			nameEl.style.fontSize = '';
-			let guard = 24;
-			while (guard-- > 0 && midEl.scrollWidth > midEl.clientWidth + 1) {
-				const current = parseFloat(getComputedStyle(nameEl).fontSize);
-				if (!current || current < 5) break;
-				nameEl.style.fontSize = (current * 0.94).toFixed(2) + 'px';
-			}
-		} catch {
-			/* never let title sizing break the card render */
+	function fitTitleTextToOneLine() {
+		if (!titleEl || !titleInnerEl || !wrapperEl) return;
+		const maxBoxHeightPx = (wrapperEl.clientHeight * titleHeightPercent) / 100;
+		const maxBoxWidthPx = titleEl.clientWidth;
+		const basePx = Math.floor(maxBoxHeightPx * titleBaseFontScale);
+		const softCapPx = Math.floor(maxBoxHeightPx * titleMaxFontScale);
+		let fontPx = Math.min(basePx, softCapPx);
+		titleInnerEl.style.fontSize = `${fontPx}px`;
+		titleInnerEl.style.letterSpacing = '-0.10em';
+		titleInnerEl.style.lineHeight = '1';
+		titleInnerEl.style.whiteSpace = 'nowrap';
+		titleInnerEl.style.display = 'inline-block';
+		let guard = 0;
+		while (
+			(titleInnerEl.scrollWidth > maxBoxWidthPx || titleInnerEl.clientHeight > maxBoxHeightPx) &&
+			fontPx > 6 &&
+			guard < 60
+		) {
+			fontPx = Math.floor(fontPx * 0.94);
+			titleInnerEl.style.fontSize = `${fontPx}px`;
+			guard++;
 		}
+		const strokePx = Math.max(0, Math.min(6, fontPx * titleStrokeFactor));
+		(titleInnerEl.style as any).webkitTextStroke = `${strokePx}px ${titleStrokeColor}`;
+		titleFontSizePx = fontPx;
 	}
 
 	$: magicBadge = makeBadge('/icons/magic_icon.png', magicValue, 'MAGIC');
@@ -102,16 +111,25 @@
 		? `${titleText ?? 'Card'} — ${descriptionText}`
 		: (titleText ?? 'Card');
 
-	$: if (titleText !== undefined && nameEl && midEl) fitBannerName();
+	$: if (
+		titleText &&
+		titleEl &&
+		titleInnerEl &&
+		titleBaseFontScale &&
+		titleMaxFontScale &&
+		titleStrokeFactor !== undefined &&
+		titleStrokeColor
+	)
+		fitTitleTextToOneLine();
 
 	onMount(() => {
 		const ro = new ResizeObserver(() => {
 			updateCachedBoundingRect();
-			fitBannerName();
+			fitTitleTextToOneLine();
 		});
 		if (wrapperEl) ro.observe(wrapperEl);
 		if ((document as any).fonts && (document as any).fonts.ready) {
-			(document as any).fonts.ready.then(() => fitBannerName());
+			(document as any).fonts.ready.then(() => fitTitleTextToOneLine());
 		}
 		return () => ro.disconnect();
 	});
@@ -169,7 +187,7 @@
 					>
 						<div
 							class="card-attribute-value"
-							style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:5cqh;letter-spacing:-0.12em;text-rendering:optimizeLegibility;font-kerning:normal;transform:translate(var(--cc-val-x,0),var(--cc-val-y,0)) scaleX(0.92);"
+							style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:5cqh;letter-spacing:-0.12em;text-rendering:optimizeLegibility;font-kerning:normal;transform:scaleX(0.92);"
 						>
 							{b.value}
 						</div>
@@ -193,96 +211,35 @@
 		decoding="async"
 		draggable="false"
 	/>
-	<!-- Elastic title banner (3-slice): fixed left/right caps + a middle that stretches
-	     with the name. Anchored right, so long names grow the ribbon LEFTWARD, like the
-	     printed cards; the font only shrinks once the ribbon hits its max width. The
-	     card number rides in the right ornament. Outlines are text-shadows (a centred
-	     text-stroke thins the glyph; the print outline is external). Sits above the
-	     frame so the name/number are never covered by the stone border. -->
-	<div class="cc-banner" bind:this={bannerEl}>
-		<div class="cc-cap-l"></div>
-		<div class="cc-mid" bind:this={midEl}>
-			<span class="cc-name" bind:this={nameEl}>{titleText ?? ''}</span>
+	{#if titleImageUrl}
+		<img
+			src={titleImageUrl}
+			alt="card-title-frame"
+			style={`position:absolute;left:${titleLeftPercent}%;top:${titleTopPercent}%;height:${titleHeightPercent}%;width:auto;display:block;pointer-events:none;z-index:2;`}
+			loading="lazy"
+			decoding="async"
+			draggable="false"
+		/>
+	{/if}
+	{#if titleText}
+		<div
+			bind:this={titleEl}
+			class="card-title-text"
+			style={`position:absolute;left:${titleTextLeftPercent}%;top:${titleTextTopPercent}%;height:${titleHeightPercent}%;width:46cqw;display:flex;align-items:center;justify-content:flex-start;text-align:left;z-index:3;pointer-events:none;white-space:nowrap;overflow:hidden;`}
+		>
+			<span
+				bind:this={titleInnerEl}
+				style="display:inline-block;white-space:nowrap;letter-spacing:-0.10em;line-height:1;"
+			>
+				{titleText}
+			</span>
 		</div>
-		<div class="cc-cap-r">
-			<span class="cc-num">{cornerNumberValue}</span>
-		</div>
+	{/if}
+
+	<div
+		class="card-corner-number"
+		style="position:absolute;top:var(--cc-corner-top,7.5cqh);right:var(--cc-corner-right,8.5cqw);width:4.2cqh;height:3.2cqh;display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none;letter-spacing:-0.12em;text-rendering:optimizeLegibility;font-kerning:normal;"
+	>
+		{cornerNumberValue}
 	</div>
 </div>
-
-<style>
-	.cc-banner {
-		--hb: var(--cc-banner-h, 19.6cqw);
-		position: absolute;
-		top: var(--cc-banner-top, 3.4%);
-		right: var(--cc-banner-right, 4.6%);
-		height: var(--hb);
-		display: flex;
-		align-items: stretch;
-		z-index: 4;
-		max-width: 92%;
-		pointer-events: none;
-		filter: drop-shadow(0 calc(var(--hb) * 0.03) calc(var(--hb) * 0.06) rgba(0, 0, 0, 0.55));
-	}
-	.cc-cap-l {
-		flex: 0 0 auto;
-		width: calc(var(--hb) * 0.2687);
-		background: url('/frames/title-left.png') no-repeat;
-		background-size: 100% 100%;
-	}
-	.cc-mid {
-		flex: 0 1 auto;
-		min-width: var(--cc-banner-min, 16cqw);
-		background: url('/frames/title-mid.png');
-		background-size: 100% 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-		padding: calc(var(--hb) * 0.0746) 1.2cqw calc(var(--hb) * 0.5671);
-	}
-	.cc-cap-r {
-		position: relative;
-		flex: 0 0 auto;
-		width: calc(var(--hb) * 0.6567);
-		background: url('/frames/title-right.png') no-repeat;
-		background-size: 100% 100%;
-	}
-	.cc-name {
-		font-size: calc(var(--hb) * var(--cc-name-factor, 0.3));
-		letter-spacing: 0.04em;
-		color: var(--cc-text-color, #fff);
-		text-transform: uppercase;
-		white-space: nowrap;
-		line-height: 1;
-		transform: translateY(-4%);
-		text-shadow:
-			calc(var(--hb) * -0.022) 0 0 #000,
-			calc(var(--hb) * 0.022) 0 0 #000,
-			0 calc(var(--hb) * -0.022) 0 #000,
-			0 calc(var(--hb) * 0.022) 0 #000,
-			calc(var(--hb) * -0.016) calc(var(--hb) * -0.016) 0 #000,
-			calc(var(--hb) * 0.016) calc(var(--hb) * -0.016) 0 #000,
-			calc(var(--hb) * -0.016) calc(var(--hb) * 0.016) 0 #000,
-			calc(var(--hb) * 0.016) calc(var(--hb) * 0.016) 0 #000,
-			0 calc(var(--hb) * 0.05) calc(var(--hb) * 0.04) rgba(0, 0, 0, 0.6);
-	}
-	.cc-num {
-		position: absolute;
-		left: var(--cc-num-x, 46%);
-		top: var(--cc-num-y, 39%);
-		transform: translate(-50%, -50%);
-		font-size: calc(var(--hb) * var(--cc-num-factor, 0.56));
-		color: var(--cc-text-color, #fff);
-		line-height: 1;
-		text-shadow:
-			calc(var(--hb) * -0.025) 0 0 #000,
-			calc(var(--hb) * 0.025) 0 0 #000,
-			0 calc(var(--hb) * -0.025) 0 #000,
-			0 calc(var(--hb) * 0.025) 0 #000,
-			calc(var(--hb) * -0.018) calc(var(--hb) * -0.018) 0 #000,
-			calc(var(--hb) * 0.018) calc(var(--hb) * -0.018) 0 #000,
-			calc(var(--hb) * -0.018) calc(var(--hb) * 0.018) 0 #000,
-			calc(var(--hb) * 0.018) calc(var(--hb) * 0.018) 0 #000;
-	}
-</style>
