@@ -43,35 +43,35 @@
 	font-size: 8cqh !important;
 }
 .card-attribute-value {
-	font-family: 'Morpheus', system-ui, sans-serif !important;
+	font-family: 'Draco', system-ui, sans-serif !important;
 	color: var(--cc-text-color, #fff);
-	letter-spacing: var(--cc-val-ls, -0.03em);
+	letter-spacing: var(--cc-val-ls, -0.06em);
 	font-size: var(--cc-val-size, 9cqh) !important;
 	text-shadow:
-		-0.05em 0 0 #000,
-		0.05em 0 0 #000,
-		0 -0.05em 0 #000,
-		0 0.05em 0 #000,
-		-0.035em -0.035em 0 #000,
-		0.035em -0.035em 0 #000,
-		-0.035em 0.035em 0 #000,
-		0.035em 0.035em 0 #000 !important;
+		-0.07em 0 0 #000,
+		0.07em 0 0 #000,
+		0 -0.07em 0 #000,
+		0 0.07em 0 #000,
+		-0.05em -0.05em 0 #000,
+		0.05em -0.05em 0 #000,
+		-0.05em 0.05em 0 #000,
+		0.05em 0.05em 0 #000 !important;
 }
 /* Attribute labels (MAGIC / MIGHT / FIRE) keep Exocet/Draco. */
 .card-attribute-label {
 	font-family: 'Draco', system-ui, sans-serif !important;
 	color: var(--cc-text-color, #fff);
-	letter-spacing: var(--cc-label-ls, -0.18em) !important;
+	letter-spacing: var(--cc-label-ls, -0.14em) !important;
 	font-size: var(--cc-label-size, 4.2cqh) !important;
 	text-shadow:
-		-0.06em 0 0 #000,
-		0.06em 0 0 #000,
-		0 -0.06em 0 #000,
-		0 0.06em 0 #000,
-		-0.04em -0.04em 0 #000,
-		0.04em -0.04em 0 #000,
-		-0.04em 0.04em 0 #000,
-		0.04em 0.04em 0 #000 !important;
+		-0.07em 0 0 #000,
+		0.07em 0 0 #000,
+		0 -0.07em 0 #000,
+		0 0.07em 0 #000,
+		-0.05em -0.05em 0 #000,
+		0.05em -0.05em 0 #000,
+		-0.05em 0.05em 0 #000,
+		0.05em 0.05em 0 #000 !important;
 }
 .card-corner-number {
 	font-family: 'Morpheus', system-ui, sans-serif !important;

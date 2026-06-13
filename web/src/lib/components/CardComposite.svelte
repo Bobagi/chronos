@@ -213,7 +213,7 @@
 
 <style>
 	.cc-banner {
-		--hb: var(--cc-banner-h, 16cqh);
+		--hb: var(--cc-banner-h, 20cqh);
 		position: absolute;
 		top: var(--cc-banner-top, 3.4%);
 		right: var(--cc-banner-right, 4.6%);
@@ -254,41 +254,58 @@
 		   taller card; --name-shrink is a 0..1 multiplier the JS only lowers for the rare
 		   name that overflows even the max-width ribbon. */
 		font-family: 'Morpheus', system-ui, sans-serif;
-		font-size: calc(var(--hb) * var(--cc-name-factor, 0.34) * var(--name-shrink, 1));
-		letter-spacing: 0.04em;
+		font-size: calc(var(--hb) * var(--cc-name-factor, 0.40) * var(--name-shrink, 1));
+		letter-spacing: 0.01em;
 		color: var(--cc-text-color, #fff);
 		text-transform: uppercase;
 		white-space: nowrap;
 		line-height: 1;
 		transform: translateY(-4%);
+		/* 16-direction outline for a solid, crisp border with no corner gaps */
 		text-shadow:
-			calc(var(--hb) * -0.028) 0 0 #000,
-			calc(var(--hb) * 0.028) 0 0 #000,
-			0 calc(var(--hb) * -0.028) 0 #000,
-			0 calc(var(--hb) * 0.028) 0 #000,
-			calc(var(--hb) * -0.02) calc(var(--hb) * -0.02) 0 #000,
-			calc(var(--hb) * 0.02) calc(var(--hb) * -0.02) 0 #000,
-			calc(var(--hb) * -0.02) calc(var(--hb) * 0.02) 0 #000,
-			calc(var(--hb) * 0.02) calc(var(--hb) * 0.02) 0 #000,
-			0 calc(var(--hb) * 0.026) calc(var(--hb) * 0.018) rgba(0, 0, 0, 0.45);
+			calc(var(--hb) * -0.05) 0 0 #000,
+			calc(var(--hb) * 0.05) 0 0 #000,
+			0 calc(var(--hb) * -0.05) 0 #000,
+			0 calc(var(--hb) * 0.05) 0 #000,
+			calc(var(--hb) * -0.035) calc(var(--hb) * -0.035) 0 #000,
+			calc(var(--hb) * 0.035) calc(var(--hb) * -0.035) 0 #000,
+			calc(var(--hb) * -0.035) calc(var(--hb) * 0.035) 0 #000,
+			calc(var(--hb) * 0.035) calc(var(--hb) * 0.035) 0 #000,
+			calc(var(--hb) * -0.05) calc(var(--hb) * -0.02) 0 #000,
+			calc(var(--hb) * 0.05) calc(var(--hb) * -0.02) 0 #000,
+			calc(var(--hb) * -0.05) calc(var(--hb) * 0.02) 0 #000,
+			calc(var(--hb) * 0.05) calc(var(--hb) * 0.02) 0 #000,
+			calc(var(--hb) * -0.02) calc(var(--hb) * -0.05) 0 #000,
+			calc(var(--hb) * 0.02) calc(var(--hb) * -0.05) 0 #000,
+			calc(var(--hb) * -0.02) calc(var(--hb) * 0.05) 0 #000,
+			calc(var(--hb) * 0.02) calc(var(--hb) * 0.05) 0 #000,
+			0 calc(var(--hb) * 0.03) calc(var(--hb) * 0.02) rgba(0, 0, 0, 0.5);
 	}
 	.cc-num {
 		position: absolute;
 		left: var(--cc-num-x, 46%);
 		top: var(--cc-num-y, 39%);
 		transform: translate(-50%, -50%);
-		font-family: 'Morpheus', system-ui, sans-serif;
-		font-size: calc(var(--hb) * var(--cc-num-factor, 0.28));
+		font-family: 'Draco', system-ui, sans-serif;
+		font-size: calc(var(--hb) * var(--cc-num-factor, 0.55));
 		color: var(--cc-text-color, #fff);
 		line-height: 1;
 		text-shadow:
-			calc(var(--hb) * -0.028) 0 0 #000,
-			calc(var(--hb) * 0.028) 0 0 #000,
-			0 calc(var(--hb) * -0.028) 0 #000,
-			0 calc(var(--hb) * 0.028) 0 #000,
-			calc(var(--hb) * -0.02) calc(var(--hb) * -0.02) 0 #000,
-			calc(var(--hb) * 0.02) calc(var(--hb) * -0.02) 0 #000,
-			calc(var(--hb) * -0.02) calc(var(--hb) * 0.02) 0 #000,
-			calc(var(--hb) * 0.02) calc(var(--hb) * 0.02) 0 #000;
+			calc(var(--hb) * -0.05) 0 0 #000,
+			calc(var(--hb) * 0.05) 0 0 #000,
+			0 calc(var(--hb) * -0.05) 0 #000,
+			0 calc(var(--hb) * 0.05) 0 #000,
+			calc(var(--hb) * -0.035) calc(var(--hb) * -0.035) 0 #000,
+			calc(var(--hb) * 0.035) calc(var(--hb) * -0.035) 0 #000,
+			calc(var(--hb) * -0.035) calc(var(--hb) * 0.035) 0 #000,
+			calc(var(--hb) * 0.035) calc(var(--hb) * 0.035) 0 #000,
+			calc(var(--hb) * -0.05) calc(var(--hb) * -0.02) 0 #000,
+			calc(var(--hb) * 0.05) calc(var(--hb) * -0.02) 0 #000,
+			calc(var(--hb) * -0.05) calc(var(--hb) * 0.02) 0 #000,
+			calc(var(--hb) * 0.05) calc(var(--hb) * 0.02) 0 #000,
+			calc(var(--hb) * -0.02) calc(var(--hb) * -0.05) 0 #000,
+			calc(var(--hb) * 0.02) calc(var(--hb) * -0.05) 0 #000,
+			calc(var(--hb) * -0.02) calc(var(--hb) * 0.05) 0 #000,
+			calc(var(--hb) * 0.02) calc(var(--hb) * 0.05) 0 #000;
 	}
 </style>

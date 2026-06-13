@@ -41,12 +41,12 @@
 		ccStrokeColor: '#000000',
 		ccTextColor: '#ffffff',
 		// elastic title banner (must match the CSS fallbacks in CardComposite)
-		ccBannerH: 16, // cqh — banner height
+		ccBannerH: 20, // cqh — banner height
 		ccBannerTop: 3.4, // %
 		ccBannerRight: 4.6, // %
 		ccBannerMin: 20, // cqw — min ribbon width (short names)
-		ccNameFactor: 0.34, // name font = banner height * this
-		ccNumFactor: 0.28, // number font = banner height * this
+		ccNameFactor: 0.40, // name font = banner height * this
+		ccNumFactor: 0.55, // number font = banner height * this
 		ccNumX: 46, // % within the right ornament
 		ccNumY: 39, // %
 		// attribute values + labels
