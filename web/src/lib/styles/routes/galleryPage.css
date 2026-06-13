@@ -236,7 +236,7 @@
 
 .modal-card-wrap {
 	height: min(72vh, 600px);
-	aspect-ratio: 430 / 670;
+	aspect-ratio: 1444 / 1920;
 	perspective: 1200px;
 	flex: 0 0 auto;
 }

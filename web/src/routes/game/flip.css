@@ -1,7 +1,7 @@
 .flip-wrap {
 	position: relative;
 	width: 100%;
-	aspect-ratio: 430/670;
+	aspect-ratio: 1444/1920;
 	perspective: 1000px;
 }
 .flipper {

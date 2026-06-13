@@ -5,8 +5,8 @@
 	export let frameImageUrl: string;
 	export let titleImageUrl: string | null = null;
 	export let titleText: string | null = null;
-	export let aspectWidth = 430;
-	export let aspectHeight = 670;
+	export let aspectWidth = 1444;
+	export let aspectHeight = 1920;
 	export let artObjectFit: 'cover' | 'contain' = 'cover';
 	export let titleTopPercent = 3;
 	export let titleLeftPercent = 29;
@@ -252,6 +252,7 @@
 		/* Sized off the banner height (cqh) so it matches the printed proportions on our
 		   taller card; --name-shrink is a 0..1 multiplier the JS only lowers for the rare
 		   name that overflows even the max-width ribbon. */
+		font-family: 'Morpheus', system-ui, sans-serif;
 		font-size: calc(var(--hb) * var(--cc-name-factor, 0.34) * var(--name-shrink, 1));
 		letter-spacing: 0.04em;
 		color: var(--cc-text-color, #fff);
@@ -260,14 +261,14 @@
 		line-height: 1;
 		transform: translateY(-4%);
 		text-shadow:
-			calc(var(--hb) * -0.022) 0 0 #000,
-			calc(var(--hb) * 0.022) 0 0 #000,
-			0 calc(var(--hb) * -0.022) 0 #000,
-			0 calc(var(--hb) * 0.022) 0 #000,
-			calc(var(--hb) * -0.016) calc(var(--hb) * -0.016) 0 #000,
-			calc(var(--hb) * 0.016) calc(var(--hb) * -0.016) 0 #000,
-			calc(var(--hb) * -0.016) calc(var(--hb) * 0.016) 0 #000,
-			calc(var(--hb) * 0.016) calc(var(--hb) * 0.016) 0 #000,
+			calc(var(--hb) * -0.028) 0 0 #000,
+			calc(var(--hb) * 0.028) 0 0 #000,
+			0 calc(var(--hb) * -0.028) 0 #000,
+			0 calc(var(--hb) * 0.028) 0 #000,
+			calc(var(--hb) * -0.02) calc(var(--hb) * -0.02) 0 #000,
+			calc(var(--hb) * 0.02) calc(var(--hb) * -0.02) 0 #000,
+			calc(var(--hb) * -0.02) calc(var(--hb) * 0.02) 0 #000,
+			calc(var(--hb) * 0.02) calc(var(--hb) * 0.02) 0 #000,
 			0 calc(var(--hb) * 0.026) calc(var(--hb) * 0.018) rgba(0, 0, 0, 0.45);
 	}
 	.cc-num {
@@ -275,17 +276,18 @@
 		left: var(--cc-num-x, 46%);
 		top: var(--cc-num-y, 39%);
 		transform: translate(-50%, -50%);
-		font-size: calc(var(--hb) * var(--cc-num-factor, 0.56));
+		font-family: 'Morpheus', system-ui, sans-serif;
+		font-size: calc(var(--hb) * var(--cc-num-factor, 0.40));
 		color: var(--cc-text-color, #fff);
 		line-height: 1;
 		text-shadow:
-			calc(var(--hb) * -0.025) 0 0 #000,
-			calc(var(--hb) * 0.025) 0 0 #000,
-			0 calc(var(--hb) * -0.025) 0 #000,
-			0 calc(var(--hb) * 0.025) 0 #000,
-			calc(var(--hb) * -0.018) calc(var(--hb) * -0.018) 0 #000,
-			calc(var(--hb) * 0.018) calc(var(--hb) * -0.018) 0 #000,
-			calc(var(--hb) * -0.018) calc(var(--hb) * 0.018) 0 #000,
-			calc(var(--hb) * 0.018) calc(var(--hb) * 0.018) 0 #000;
+			calc(var(--hb) * -0.028) 0 0 #000,
+			calc(var(--hb) * 0.028) 0 0 #000,
+			0 calc(var(--hb) * -0.028) 0 #000,
+			0 calc(var(--hb) * 0.028) 0 #000,
+			calc(var(--hb) * -0.02) calc(var(--hb) * -0.02) 0 #000,
+			calc(var(--hb) * 0.02) calc(var(--hb) * -0.02) 0 #000,
+			calc(var(--hb) * -0.02) calc(var(--hb) * 0.02) 0 #000,
+			calc(var(--hb) * 0.02) calc(var(--hb) * 0.02) 0 #000;
 	}
 </style>

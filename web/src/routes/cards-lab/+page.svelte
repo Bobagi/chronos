@@ -46,13 +46,13 @@
 		ccBannerRight: 4.6, // %
 		ccBannerMin: 20, // cqw — min ribbon width (short names)
 		ccNameFactor: 0.34, // name font = banner height * this
-		ccNumFactor: 0.56, // number font = banner height * this
+		ccNumFactor: 0.40, // number font = banner height * this
 		ccNumX: 46, // % within the right ornament
 		ccNumY: 39, // %
 		// attribute values + labels
-		ccValSize: 10, // cqh
+		ccValSize: 9, // cqh
 		ccValStroke: 0.18,
-		ccLabelSize: 5,
+		ccLabelSize: 4.2,
 		ccLabelStroke: 0.25
 	};
 
@@ -354,7 +354,7 @@
 	}
 	.cardfx-card {
 		width: clamp(240px, 42vh, 360px);
-		aspect-ratio: 430 / 670;
+		aspect-ratio: 1444 / 1920;
 	}
 	.lab__placeholder {
 		display: grid;

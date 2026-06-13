@@ -361,7 +361,7 @@
    the felt clipping the top card or hiding the chooser. */
 .lb__cards .duel-slot {
 	width: clamp(92px, 17vh, 225px) !important;
-	height: calc(clamp(92px, 17vh, 225px) * 1.55) !important;
+	height: calc(clamp(92px, 17vh, 225px) * 1.33) !important;
 }
 .lb__cards {
 	gap: 4px;
@@ -462,7 +462,7 @@
 }
 .lb--side-hand .lb__cards .duel-slot {
 	width: clamp(120px, 23vh, 300px) !important;
-	height: calc(clamp(120px, 23vh, 300px) * 1.55) !important;
+	height: calc(clamp(120px, 23vh, 300px) * 1.33) !important;
 }
 .lb--side-hand .lb__notices {
 	bottom: 9vh;

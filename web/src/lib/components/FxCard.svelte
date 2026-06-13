@@ -18,7 +18,7 @@
 	// “safe” in-flight card size (keeps aspect & avoids cropping)
 	const CARD_MIN = 120;
 	const CARD_MAX = 320;
-	const aspect = 430 / 670; // width/height
+	const aspect = 1444 / 1920; // width/height
 
 	const cardH = Math.min(
 		CARD_MAX,

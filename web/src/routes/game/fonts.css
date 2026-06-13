@@ -6,16 +6,26 @@
 	font-style: normal;
 	font-display: swap;
 }
+@font-face {
+	/* Morpheus — used for card name, number and attribute values. */
+	font-family: 'Morpheus';
+	src: url('/fonts/Morpheus.ttf') format('truetype');
+	font-weight: 400 900;
+	font-style: normal;
+	font-display: swap;
+}
 /*
  * Card text styling. Every size / outline / spacing / colour is a CSS var with the
  * current value as the fallback, so it's tunable per-card (set the var on any ancestor,
  * e.g. in /cards-lab) without changing the default look anywhere else. To bake new
  * defaults for everyone, change the fallback values here.
+ *
+ * Font split: Morpheus for name/number/values; Draco (Exocet) ONLY for attribute labels.
  */
 .card-font {
 	--card-font-size: 2.4cqh;
 	font-family:
-		'Draco',
+		'Morpheus',
 		system-ui,
 		-apple-system,
 		'Segoe UI',
@@ -23,7 +33,6 @@
 		sans-serif;
 	font-size: var(--card-font-size);
 	line-height: 1;
-	-webkit-text-stroke: var(--cc-base-stroke, 0.18cqh) var(--cc-stroke-color, #000);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
@@ -34,23 +43,48 @@
 	font-size: 8cqh !important;
 }
 .card-attribute-value {
+	font-family: 'Morpheus', system-ui, sans-serif !important;
 	color: var(--cc-text-color, #fff);
-	text-shadow: none !important;
 	letter-spacing: var(--cc-val-ls, -0.03em);
-	font-size: var(--cc-val-size, 10cqh) !important;
-	-webkit-text-stroke: var(--cc-val-stroke, 0.18cqh) var(--cc-stroke-color, #000) !important;
+	font-size: var(--cc-val-size, 9cqh) !important;
+	text-shadow:
+		-0.05em 0 0 #000,
+		0.05em 0 0 #000,
+		0 -0.05em 0 #000,
+		0 0.05em 0 #000,
+		-0.035em -0.035em 0 #000,
+		0.035em -0.035em 0 #000,
+		-0.035em 0.035em 0 #000,
+		0.035em 0.035em 0 #000 !important;
 }
+/* Attribute labels (MAGIC / MIGHT / FIRE) keep Exocet/Draco. */
 .card-attribute-label {
+	font-family: 'Draco', system-ui, sans-serif !important;
 	color: var(--cc-text-color, #fff);
-	text-shadow: none !important;
 	letter-spacing: var(--cc-label-ls, -0.18em) !important;
-	-webkit-text-stroke: var(--cc-label-stroke, 0.25cqh) var(--cc-stroke-color, #000) !important;
-	font-size: var(--cc-label-size, 5cqh) !important;
+	font-size: var(--cc-label-size, 4.2cqh) !important;
+	text-shadow:
+		-0.06em 0 0 #000,
+		0.06em 0 0 #000,
+		0 -0.06em 0 #000,
+		0 0.06em 0 #000,
+		-0.04em -0.04em 0 #000,
+		0.04em -0.04em 0 #000,
+		-0.04em 0.04em 0 #000,
+		0.04em 0.04em 0 #000 !important;
 }
 .card-corner-number {
+	font-family: 'Morpheus', system-ui, sans-serif !important;
 	color: var(--cc-text-color, #fff);
-	text-shadow: none !important;
 	letter-spacing: -0.03em;
 	font-size: var(--cc-corner-size, 4.8cqh) !important;
-	-webkit-text-stroke: var(--cc-corner-stroke, 0.18cqh) var(--cc-stroke-color, #000) !important;
+	text-shadow:
+		-0.05em 0 0 #000,
+		0.05em 0 0 #000,
+		0 -0.05em 0 #000,
+		0 0.05em 0 #000,
+		-0.035em -0.035em 0 #000,
+		0.035em -0.035em 0 #000,
+		-0.035em 0.035em 0 #000,
+		0.035em 0.035em 0 #000 !important;
 }

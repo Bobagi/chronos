@@ -6,8 +6,8 @@
 	export let cardBackImageUrl: string;
 
 	/** Card aspect ratio (keeps the back art crisp at any size) */
-	export let aspectWidth = 430;
-	export let aspectHeight = 670;
+	export let aspectWidth = 1444;
+	export let aspectHeight = 1920;
 
 	/** Responsive width identical to the hand cards (controlled by the page) */
 	export let cardWidthCss = 'clamp(104px, 17.5vw, 200px)';

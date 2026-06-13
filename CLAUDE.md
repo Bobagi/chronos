@@ -49,11 +49,15 @@ their discard pile; whoever captured more cards when a hand empties wins the mat
   needs `npm_config_engine_strict=false` to tolerate that.
 - Card art is served from `https://bobagi.space/images/cards/<number>.png`
   (backend prepends `CARD_IMAGE_BASE_URL`, default `https://bobagi.space`, in `CardRepository`).
-- The card / display font (`--font-display: 'Draco'`) is the real, complete **Exocet Heavy**
-  (Jonathan Barnbrook / Emigre, 1992 — the Diablo-logo typeface), at `web/static/fonts/ExocetHeavy.ttf`.
-  It's loaded via `@font-face` in `appShell.css` and `web/src/routes/game/fonts.css` under the legacy
-  `'Draco'` family alias (kept so existing references keep working). An earlier incomplete free
-  conversion (where `T` rendered as `+`) was replaced by this file.
+- **Card font split:** `web/static/fonts/Morpheus.ttf` (family `'Morpheus'`) is used for all in-card
+  text — title banner name, card number, and attribute values. `web/static/fonts/ExocetHeavy.ttf`
+  (family `'Draco'`, real Exocet Heavy by Barnbrook/Emigre) is kept ONLY for the attribute labels
+  (MAGIC / MIGHT / FIRE). Both are declared in `web/src/routes/game/fonts.css`. The UI/nav font
+  (`--font-display: 'Draco'`) in `appShell.css` is unchanged (Exocet stays for the top bar, etc.).
+- **Card aspect ratio is 1444/1920** (the designer frame dimensions, ≈ 0.752). All CSS and
+  `aspectWidth`/`aspectHeight` defaults in `CardComposite`, `DeckStack`, `hands.css`, `flip.css`,
+  `effects.css`, `galleryPage.css`, `mainpage.css` and `cards-lab` use this ratio. The old 430/670
+  was wrong (too tall).
 
 ### Deploy the FRONTEND (after editing anything in `web/`)
 ```bash
@@ -217,9 +221,10 @@ web/                         SvelteKit frontend
   observer feed back into an infinite layout loop. Keep it synchronous + observer-free.
 - **Hand-hover selection glow is green** (Hearthstone-style, `hands.css`); the elliptical golden pedestal
   under the lifted card was removed.
-- **Other card text is tunable via CSS vars** (`web/src/routes/game/fonts.css`): `--cc-base-stroke`,
-  `--cc-stroke-color`, `--cc-text-color`, `--cc-val-size`/`--cc-val-stroke`, `--cc-label-size`/
-  `--cc-label-stroke` (all default to the current look). Tune in `/cards-lab` and bake into `fonts.css`.
+- **Other card text is tunable via CSS vars** (`web/src/routes/game/fonts.css`): `--cc-text-color`,
+  `--cc-val-size`/`--cc-val-ls`, `--cc-label-size`/`--cc-label-ls` (all default to the current look).
+  All outlines are **text-shadows** (8-direction), NOT `-webkit-text-stroke` (which thinned glyphs).
+  Tune in `/cards-lab` and bake into `fonts.css` + `CardComposite` defaults.
 - **Friend API paths live in the client factory DEFAULTS** (`web/src/lib/api/chronosClientFactory.ts`,
   `defaultClientOptions`). They must match the NestJS controllers: `POST /friends/request/:id/{accept,
   reject}`, `DELETE /friends/:id`, `POST /game/start-with-friend`. A past bug had wrong defaults

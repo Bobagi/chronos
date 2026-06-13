@@ -137,7 +137,7 @@
 
 .hero-card {
 	width: clamp(120px, 13vw, 168px);
-	aspect-ratio: 430 / 670;
+	aspect-ratio: 1444 / 1920;
 	border-radius: 8px;
 	box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
 	transition:
