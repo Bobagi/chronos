@@ -304,7 +304,15 @@ web/                         SvelteKit frontend
   translations was an additive migration (`20260608000000_add_card_translations`) — `migrate deploy`
   + seed on a normal `docker compose up` applied it with no wipe. Creating throwaway test games/users is fine; they age out (admin
   "Expire old games" button) — but direct DB mutations are restricted, so prefer the app's own endpoints.
-- **Secrets:** `.env` (backend) and `web/.env` hold DB creds / API base. Never print, echo, or commit them.
+- **Secrets:** `.env` (backend) and `web/.env` hold DB creds / API base. Both are git-ignored and
+  NOT tracked — never print, echo, or commit them. **The repo is PUBLIC** (`Bobagi/cartomania`): never
+  add ops notes that leak the host/SSH access (two `howToAccessDatabase.md` files that exposed
+  `ssh root@bobagi.space` were removed for this reason), and keep examples credential-free.
+- **Seed passwords are a security-sensitive default.** `prisma/seed.ts` falls back to weak demo
+  passwords (`admin123` / `alice123`) when `ADMIN_PASSWORD` / `ALICE_PASSWORD` are unset, and the seed
+  `upsert` uses `update:` so it **rotates the password on every `docker compose up`**. For any
+  internet-facing deploy these MUST be set in the live `.env` — otherwise the public site has a known
+  ADMIN login. To rotate: set them in `.env`, then `docker compose up -d chronos` (re-runs the seed).
 - **Don't touch other VPS services** (rhyme, umami, todo, etc.) — see `/root/CLAUDE.md` for the machine map.
 - **Commits:** end messages with `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`. Work on
   `main` (current convention) or `feat/*`; confirm before destructive git/DB actions.

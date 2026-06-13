@@ -1,4 +1,4 @@
-# Cartomania – Digital Collectible Card Game (Backend + Web)
+# Cartomania — Digital Collectible Card Game (Backend + Web)
 
 **Cartomania** (formerly _Chronos_) is a digital collectible card game. The current set is the
 **Dracomania** collection (dragons & fantasy), and the project is built to host multiple collections
@@ -8,79 +8,75 @@ player dashboard (avatars + account settings), friends and matches. The former s
 frontend was merged in here and retired.
 
 > The product is branded **Cartomania** (repo `cartomania`) and served at
-> **`cartomania.bobagi.space`** (the old `chronos.bobagi.space` 301-redirects to it). The code
-> identifiers and the infra names (Docker `chronos-*`, PM2 `chronos-web`, the DB, the `/api/chronos/*`
-> proxy) still use `chronos` internally.
+> **[`cartomania.bobagi.space`](https://cartomania.bobagi.space)** (the old `chronos.bobagi.space`
+> 301-redirects to it). The code identifiers and the infra names (Docker `chronos-*`, PM2
+> `chronos-web`, the DB, the `/api/chronos/*` proxy) still use `chronos` internally.
 
-The main mode is **Attribute Duel**: each round both duelists reveal a card and clash on one attribute
-(magic / might / fire); the round winner captures both cards into their discard pile, and whoever
-captured more cards when a hand empties wins the match. A legacy `CLASSIC` mode also exists. The UI is
-available in English, Portuguese and Spanish.
+## 🎮 Gameplay — Attribute Duel
 
-This backend handles all game rules, player logic, turn rotation, card resolution, and battle flow.
+The main mode is **Attribute Duel**. Each round both duelists reveal one card and clash on a single
+attribute — **magic / might / fire**. The round winner captures **both** cards into their discard
+pile; whoever has captured more cards when a hand empties wins the match. A legacy `CLASSIC` mode also
+exists, but Attribute Duel is the focus.
+
+The duel is **server-authoritative**: the full state machine and turn timers live on the backend, so a
+match keeps progressing and finishes on its own even with no browser open. The client is a pure
+renderer — it polls game state and sends only the player's real moves, which the server validates, so a
+tampered client can't stall a match or fake the clock.
+
+The UI is fully available in **English, Portuguese and Spanish**.
 
 ## 🛠 Tech Stack
 
-- [NestJS](https://nestjs.com/) (TypeScript)
-- REST API + Swagger
-- PostgreSQL + Prisma ORM
-- Docker-ready
-- SvelteKit web frontend in [`web/`](./web)
+- **Backend:** [NestJS](https://nestjs.com/) (TypeScript), REST + Swagger, layered
+  modules/services/repositories
+- **Frontend:** [SvelteKit](https://kit.svelte.dev/) (`@sveltejs/adapter-node`) in [`web/`](./web)
+- **Data:** PostgreSQL + [Prisma](https://www.prisma.io/) ORM
+- **Infra:** Docker / docker-compose; the web app runs under PM2 in production
 
 ---
 
 ## 🌐 Web frontend (`web/`)
 
-The browser app (SvelteKit, `@sveltejs/adapter-node`) lives in [`web/`](./web). It serves the
-landing/login, card gallery, player dashboard (avatars + account settings), friends and matches, and
-talks to this backend **server-side** via its `/api/chronos/*` proxy (default base
-`http://localhost:3053`) — so the browser only ever hits the front's own origin.
+The browser app lives in [`web/`](./web). It serves the landing/login, card gallery, player dashboard
+(avatars + account settings), friends and matches, and talks to this backend **server-side** via its
+`/api/chronos/*` proxy — so the browser only ever hits the front's own origin (no CORS).
 
 ```bash
 # dev (two terminals)
-npm run start:dev                          # backend on :3053
+npm run start:dev                          # backend on :3000
 cd web && pnpm install && pnpm run dev     # front on :5173
 
 # production build
 cd web && pnpm install && pnpm run build   # outputs web/build (adapter-node)
-node web/build/index.js                     # serves the front (PM2: chronos-web, :3055)
+node web/build/index.js                     # serves the front
 ```
 
-Deploy (VPS): nginx routes `cartomania.bobagi.space` → the front (`:3055`); the front proxies to the
-backend on `127.0.0.1:3053`. Set `VITE_API_BASE_URL` at build time only if the backend is not on `:3053`.
-
----
-
-## ▶️ Run Locally (without Docker)
-
-1. Create a `.env` file using the variables listed in the Docker section.
-2. Install dependencies with your preferred package manager, for example `npm install`.
-3. Start the development server with `npm run start:dev` and access the API at `http://localhost:3053`.
-
----
-
-## 📦 Features
-
-- Create and manage a match between 2 players
-- Track game state, logs, turns, HP, and player hands
-- Each player starts with 5 random cards in hand
-- Only cards in hand can be played
-- REST endpoints for game actions
-- Swagger docs at `/api`
+In production (VPS) nginx routes `cartomania.bobagi.space` → the front; the front proxies to the
+backend over loopback. Set `VITE_API_BASE_URL` only if the backend isn't reachable at the default
+base URL.
 
 ---
 
 ## 🚀 Run with Docker
 
-### 1) `.env` (root)
+### 1) `.env` (repo root)
 
 ```env
-CHRONOS_PORT=3053
+CHRONOS_PORT=3000
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
+POSTGRES_PASSWORD=change-me
 POSTGRES_DB=chronos
-DATABASE_URL=postgresql://postgres:postgres@db:5432/chronos
+DATABASE_URL=postgresql://postgres:change-me@db:5432/chronos
+
+# Seeded accounts — ALWAYS set strong values; without them the seed falls back to
+# weak demo passwords. Required for any internet-facing deployment.
+ADMIN_PASSWORD=set-a-strong-password
+ALICE_PASSWORD=set-a-strong-password
 ```
+
+> `.env` is git-ignored and never committed. The backend listens on container port **3000**, exposed
+> on the host as `CHRONOS_PORT`.
 
 ### 2) Start services
 
@@ -88,29 +84,77 @@ DATABASE_URL=postgresql://postgres:postgres@db:5432/chronos
 docker compose up -d db chronos
 ```
 
+`docker compose up` runs migrations and an **idempotent seed** (the Dracomania collection — 32 cards
+plus their pt/es translations — and the `admin` / `alice` accounts).
+
 ### 3) API base URL
 
 ```
-http://localhost:3053
+http://localhost:3000
+```
+
+Swagger docs: `http://localhost:3000/api`.
+
+---
+
+## ▶️ Run locally (without Docker)
+
+1. Create a `.env` using the variables from the Docker section (point `DATABASE_URL` at your Postgres).
+2. Install dependencies: `npm install`.
+3. Start the dev server: `npm run start:dev` — the API is then at `http://localhost:3000`.
+
+---
+
+## 📦 Features
+
+- Account management: register / login, change username & password, pick an avatar, delete account
+- **Attribute Duel** matches vs. a bot or a friend, with a server-authoritative state machine + timers
+- Real-time-ish duel board (state polling), scrollable battle log, Hearthstone-style hand
+- Card gallery with localized card names/descriptions (EN/PT/ES)
+- Friends: search, requests, roster with online presence, and 1:1 chat
+- Multiple collections support, seeded with the 32-card Dracomania set
+- REST API documented with Swagger at `/api`
+
+---
+
+## 🧪 Quick API checks
+
+**Health**
+
+```bash
+curl http://localhost:3000/health
+```
+
+**Start an Attribute Duel** (vs. bot — pass a real player id)
+
+```bash
+curl -X POST http://localhost:3000/game/start-duel \
+  -H "Content-Type: application/json" \
+  -d '{"playerAId":"<player-uuid>"}'
+```
+
+**Inspect duel state**
+
+```bash
+curl http://localhost:3000/game/state/<gameId>
 ```
 
 ---
 
-## 📜 Create Migration (exact commands)
+## 📜 Prisma migrations
 
 ```bash
-docker compose up -d db chronos
-docker compose exec chronos sh -lc 'npx prisma migrate dev --name add-new-game-mode'
+docker compose exec chronos sh -lc 'npx prisma migrate dev --name <migration-name>'
 ```
 
-In case of 'We found changes that cannot be executed':
+If you hit "We found changes that cannot be executed":
 
 ```bash
-docker compose exec chronos sh -lc 'npx prisma migrate dev --name add_auth_player_role --create-only'
+docker compose exec chronos sh -lc 'npx prisma migrate dev --name <migration-name> --create-only'
 docker compose exec chronos sh -lc 'npx prisma migrate reset --force --skip-seed'
 ```
 
-Then, generate files:
+Then regenerate the client:
 
 ```bash
 docker compose exec chronos sh -lc 'npx prisma generate'
@@ -121,52 +165,19 @@ docker compose exec chronos sh -lc 'npx prisma generate'
 ## 🗄 Prisma Studio (DB UI)
 
 ```bash
-docker exec -it chronos-backend npx prisma studio --port 5555 --hostname 0.0.0.0 --browser none
+docker compose exec chronos sh -lc 'npx prisma studio --port 5555 --hostname 0.0.0.0 --browser none'
 ```
 
-```bash
-ssh -L 5555:127.0.0.1:5555 user@host
-```
-
-Open: `http://localhost:5555`
-
----
-
-## 🧪 Quick API Checks
-
-**Health**
+Forward the port to your machine over SSH and open `http://localhost:5555`:
 
 ```bash
-curl -k http://localhost:3053/health
-```
-
-**Start a new game**
-
-```bash
-curl -k -X POST http://localhost:3053/game/start
-```
-
-**Play a card**
-
-```bash
-curl -k -X POST http://localhost:3053/game/play-card \
-  -H "Content-Type: application/json" \
-  -d '{"gameId":"550e8400-e29b-41d4-a716-446655440000","player":"A","card":"fireball"}'
+ssh -N -L 5555:127.0.0.1:5555 <user>@<host>
 ```
 
 ---
 
-## 📘 Swagger
-
-```
-http://localhost:3053/api
-```
-
----
-
-## 🔄 Reset DB and Seed (optional)
+## 🔄 Reset DB and reseed (optional, destructive)
 
 ```bash
 docker compose exec chronos sh -lc 'npx prisma migrate reset --force'
-docker compose exec chronos sh -lc 'npx ts-node prisma/seed.ts'
 ```
