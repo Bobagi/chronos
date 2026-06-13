@@ -213,7 +213,7 @@
 
 <style>
 	.cc-banner {
-		--hb: var(--cc-banner-h, 20cqh);
+		--hb: var(--cc-banner-h, 28cqh);
 		position: absolute;
 		top: var(--cc-banner-top, 3.4%);
 		right: var(--cc-banner-right, 4.6%);
@@ -254,7 +254,7 @@
 		   taller card; --name-shrink is a 0..1 multiplier the JS only lowers for the rare
 		   name that overflows even the max-width ribbon. */
 		font-family: 'Morpheus', system-ui, sans-serif;
-		font-size: calc(var(--hb) * var(--cc-name-factor, 0.40) * var(--name-shrink, 1));
+		font-size: calc(var(--hb) * var(--cc-name-factor, 0.29) * var(--name-shrink, 1));
 		letter-spacing: 0.01em;
 		color: var(--cc-text-color, #fff);
 		text-transform: uppercase;
@@ -287,7 +287,7 @@
 		top: var(--cc-num-y, 39%);
 		transform: translate(-50%, -50%);
 		font-family: 'Draco', system-ui, sans-serif;
-		font-size: calc(var(--hb) * var(--cc-num-factor, 0.55));
+		font-size: calc(var(--hb) * var(--cc-num-factor, 0.39));
 		color: var(--cc-text-color, #fff);
 		line-height: 1;
 		text-shadow:
