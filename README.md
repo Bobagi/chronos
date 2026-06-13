@@ -7,9 +7,10 @@
 player dashboard (avatars + account settings), friends and matches. The former separate `kairos`
 frontend was merged in here and retired.
 
-> The product is branded **Cartomania** (repo `cartomania`), but the code identifiers, the live domain
-> (`chronos.bobagi.space`) and the infra names (Docker `chronos-*`, PM2 `chronos-web`, the DB, the
-> `/api/chronos/*` proxy) still use `chronos` internally.
+> The product is branded **Cartomania** (repo `cartomania`) and served at
+> **`cartomania.bobagi.space`** (the old `chronos.bobagi.space` 301-redirects to it). The code
+> identifiers and the infra names (Docker `chronos-*`, PM2 `chronos-web`, the DB, the `/api/chronos/*`
+> proxy) still use `chronos` internally.
 
 The main mode is **Attribute Duel**: each round both duelists reveal a card and clash on one attribute
 (magic / might / fire); the round winner captures both cards into their discard pile, and whoever
@@ -45,7 +46,7 @@ cd web && pnpm install && pnpm run build   # outputs web/build (adapter-node)
 node web/build/index.js                     # serves the front (PM2: chronos-web, :3055)
 ```
 
-Deploy (VPS): nginx routes `chronos.bobagi.space` → the front (`:3055`); the front proxies to the
+Deploy (VPS): nginx routes `cartomania.bobagi.space` → the front (`:3055`); the front proxies to the
 backend on `127.0.0.1:3053`. Set `VITE_API_BASE_URL` at build time only if the backend is not on `:3053`.
 
 ---

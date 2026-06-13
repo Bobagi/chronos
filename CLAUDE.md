@@ -2,8 +2,9 @@
 
 > **BRANDING:** the product is branded **Cartomania** (the user-facing name + the GitHub repo
 > `Bobagi/cartomania`); it's meant to host multiple collections (Dracomania, Mythomania, custom
-> player collections). The **codebase identifiers** (`Chronos*` functions/types, the `chronos` proxy
-> path), the **domain** (`chronos.bobagi.space`), and the **infra** names (Docker `chronos-*`, PM2
+> player collections). The product is served at **`cartomania.bobagi.space`** (the old
+> `chronos.bobagi.space` 301-redirects to it). The **codebase identifiers** (`Chronos*`
+> functions/types, the `chronos` proxy path) and the **infra** names (Docker `chronos-*`, PM2
 > `chronos-web`, the DB) still use `chronos` on purpose — so "Chronos" below = the internal/infra name.
 
 > **SESSION PROTOCOL — follow automatically, every time, without being reminded:**
@@ -29,7 +30,8 @@ the owner's (Gustavo Perin / "Bobagi") portfolio piece. It is **one project**:
   **server-side** via a proxy (`/api/chronos/*`), so the browser only hits its own origin (no CORS).
 
 The former separate `kairos` frontend was merged into `web/` and retired. Repo:
-`https://github.com/Bobagi/chronos`. Live: `https://chronos.bobagi.space`.
+`https://github.com/Bobagi/chronos`. Live: `https://cartomania.bobagi.space`
+(legacy `https://chronos.bobagi.space` 301-redirects here).
 
 The main mode is **Attribute Duel** (`mode = ATTRIBUTE_DUEL`): each round both duelists reveal one
 card and clash on one attribute (**magic / might / fire**); the round winner captures both cards into
@@ -43,7 +45,8 @@ their discard pile; whoever captured more cards when a hand empties wins the mat
 | Frontend | `/opt/chronos/web` (`build/index.js`) | **PM2** app `chronos-web` | 127.0.0.1:**3055** |
 | Backend | Docker `chronos-backend` (image `chronos-chronos`) | `docker compose` service `chronos` | host **3056** → container 3000; also 5555 (Prisma Studio) |
 | Database | Docker `chronos-db` (postgres:15) | `docker compose` service `db` | host **5434** → 5432 |
-| nginx | `/etc/nginx/sites-available/chronos.bobagi.space` | proxies `/` → 127.0.0.1:3055 | :80/:443 |
+| nginx | `/etc/nginx/sites-available/cartomania.bobagi.space` | proxies `/` → 127.0.0.1:3055 | :80/:443 |
+| nginx (legacy) | `/etc/nginx/sites-available/chronos.bobagi.space` | 301 → `cartomania.bobagi.space` | :80/:443 |
 
 - **Node is 18.20.5 via nvm; pnpm 9.15.9.** (`.nvmrc` says 20 but only 18 is installed.) The web build
   needs `npm_config_engine_strict=false` to tolerate that.
@@ -267,7 +270,7 @@ web/                         SvelteKit frontend
   redirect) and `.../callback/+server.ts` (stub). It comes to life once these are set:
     - `PUBLIC_GOOGLE_AUTH_ENABLED=true` (web — shows/enables the button; otherwise it shows "coming soon")
     - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` (web server — the OAuth client;
-      redirect URI e.g. `https://chronos.bobagi.space/auth/google/callback`)
+      redirect URI e.g. `https://cartomania.bobagi.space/auth/google/callback`)
   Still TODO (documented inline in the callback): the token exchange, `id_token` verification, a backend
   find-or-create-Player-by-Google-identity endpoint (needs a `googleId`/`email` column on Player via a
   Prisma migration), then `setChronosSessionCookie`.
@@ -285,7 +288,7 @@ web/                         SvelteKit frontend
     -d "{\"playerAId\":\"$ADMIN\"}" | python3 -c 'import sys,json;print(json.load(sys.stdin)["gameId"])')
   curl -s localhost:3056/game/state/$GID            # inspect duelStage + duelCenter
   ```
-- **Browser (Playwright is installed, chromium headless):** drive `https://chronos.bobagi.space` or
+- **Browser (Playwright is installed, chromium headless):** drive `https://cartomania.bobagi.space` or
   navigate directly to `/game/duel/<id>` (state fetch + duel actions are unauthenticated) and
   screenshot. Import via `createRequire('/opt/chronos/web/')('playwright')`.
 
