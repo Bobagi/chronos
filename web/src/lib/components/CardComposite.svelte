@@ -213,12 +213,10 @@
 
 <style>
 	.cc-banner {
-		--hb: var(--cc-banner-h, 28cqh);
-		--osh: calc(var(--hb) * var(--cc-outline-size, 0.028));
-		--oc: var(--cc-outline-color, #000);
+		--hb: var(--cc-banner-h, 25cqh);
 		position: absolute;
-		top: var(--cc-banner-top, 3.4%);
-		right: var(--cc-banner-right, 4.6%);
+		top: var(--cc-banner-top, 2.2%);
+		right: var(--cc-banner-right, 1%);
 		height: var(--hb);
 		display: flex;
 		align-items: stretch;
@@ -235,7 +233,7 @@
 	}
 	.cc-mid {
 		flex: 0 1 auto;
-		min-width: var(--cc-banner-min, 20cqw);
+		min-width: var(--cc-banner-min, 21cqw);
 		background: url('/frames/title-mid.png');
 		background-size: 100% 100%;
 		display: flex;
@@ -252,9 +250,10 @@
 		background-size: 100% 100%;
 	}
 	.cc-name {
-		/* Sized off the banner height (cqh) so it matches the printed proportions on our
-		   taller card; --name-shrink is a 0..1 multiplier the JS only lowers for the rare
-		   name that overflows even the max-width ribbon. */
+		/* Sized off the banner height (cqh); --name-shrink is a 0..1 multiplier the JS
+		   only lowers when the name overflows the max-width ribbon.
+		   Outline: em-based text-shadow so it tracks the font size (no chained CSS vars
+		   that can silently fail). --cc-outline-size is a unitless em-fraction (0.09 = 9% of font size). */
 		font-family: 'Morpheus', system-ui, sans-serif;
 		font-size: calc(var(--hb) * var(--cc-name-factor, 0.29) * var(--name-shrink, 1));
 		letter-spacing: 0.01em;
@@ -264,33 +263,32 @@
 		line-height: 1;
 		transform: translateY(-4%);
 		text-shadow:
-			calc(-1 * var(--osh)) 0 0 var(--oc),
-			var(--osh) 0 0 var(--oc),
-			0 calc(-1 * var(--osh)) 0 var(--oc),
-			0 var(--osh) 0 var(--oc),
-			calc(-1 * var(--osh)) calc(-1 * var(--osh)) 0 var(--oc),
-			var(--osh) calc(-1 * var(--osh)) 0 var(--oc),
-			calc(-1 * var(--osh)) var(--osh) 0 var(--oc),
-			var(--osh) var(--osh) 0 var(--oc),
-			0 var(--osh) calc(var(--hb) * 0.018) rgba(0, 0, 0, 0.4);
+			calc(var(--cc-outline-size, 0.09) * -1em) 0 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * 1em) 0 0 var(--cc-outline-color, #000),
+			0 calc(var(--cc-outline-size, 0.09) * -1em) 0 var(--cc-outline-color, #000),
+			0 calc(var(--cc-outline-size, 0.09) * 1em) 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * -0.7em) calc(var(--cc-outline-size, 0.09) * -0.7em) 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * 0.7em) calc(var(--cc-outline-size, 0.09) * -0.7em) 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * -0.7em) calc(var(--cc-outline-size, 0.09) * 0.7em) 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * 0.7em) calc(var(--cc-outline-size, 0.09) * 0.7em) 0 var(--cc-outline-color, #000);
 	}
 	.cc-num {
 		position: absolute;
-		left: var(--cc-num-x, 46%);
-		top: var(--cc-num-y, 39%);
+		left: var(--cc-num-x, 50.5%);
+		top: var(--cc-num-y, 35.5%);
 		transform: translate(-50%, -50%);
-		font-family: 'Draco', system-ui, sans-serif;
-		font-size: calc(var(--hb) * var(--cc-num-factor, 0.39));
+		font-family: 'Morpheus', system-ui, sans-serif;
+		font-size: calc(var(--hb) * var(--cc-num-factor, 0.26));
 		color: var(--cc-text-color, #fff);
 		line-height: 1;
 		text-shadow:
-			calc(-1 * var(--osh)) 0 0 var(--oc),
-			var(--osh) 0 0 var(--oc),
-			0 calc(-1 * var(--osh)) 0 var(--oc),
-			0 var(--osh) 0 var(--oc),
-			calc(-1 * var(--osh)) calc(-1 * var(--osh)) 0 var(--oc),
-			var(--osh) calc(-1 * var(--osh)) 0 var(--oc),
-			calc(-1 * var(--osh)) var(--osh) 0 var(--oc),
-			var(--osh) var(--osh) 0 var(--oc);
+			calc(var(--cc-outline-size, 0.09) * -1em) 0 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * 1em) 0 0 var(--cc-outline-color, #000),
+			0 calc(var(--cc-outline-size, 0.09) * -1em) 0 var(--cc-outline-color, #000),
+			0 calc(var(--cc-outline-size, 0.09) * 1em) 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * -0.7em) calc(var(--cc-outline-size, 0.09) * -0.7em) 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * 0.7em) calc(var(--cc-outline-size, 0.09) * -0.7em) 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * -0.7em) calc(var(--cc-outline-size, 0.09) * 0.7em) 0 var(--cc-outline-color, #000),
+			calc(var(--cc-outline-size, 0.09) * 0.7em) calc(var(--cc-outline-size, 0.09) * 0.7em) 0 var(--cc-outline-color, #000);
 	}
 </style>

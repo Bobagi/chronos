@@ -38,20 +38,20 @@
 	// prop defaults in CardComposite. Tune here, then bake the exported values there.
 	const CARD_TEXT_DEFAULTS = {
 		ccOutlineColor: '#000000',
-		ccOutlineSize: 0.028, // fraction of banner height → drives text-shadow offset
+		ccOutlineSize: 0.09, // em-fraction → multiplied by font-size in text-shadow
 		ccTextColor: '#ffffff',
 		// elastic title banner (must match the CSS fallbacks in CardComposite)
-		ccBannerH: 28, // cqh — banner height
-		ccBannerTop: 3.4, // %
-		ccBannerRight: 4.6, // %
-		ccBannerMin: 20, // cqw — min ribbon width (short names)
+		ccBannerH: 25, // cqh — banner height
+		ccBannerTop: 2.2, // %
+		ccBannerRight: 1, // %
+		ccBannerMin: 21, // cqw — min ribbon width (short names)
 		ccNameFactor: 0.29, // name font = banner height * this
-		ccNumFactor: 0.39, // number font = banner height * this
-		ccNumX: 46, // % within the right ornament
-		ccNumY: 39, // %
+		ccNumFactor: 0.26, // number font = banner height * this
+		ccNumX: 50.5, // % within the right ornament
+		ccNumY: 35.5, // %
 		// attribute values + labels
-		ccValSize: 9, // cqh
-		ccLabelSize: 4.2
+		ccValSize: 8, // cqh
+		ccLabelSize: 5.6
 	};
 
 	// One flat tweaks object: tilt + foil + destruction + card text.
@@ -283,7 +283,7 @@
 			<label for="sc">Outline color</label>
 			<input id="sc" type="color" bind:value={t.ccOutlineColor} />
 		</div>
-		{#each [['ccBannerH', 'Banner height (cqh)', 8, 36, 0.2], ['ccBannerTop', 'Banner top %', 0, 12, 0.2], ['ccBannerRight', 'Banner right %', 0, 12, 0.2], ['ccBannerMin', 'Ribbon min width (cqw)', 8, 45, 0.5], ['ccNameFactor', 'Name size ×height', 0.10, 0.55, 0.005], ['ccOutlineSize', 'Outline thickness', 0.005, 0.08, 0.002], ['ccNumFactor', 'Number size ×height', 0.08, 0.9, 0.01], ['ccNumX', 'Number X %', 20, 70, 0.5], ['ccNumY', 'Number Y %', 15, 65, 0.5], ['ccValSize', 'Attr value size (cqh)', 4, 16, 0.2], ['ccLabelSize', 'Attr label size (cqh)', 2, 9, 0.2]] as [key, lbl, min, max, step]}
+		{#each [['ccBannerH', 'Banner height (cqh)', 8, 36, 0.2], ['ccBannerTop', 'Banner top %', 0, 12, 0.2], ['ccBannerRight', 'Banner right %', 0, 12, 0.2], ['ccBannerMin', 'Ribbon min width (cqw)', 8, 45, 0.5], ['ccNameFactor', 'Name size ×height', 0.10, 0.55, 0.005], ['ccOutlineSize', 'Outline thickness (×em)', 0.02, 0.16, 0.005], ['ccNumFactor', 'Number size ×height', 0.08, 0.9, 0.01], ['ccNumX', 'Number X %', 20, 70, 0.5], ['ccNumY', 'Number Y %', 15, 65, 0.5], ['ccValSize', 'Attr value size (cqh)', 4, 16, 0.2], ['ccLabelSize', 'Attr label size (cqh)', 2, 9, 0.2]] as [key, lbl, min, max, step]}
 			<div class="slider">
 				<span>{lbl}</span>
 				<input

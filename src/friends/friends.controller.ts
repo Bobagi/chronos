@@ -35,8 +35,9 @@ export class FriendsController {
   }
 
   @Get()
-  list(@Req() request: AuthenticatedRequest) {
+  async list(@Req() request: AuthenticatedRequest) {
     const userId = this.assertUserId(request);
+    void this.friends.touchLastSeen(userId);
     return this.friends.listFriends(userId);
   }
 

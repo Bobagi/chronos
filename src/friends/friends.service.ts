@@ -5,6 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 export interface BasicPlayerSummary {
   id: string;
   username: string;
+  avatarUrl?: string | null;
+  lastSeenAt?: string | null;
 }
 
 export interface FriendshipSummary {
@@ -19,9 +21,21 @@ export class FriendsService {
   constructor(private readonly prisma: PrismaService) {}
 
   private playerSummary(
-    player: Pick<Player, 'id' | 'username'>,
+    player: Pick<Player, 'id' | 'username' | 'avatarUrl' | 'lastSeenAt'>,
   ): BasicPlayerSummary {
-    return { id: player.id, username: player.username };
+    return {
+      id: player.id,
+      username: player.username,
+      avatarUrl: player.avatarUrl,
+      lastSeenAt: player.lastSeenAt?.toISOString() ?? null,
+    };
+  }
+
+  async touchLastSeen(userId: string): Promise<void> {
+    await this.prisma.player.update({
+      where: { id: userId },
+      data: { lastSeenAt: new Date() },
+    }).catch(() => {});
   }
 
   private async findFriendshipBetween(
@@ -50,7 +64,7 @@ export class FriendsService {
       },
       orderBy: { username: 'asc' },
       take: 20,
-      select: { id: true, username: true },
+      select: { id: true, username: true, avatarUrl: true, lastSeenAt: true },
     });
     return users.map((user) => this.playerSummary(user));
   }
@@ -62,8 +76,8 @@ export class FriendsService {
         OR: [{ requesterId: userId }, { addresseeId: userId }],
       },
       include: {
-        requester: { select: { id: true, username: true } },
-        addressee: { select: { id: true, username: true } },
+        requester: { select: { id: true, username: true, avatarUrl: true, lastSeenAt: true } },
+        addressee: { select: { id: true, username: true, avatarUrl: true, lastSeenAt: true } },
       },
       orderBy: { updatedAt: 'desc' },
     });
@@ -89,7 +103,7 @@ export class FriendsService {
         addresseeId: userId,
       },
       include: {
-        requester: { select: { id: true, username: true } },
+        requester: { select: { id: true, username: true, avatarUrl: true, lastSeenAt: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -19,6 +19,8 @@ export interface GameResult {
 export interface ChronosPlayerSummary {
 	id: string;
 	username: string;
+	avatarUrl?: string | null;
+	lastSeenAt?: string | null;
 }
 
 export interface ChronosFriendSummary {

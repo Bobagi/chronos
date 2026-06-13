@@ -48,11 +48,31 @@
 	let msgsEl: HTMLDivElement | null = null;
 
 	const timers: ReturnType<typeof setTimeout>[] = [];
+	let refreshInterval: ReturnType<typeof setInterval> | null = null;
+	let chatInterval: ReturnType<typeof setInterval> | null = null;
 
 	function after(ms: number, fn: () => void) {
 		const t = setTimeout(fn, ms);
 		timers.push(t);
 		return t;
+	}
+
+	function presenceStatus(lastSeenAt: string | null | undefined): 'online' | 'away' | 'offline' {
+		if (!lastSeenAt) return 'offline';
+		const diff = Date.now() - new Date(lastSeenAt).getTime();
+		if (diff < 2 * 60 * 1000) return 'online';
+		if (diff < 10 * 60 * 1000) return 'away';
+		return 'offline';
+	}
+
+	function presenceLabel(lastSeenAt: string | null | undefined): string {
+		if (!lastSeenAt) return 'Offline';
+		const diff = Date.now() - new Date(lastSeenAt).getTime();
+		if (diff < 2 * 60 * 1000) return 'Online';
+		const mins = Math.floor(diff / 60000);
+		if (mins < 60) return `Visto há ${mins} min`;
+		const hrs = Math.floor(mins / 60);
+		return `Visto há ${hrs} h`;
 	}
 
 	function showToast(txt: string, ok = false) {
@@ -108,12 +128,28 @@
 		}
 	}
 
+	async function refreshChat() {
+		if (!dockFriendId || !docked) return;
+		try {
+			const history = await fetchChronosFriendChat(docked.friend.id);
+			const incoming = history.messages ?? [];
+			if (incoming.length > chatMessages.length) {
+				chatMessages = incoming;
+				await scrollMsgs();
+			}
+		} catch {}
+	}
+
 	onMount(async () => {
 		await loadData();
+		refreshInterval = setInterval(() => void loadData(), 8000);
+		chatInterval = setInterval(() => void refreshChat(), 3000);
 	});
 
 	onDestroy(() => {
 		timers.forEach(clearTimeout);
+		if (refreshInterval) clearInterval(refreshInterval);
+		if (chatInterval) clearInterval(chatInterval);
 	});
 
 	async function handleAccept(r: ChronosIncomingFriendRequest) {
@@ -351,13 +387,13 @@
 											{:else}
 												{avatarLetter(f.friend.username)}
 											{/if}
-											<span class="fr-dot"></span>
+											<span class="fr-dot" data-presence={presenceStatus(f.friend.lastSeenAt)}></span>
 										</span>
 
 										<!-- Info -->
 										<div class="who">
 											<div class="nome">{f.friend.username}</div>
-											<div class="fr-status">Offline</div>
+											<div class="fr-status" data-presence={presenceStatus(f.friend.lastSeenAt)}>{presenceLabel(f.friend.lastSeenAt)}</div>
 										</div>
 
 										<!-- Actions -->

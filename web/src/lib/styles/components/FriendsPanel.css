@@ -158,8 +158,8 @@
   border: 2.5px solid var(--bg-1);
   background: var(--faint);
 }
-.fr-dot.online  { background: var(--win); box-shadow: 0 0 7px var(--win); }
-.fr-dot.partida { background: var(--gold); box-shadow: 0 0 7px var(--gold); }
+.fr-dot.online,  .fr-dot[data-presence="online"]  { background: var(--win);  box-shadow: 0 0 7px var(--win); }
+.fr-dot.partida, .fr-dot[data-presence="away"]   { background: var(--gold); box-shadow: 0 0 7px var(--gold); }
 
 .fr-row .who { min-width: 0; }
 .fr-row .nome {
@@ -172,8 +172,8 @@
   color: var(--faint); letter-spacing: 0.04em;
 }
 .fr-status { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 2px; }
-.fr-status.online  { color: var(--win); }
-.fr-status.partida { color: var(--gold-2); }
+.fr-status.online,  .fr-status[data-presence="online"]  { color: var(--win); }
+.fr-status.partida, .fr-status[data-presence="away"]   { color: var(--gold-2); }
 
 /* ações na linha */
 .fr-actions { display: flex; align-items: center; gap: 8px; }

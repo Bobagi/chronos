@@ -327,13 +327,16 @@ web/                         SvelteKit frontend
   via the `CardTranslation` table (the duel keeps canonical English by design — see the gotcha).
 - **Friends panel z-index fixed**: backdrop z-index raised to 200 (was 40, behind top-bar at 50); dock
   → 210, toast → 220 so they all float above the top bar correctly on desktop and mobile.
-- **Card outline**: 8-direction text-shadow controlled via `--cc-outline-size` (fraction of banner height,
-  default 0.028) and `--cc-outline-color` (default `#000`). Both are now live CSS vars, so `/cards-lab`
-  can tune and export them. The `.cc-banner` rule defines `--osh` and `--oc` shorthands inherited by
-  `.cc-name` and `.cc-num`.
+- **Card outline**: 8-direction text-shadow using `--cc-outline-size` (em-fraction, default 0.09) and
+  `--cc-outline-color` (default `#000`). Both are live CSS vars tunable from `/cards-lab`. Uses
+  `calc(var(--cc-outline-size, 0.09) * 1em)` directly (no intermediate `--osh`/`--oc` vars that
+  can silently fail in chained calc()). Text color and position baked from user's exported values.
 - **`/cards-lab` controls**: non-working sliders (`Attr outline base`, `Attr value/label outline`)
-  removed; `Outline color` picker now wired to `--cc-outline-color`; new `Outline thickness` slider for
-  `--cc-outline-size`; `Number size` min lowered to 0.08.
+  removed; `Outline color` picker now wired to `--cc-outline-color`; `Outline thickness` slider for
+  `--cc-outline-size` (em-fraction 0.02–0.16); `Number size` min lowered to 0.08.
+- **Font**: `--font-display` in appShell.css changed from `'Draco'` to `'Morpheus'` so the whole site
+  (nav, gallery, dashboard) uses Morpheus. `card-attribute-value` also switched to Morpheus. Only
+  `card-attribute-label` (MAGIC/MIGHT/FIRE labels) keeps Draco (Exocet).
 - **Challenge notification**: the dashboard polls `GET /game/active/mine` every 4 s; when a new game
   appears where the current user is playerB (challenger ≠ BOT) and the game wasn't known before, a
   `.challenge-toast` floats at the bottom with Accept → navigate to game and Decline → surrender. First
@@ -341,3 +344,8 @@ web/                         SvelteKit frontend
   trigger a spurious notification. Friends are cached in `friendsCache` (Map id→username) for the name
   display. Chat via the floating dock in FriendsPanel already works end-to-end (`fetchChronosFriendChat`
   / `sendChronosFriendMessage`).
+- **FriendsPanel auto-refresh**: friends list + requests auto-refresh every 8 s; chat auto-refreshes
+  every 3 s while the dock is open (new messages only, scroll stays at bottom).
+- **Online presence**: `Player.lastSeenAt DateTime?` (migration `20260613000000_add_player_last_seen_at`).
+  Updated on every `GET /friends` call via `touchLastSeen()`. Returned in all friend summaries.
+  Frontend: online = < 2 min ago (green dot), away = < 10 min ago (gold dot), offline = gray dot.

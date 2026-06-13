@@ -21,7 +21,7 @@ export const HOLO_TILT_DEFAULTS: HoloTiltOptions = {
 	smoothing: 0.12,
 	liftZ: 24,
 	iridShift: 26,
-	idleSway: true,
+	idleSway: false,
 	idleSpeed: 0.6
 };
 
