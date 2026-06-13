@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, afterUpdate } from 'svelte';
+	import { t } from '$lib/i18n';
 
 	export let artImageUrl: string;
 	export let frameImageUrl: string;
@@ -90,9 +91,9 @@
 		}
 	}
 
-	$: magicBadge = makeBadge('/icons/magic_icon.png', magicValue, 'MAGIC');
-	$: mightBadge = makeBadge('/icons/strength_icon.png', mightValue, 'MIGHT');
-	$: fireBadge = makeBadge('/icons/fire_icon.png', fireValue, 'FIRE');
+	$: magicBadge = makeBadge('/icons/magic_icon.png', magicValue, $t('attributes.magic').toUpperCase());
+	$: mightBadge = makeBadge('/icons/strength_icon.png', mightValue, $t('attributes.might').toUpperCase());
+	$: fireBadge = makeBadge('/icons/fire_icon.png', fireValue, $t('attributes.fire').toUpperCase());
 
 	$: tooltipText = descriptionText
 		? `${titleText ?? 'Card'} — ${descriptionText}`
@@ -277,7 +278,7 @@
 		top: var(--cc-num-y, 39%);
 		transform: translate(-50%, -50%);
 		font-family: 'Morpheus', system-ui, sans-serif;
-		font-size: calc(var(--hb) * var(--cc-num-factor, 0.40));
+		font-size: calc(var(--hb) * var(--cc-num-factor, 0.28));
 		color: var(--cc-text-color, #fff);
 		line-height: 1;
 		text-shadow:
