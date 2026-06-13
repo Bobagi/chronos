@@ -325,3 +325,19 @@ web/                         SvelteKit frontend
 - Multilanguage (en / pt / es) with a flag language selector in the top bar; persisted via cookie and
   SSR-resolved. The whole UI is translated, and **card name/description are localized in the gallery**
   via the `CardTranslation` table (the duel keeps canonical English by design — see the gotcha).
+- **Friends panel z-index fixed**: backdrop z-index raised to 200 (was 40, behind top-bar at 50); dock
+  → 210, toast → 220 so they all float above the top bar correctly on desktop and mobile.
+- **Card outline**: 8-direction text-shadow controlled via `--cc-outline-size` (fraction of banner height,
+  default 0.028) and `--cc-outline-color` (default `#000`). Both are now live CSS vars, so `/cards-lab`
+  can tune and export them. The `.cc-banner` rule defines `--osh` and `--oc` shorthands inherited by
+  `.cc-name` and `.cc-num`.
+- **`/cards-lab` controls**: non-working sliders (`Attr outline base`, `Attr value/label outline`)
+  removed; `Outline color` picker now wired to `--cc-outline-color`; new `Outline thickness` slider for
+  `--cc-outline-size`; `Number size` min lowered to 0.08.
+- **Challenge notification**: the dashboard polls `GET /game/active/mine` every 4 s; when a new game
+  appears where the current user is playerB (challenger ≠ BOT) and the game wasn't known before, a
+  `.challenge-toast` floats at the bottom with Accept → navigate to game and Decline → surrender. First
+  poll silently seeds `seenGameIds` (localStorage key `cartomania-seen-games`) so existing games never
+  trigger a spurious notification. Friends are cached in `friendsCache` (Map id→username) for the name
+  display. Chat via the floating dock in FriendsPanel already works end-to-end (`fetchChronosFriendChat`
+  / `sendChronosFriendMessage`).

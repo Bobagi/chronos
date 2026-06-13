@@ -214,6 +214,8 @@
 <style>
 	.cc-banner {
 		--hb: var(--cc-banner-h, 28cqh);
+		--osh: calc(var(--hb) * var(--cc-outline-size, 0.028));
+		--oc: var(--cc-outline-color, #000);
 		position: absolute;
 		top: var(--cc-banner-top, 3.4%);
 		right: var(--cc-banner-right, 4.6%);
@@ -261,25 +263,16 @@
 		white-space: nowrap;
 		line-height: 1;
 		transform: translateY(-4%);
-		/* 16-direction outline for a solid, crisp border with no corner gaps */
 		text-shadow:
-			calc(var(--hb) * -0.05) 0 0 #000,
-			calc(var(--hb) * 0.05) 0 0 #000,
-			0 calc(var(--hb) * -0.05) 0 #000,
-			0 calc(var(--hb) * 0.05) 0 #000,
-			calc(var(--hb) * -0.035) calc(var(--hb) * -0.035) 0 #000,
-			calc(var(--hb) * 0.035) calc(var(--hb) * -0.035) 0 #000,
-			calc(var(--hb) * -0.035) calc(var(--hb) * 0.035) 0 #000,
-			calc(var(--hb) * 0.035) calc(var(--hb) * 0.035) 0 #000,
-			calc(var(--hb) * -0.05) calc(var(--hb) * -0.02) 0 #000,
-			calc(var(--hb) * 0.05) calc(var(--hb) * -0.02) 0 #000,
-			calc(var(--hb) * -0.05) calc(var(--hb) * 0.02) 0 #000,
-			calc(var(--hb) * 0.05) calc(var(--hb) * 0.02) 0 #000,
-			calc(var(--hb) * -0.02) calc(var(--hb) * -0.05) 0 #000,
-			calc(var(--hb) * 0.02) calc(var(--hb) * -0.05) 0 #000,
-			calc(var(--hb) * -0.02) calc(var(--hb) * 0.05) 0 #000,
-			calc(var(--hb) * 0.02) calc(var(--hb) * 0.05) 0 #000,
-			0 calc(var(--hb) * 0.03) calc(var(--hb) * 0.02) rgba(0, 0, 0, 0.5);
+			calc(-1 * var(--osh)) 0 0 var(--oc),
+			var(--osh) 0 0 var(--oc),
+			0 calc(-1 * var(--osh)) 0 var(--oc),
+			0 var(--osh) 0 var(--oc),
+			calc(-1 * var(--osh)) calc(-1 * var(--osh)) 0 var(--oc),
+			var(--osh) calc(-1 * var(--osh)) 0 var(--oc),
+			calc(-1 * var(--osh)) var(--osh) 0 var(--oc),
+			var(--osh) var(--osh) 0 var(--oc),
+			0 var(--osh) calc(var(--hb) * 0.018) rgba(0, 0, 0, 0.4);
 	}
 	.cc-num {
 		position: absolute;
@@ -291,21 +284,13 @@
 		color: var(--cc-text-color, #fff);
 		line-height: 1;
 		text-shadow:
-			calc(var(--hb) * -0.05) 0 0 #000,
-			calc(var(--hb) * 0.05) 0 0 #000,
-			0 calc(var(--hb) * -0.05) 0 #000,
-			0 calc(var(--hb) * 0.05) 0 #000,
-			calc(var(--hb) * -0.035) calc(var(--hb) * -0.035) 0 #000,
-			calc(var(--hb) * 0.035) calc(var(--hb) * -0.035) 0 #000,
-			calc(var(--hb) * -0.035) calc(var(--hb) * 0.035) 0 #000,
-			calc(var(--hb) * 0.035) calc(var(--hb) * 0.035) 0 #000,
-			calc(var(--hb) * -0.05) calc(var(--hb) * -0.02) 0 #000,
-			calc(var(--hb) * 0.05) calc(var(--hb) * -0.02) 0 #000,
-			calc(var(--hb) * -0.05) calc(var(--hb) * 0.02) 0 #000,
-			calc(var(--hb) * 0.05) calc(var(--hb) * 0.02) 0 #000,
-			calc(var(--hb) * -0.02) calc(var(--hb) * -0.05) 0 #000,
-			calc(var(--hb) * 0.02) calc(var(--hb) * -0.05) 0 #000,
-			calc(var(--hb) * -0.02) calc(var(--hb) * 0.05) 0 #000,
-			calc(var(--hb) * 0.02) calc(var(--hb) * 0.05) 0 #000;
+			calc(-1 * var(--osh)) 0 0 var(--oc),
+			var(--osh) 0 0 var(--oc),
+			0 calc(-1 * var(--osh)) 0 var(--oc),
+			0 var(--osh) 0 var(--oc),
+			calc(-1 * var(--osh)) calc(-1 * var(--osh)) 0 var(--oc),
+			var(--osh) calc(-1 * var(--osh)) 0 var(--oc),
+			calc(-1 * var(--osh)) var(--osh) 0 var(--oc),
+			var(--osh) var(--osh) 0 var(--oc);
 	}
 </style>

@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { onMount, onDestroy } from 'svelte';
 	import type { GameMode } from '$lib/api/chronosTypes';
 	import {
 		endChronosGameSessionOnServer,
 		expireInactiveChronosGames,
 		loginChronosUserAccount,
-		startAttributeDuelChronosGameForPlayer
+		startAttributeDuelChronosGameForPlayer,
+		listAuthenticatedChronosPlayerActiveGames,
+		listChronosFriends,
+		surrenderChronosGame
 	} from '$lib/api/GameClient';
 	import AvatarPicker from '$lib/components/AvatarPicker.svelte';
 	import CardComposite from '$lib/components/CardComposite.svelte';
@@ -43,11 +47,107 @@
 	const heroCardTitleImageUrl = '/frames/title.png';
 	const heroCardTiltClasses = ['tilt-left', 'tilt-center', 'tilt-right'];
 
+	const BOT_ID = '70dc2eb8-b3a5-4c21-9e2b-c6cf901078b0';
+
 	let usernameInputValue = '';
 	let passwordInputValue = '';
 	let loginErrorKey: string | null = null;
 	let showFriendsPanel = false;
 	let showAvatarPicker = false;
+
+	// --- Challenge notification polling ---
+	type PendingChallenge = { gameId: string; challengerName: string; mode: string };
+	let pendingChallenges: PendingChallenge[] = [];
+	let seenGameIds = new Set<string>();
+	let friendsCache = new Map<string, string>(); // playerId → username
+	let challengePollInterval: ReturnType<typeof setInterval> | null = null;
+	let firstPollDone = false;
+
+	function loadSeenGames() {
+		try {
+			const raw = localStorage.getItem('cartomania-seen-games');
+			if (raw) seenGameIds = new Set<string>(JSON.parse(raw) as string[]);
+		} catch {}
+	}
+
+	function saveSeenGames() {
+		try {
+			localStorage.setItem('cartomania-seen-games', JSON.stringify([...seenGameIds]));
+		} catch {}
+	}
+
+	function markChallengeSeen(gameId: string) {
+		seenGameIds.add(gameId);
+		saveSeenGames();
+		pendingChallenges = pendingChallenges.filter((c) => c.gameId !== gameId);
+	}
+
+	async function refreshFriendsCache() {
+		if (!currentUser) return;
+		try {
+			const friends = await listChronosFriends();
+			friends.forEach((f) => friendsCache.set(f.friend.id, f.friend.username));
+		} catch {}
+	}
+
+	async function pollForChallenges() {
+		if (!currentUser) return;
+		try {
+			const games = await listAuthenticatedChronosPlayerActiveGames();
+			for (const game of games) {
+				const g = game as Record<string, unknown>;
+				const gameId = (g.gameId as string) || (g.id as string);
+				if (!gameId) continue;
+				if (firstPollDone && !seenGameIds.has(gameId)) {
+					const players = g.players as string[] | undefined;
+					if (players && players.length >= 2 && players[1] === currentUser.id && players[0] !== BOT_ID) {
+						seenGameIds.add(gameId);
+						saveSeenGames();
+						const challengerName = friendsCache.get(players[0]) || 'Um amigo';
+						const mode = (g.mode as string) || 'ATTRIBUTE_DUEL';
+						pendingChallenges = [...pendingChallenges, { gameId, challengerName, mode }];
+					}
+				} else if (!firstPollDone) {
+					seenGameIds.add(gameId);
+				}
+			}
+			if (!firstPollDone) {
+				firstPollDone = true;
+				saveSeenGames();
+			}
+		} catch {}
+	}
+
+	async function acceptChallenge(challenge: PendingChallenge) {
+		markChallengeSeen(challenge.gameId);
+		if (challenge.mode === 'CLASSIC') goto(`/game/classic/${challenge.gameId}`);
+		else goto(`/game/duel/${challenge.gameId}`);
+	}
+
+	async function declineChallenge(challenge: PendingChallenge) {
+		markChallengeSeen(challenge.gameId);
+		try { await surrenderChronosGame(challenge.gameId); } catch {}
+	}
+
+	function startChallengePoll() {
+		loadSeenGames();
+		firstPollDone = false;
+		void refreshFriendsCache();
+		void pollForChallenges();
+		challengePollInterval = setInterval(() => void pollForChallenges(), 4000);
+	}
+
+	function stopChallengePoll() {
+		if (challengePollInterval) { clearInterval(challengePollInterval); challengePollInterval = null; }
+	}
+
+	onMount(() => {
+		if (currentUser) startChallengePoll();
+	});
+
+	onDestroy(() => {
+		stopChallengePoll();
+	});
 
 	$: currentUser = data.authUser;
 	$: setAuthState(currentUser ?? null);
@@ -152,6 +252,18 @@
 
 	$: if (!currentUser) {
 		showFriendsPanel = false;
+		stopChallengePoll();
+		pendingChallenges = [];
+	}
+
+	let _prevUserId: string | null = null;
+	$: {
+		const uid = currentUser?.id ?? null;
+		if (uid && uid !== _prevUserId) {
+			stopChallengePoll();
+			startChallengePoll();
+		}
+		_prevUserId = uid;
 	}
 
 	function replaceBrokenAvatarWithFallbackImage(event: Event) {
@@ -444,6 +556,17 @@
 					on:refreshDashboard={refreshDashboardAfterFriendPanelInteraction}
 				/>
 			{/if}
+
+			{#each pendingChallenges as challenge (challenge.gameId)}
+				<div class="challenge-toast" role="alert">
+					<span class="ct-icon">⚔</span>
+					<div class="ct-body">
+						<strong>{challenge.challengerName}</strong> te desafiou para um duelo!
+					</div>
+					<button class="ct-accept button" on:click={() => acceptChallenge(challenge)}>Aceitar</button>
+					<button class="ct-decline" on:click={() => declineChallenge(challenge)}>Recusar</button>
+				</div>
+			{/each}
 
 			{#if showAvatarPicker}
 				<AvatarPicker

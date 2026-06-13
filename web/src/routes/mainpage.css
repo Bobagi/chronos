@@ -546,3 +546,66 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ---- Challenge notification toast ---- */
+.challenge-toast {
+	position: fixed;
+	bottom: 30px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 300;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 20px;
+	border-radius: 14px;
+	background: linear-gradient(180deg, #16203a, #0e1426);
+	border: 1px solid rgba(196, 175, 110, 0.28);
+	box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.75);
+	color: #ece9f5;
+	font-size: 14px;
+	font-weight: 600;
+	animation: ctSlideUp 0.3s cubic-bezier(0.2, 1.1, 0.35, 1);
+	max-width: min(500px, 94vw);
+}
+.ct-icon {
+	font-size: 20px;
+	flex-shrink: 0;
+}
+.ct-body {
+	flex: 1;
+	min-width: 0;
+}
+.ct-accept {
+	flex-shrink: 0;
+	padding: 8px 16px;
+	border-radius: 9px;
+	background: linear-gradient(135deg, #f0d488, #d9b85a);
+	color: #1a1206;
+	font-size: 13px;
+	font-weight: 800;
+	border: none;
+	cursor: pointer;
+}
+.ct-accept:hover {
+	filter: brightness(1.1);
+}
+.ct-decline {
+	flex-shrink: 0;
+	padding: 8px 14px;
+	border-radius: 9px;
+	background: transparent;
+	border: 1px solid rgba(160, 172, 210, 0.2);
+	color: #99a0bb;
+	font-size: 13px;
+	font-weight: 700;
+	cursor: pointer;
+}
+.ct-decline:hover {
+	color: #f1736b;
+	border-color: rgba(241, 115, 107, 0.4);
+}
+@keyframes ctSlideUp {
+	from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+	to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
