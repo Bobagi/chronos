@@ -1011,8 +1011,8 @@
 								titleImageUrl={titleOverlayImageUrl}
 								titleText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)?.name ??
 									$gameStateStore.duelCenter.aCardCode}
-								aspectWidth={430}
-								aspectHeight={670}
+								aspectWidth={1444}
+								aspectHeight={1920}
 								artObjectFit="cover"
 								enableTilt={false}
 								descriptionText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.aCardCode)
@@ -1067,8 +1067,8 @@
 											titleImageUrl={titleOverlayImageUrl}
 											titleText={cardDetailsCacheByCode.get($gameStateStore.duelCenter.bCardCode)
 												?.name ?? $gameStateStore.duelCenter.bCardCode}
-											aspectWidth={430}
-											aspectHeight={670}
+											aspectWidth={1444}
+											aspectHeight={1920}
 											artObjectFit="cover"
 											enableTilt={false}
 											descriptionText={cardDetailsCacheByCode.get(
@@ -1292,8 +1292,8 @@
 										frameImageUrl={frameOverlayImageUrl ?? '/frames/default.png'}
 										titleImageUrl={titleOverlayImageUrl}
 										titleText={it.name ?? it.code}
-										aspectWidth={430}
-										aspectHeight={670}
+										aspectWidth={1444}
+										aspectHeight={1920}
 										artObjectFit="cover"
 										enableTilt={true}
 										descriptionText={it.description ?? ''}

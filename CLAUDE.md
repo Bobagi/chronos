@@ -58,9 +58,14 @@ their discard pile; whoever captured more cards when a hand empties wins the mat
   (MAGIC / MIGHT / FIRE). Both are declared in `web/src/routes/game/fonts.css`. The UI/nav font
   (`--font-display: 'Draco'`) in `appShell.css` is unchanged (Exocet stays for the top bar, etc.).
 - **Card aspect ratio is 1444/1920** (the designer frame dimensions, ≈ 0.752). All CSS and
-  `aspectWidth`/`aspectHeight` defaults in `CardComposite`, `DeckStack`, `hands.css`, `flip.css`,
-  `effects.css`, `galleryPage.css`, `mainpage.css` and `cards-lab` use this ratio. The old 430/670
-  was wrong (too tall).
+  `aspectWidth`/`aspectHeight` defaults in `CardComposite`, `DeckStack`, `FlippableCard`, `hands.css`,
+  `flip.css`, `effects.css`, `galleryPage.css`, `mainpage.css` and `cards-lab` use this ratio, and the
+  explicit `aspectWidth`/`aspectHeight` props passed from the **gallery**, the **duel page**, and the
+  **classic page** are also 1444/1920. The old 430/670 was wrong (too tall). **PITFALL:** because
+  `CardComposite` is `container-type:size` and ALL its inner text/banner/badges are sized in `cqh`/`cqw`,
+  passing the wrong aspect ratio silently distorts the whole card (banner height, attribute sizes,
+  positions) — which is exactly why cards in the gallery/duel once looked different from `/cards-lab`
+  (the lab uses the correct 1444/1920 default). Keep every call site on 1444/1920.
 
 ### Deploy the FRONTEND (after editing anything in `web/`)
 ```bash

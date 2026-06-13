@@ -450,8 +450,8 @@
 				<DeckStack
 					deckCount={deckB}
 					cardBackImageUrl="/frames/card-back.png"
-					aspectWidth={430}
-					aspectHeight={670}
+					aspectWidth={1444}
+					aspectHeight={1920}
 					cardWidthCss={cardWidthCssValue}
 					maxVisible={7}
 					offsetXPx={4}
@@ -525,8 +525,8 @@
 				<DeckStack
 					deckCount={deckA}
 					cardBackImageUrl="/frames/card-back.png"
-					aspectWidth={430}
-					aspectHeight={670}
+					aspectWidth={1444}
+					aspectHeight={1920}
 					cardWidthCss={cardWidthCssValue}
 					maxVisible={7}
 					offsetXPx={4}
@@ -563,8 +563,8 @@
 											frameImageUrl={defaultFrameOverlayImageUrl}
 											titleImageUrl={titleOverlayImageUrl}
 											titleText={it.name ?? it.code}
-											aspectWidth={430}
-											aspectHeight={670}
+											aspectWidth={1444}
+											aspectHeight={1920}
 											artObjectFit="cover"
 											enableTilt={true}
 											descriptionText={it.description ?? ''}

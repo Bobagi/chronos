@@ -200,8 +200,8 @@
 										frameImageUrl={defaultFrameOverlayImageUrl}
 										titleImageUrl={titleOverlayImageUrl}
 										titleText={cardItem.name ?? cardItem.code}
-										aspectWidth={430}
-										aspectHeight={670}
+										aspectWidth={1444}
+										aspectHeight={1920}
 										artObjectFit="cover"
 										enableTilt={true}
 										descriptionText={cardItem.description ?? ''}
@@ -244,8 +244,8 @@
 						frameImageUrl={defaultFrameOverlayImageUrl}
 						titleImageUrl={titleOverlayImageUrl}
 						titleText={selectedCardItem.name ?? selectedCardItem.code}
-						aspectWidth={430}
-						aspectHeight={670}
+						aspectWidth={1444}
+						aspectHeight={1920}
 						artObjectFit="cover"
 						enableTilt={true}
 						descriptionText={selectedCardItem.description ?? ''}

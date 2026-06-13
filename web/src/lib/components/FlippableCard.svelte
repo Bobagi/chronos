@@ -8,8 +8,8 @@
 	export let titleImageUrl: string | null = null;
 	export let titleText: string | null = null;
 
-	export let aspectWidth = 430;
-	export let aspectHeight = 670;
+	export let aspectWidth = 1444;
+	export let aspectHeight = 1920;
 	export let artObjectFit: 'cover' | 'contain' = 'cover';
 
 	export let startFace: 'front' | 'back' = 'front';
