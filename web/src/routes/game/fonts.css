@@ -7,7 +7,7 @@
 	font-display: swap;
 }
 @font-face {
-	/* Morpheus — used for card name, number and attribute values. */
+	/* Morpheus — used for card name banner; also the "CARTOMANIA" brand title. */
 	font-family: 'Morpheus';
 	src: url('/fonts/Morpheus.ttf') format('truetype');
 	font-weight: 400 900;
@@ -15,12 +15,15 @@
 	font-display: swap;
 }
 /*
- * Card text styling. Every size / outline / spacing / colour is a CSS var with the
- * current value as the fallback, so it's tunable per-card (set the var on any ancestor,
- * e.g. in /cards-lab) without changing the default look anywhere else. To bake new
- * defaults for everyone, change the fallback values here.
+ * Card text styling. Every size / outline / spacing / colour is a CSS var tunable
+ * from /cards-lab (set the var on any ancestor). To bake new defaults, change the
+ * fallback values here.
  *
- * Font split: Morpheus for name/number/values; Draco (Exocet) ONLY for attribute labels.
+ * Font split: Morpheus for the name banner (--cc-name-font default); Draco (Exocet)
+ * for the corner number, attribute values, and attribute labels (all --cc-*-font vars).
+ * Outline: -webkit-text-stroke + paint-order:stroke fill — strokes cleanly at any
+ * thickness (no ghost-copy artefacts). Visible outline = --cc-outline-size × 1em
+ * (we double it internally because paint-order:fill covers the inner half).
  */
 .card-font {
 	--card-font-size: 2.4cqh;
@@ -43,48 +46,22 @@
 	font-size: 8cqh !important;
 }
 .card-attribute-value {
-	font-family: 'Morpheus', system-ui, sans-serif !important;
+	font-family: var(--cc-val-font, 'Draco'), system-ui, sans-serif !important;
 	color: var(--cc-text-color, #fff);
 	letter-spacing: var(--cc-val-ls, -0.06em);
 	font-size: var(--cc-val-size, 8cqh) !important;
-	text-shadow:
-		-0.07em 0 0 #000,
-		0.07em 0 0 #000,
-		0 -0.07em 0 #000,
-		0 0.07em 0 #000,
-		-0.05em -0.05em 0 #000,
-		0.05em -0.05em 0 #000,
-		-0.05em 0.05em 0 #000,
-		0.05em 0.05em 0 #000 !important;
+	-webkit-text-stroke-width: calc(var(--cc-outline-size, 0.09) * 2em) !important;
+	-webkit-text-stroke-color: var(--cc-outline-color, #000) !important;
+	paint-order: stroke fill !important;
+	text-shadow: none !important;
 }
-/* Attribute labels (MAGIC / MIGHT / FIRE) keep Exocet/Draco. */
 .card-attribute-label {
-	font-family: 'Draco', system-ui, sans-serif !important;
+	font-family: var(--cc-label-font, 'Draco'), system-ui, sans-serif !important;
 	color: var(--cc-text-color, #fff);
 	letter-spacing: var(--cc-label-ls, -0.14em) !important;
 	font-size: var(--cc-label-size, 5.6cqh) !important;
-	text-shadow:
-		-0.07em 0 0 #000,
-		0.07em 0 0 #000,
-		0 -0.07em 0 #000,
-		0 0.07em 0 #000,
-		-0.05em -0.05em 0 #000,
-		0.05em -0.05em 0 #000,
-		-0.05em 0.05em 0 #000,
-		0.05em 0.05em 0 #000 !important;
-}
-.card-corner-number {
-	font-family: 'Morpheus', system-ui, sans-serif !important;
-	color: var(--cc-text-color, #fff);
-	letter-spacing: -0.03em;
-	font-size: var(--cc-corner-size, 4.8cqh) !important;
-	text-shadow:
-		-0.05em 0 0 #000,
-		0.05em 0 0 #000,
-		0 -0.05em 0 #000,
-		0 0.05em 0 #000,
-		-0.035em -0.035em 0 #000,
-		0.035em -0.035em 0 #000,
-		-0.035em 0.035em 0 #000,
-		0.035em 0.035em 0 #000 !important;
+	-webkit-text-stroke-width: calc(var(--cc-outline-size, 0.09) * 2em) !important;
+	-webkit-text-stroke-color: var(--cc-outline-color, #000) !important;
+	paint-order: stroke fill !important;
+	text-shadow: none !important;
 }

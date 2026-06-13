@@ -250,11 +250,11 @@
 		background-size: 100% 100%;
 	}
 	.cc-name {
-		/* Sized off the banner height (cqh); --name-shrink is a 0..1 multiplier the JS
-		   only lowers when the name overflows the max-width ribbon.
-		   Outline: em-based text-shadow so it tracks the font size (no chained CSS vars
-		   that can silently fail). --cc-outline-size is a unitless em-fraction (0.09 = 9% of font size). */
-		font-family: 'Morpheus', system-ui, sans-serif;
+		/* Sized off the banner height; --name-shrink only lowers when the name overflows.
+		   Outline uses -webkit-text-stroke + paint-order (stroke painted first, fill on
+		   top covers the inner half) — uniform at any thickness, no ghost-copy artefacts.
+		   --cc-outline-size × 2em = total stroke; visible outer outline = --cc-outline-size × 1em. */
+		font-family: var(--cc-name-font, 'Morpheus'), system-ui, sans-serif;
 		font-size: calc(var(--hb) * var(--cc-name-factor, 0.29) * var(--name-shrink, 1));
 		letter-spacing: 0.01em;
 		color: var(--cc-text-color, #fff);
@@ -262,33 +262,23 @@
 		white-space: nowrap;
 		line-height: 1;
 		transform: translateY(-4%);
-		text-shadow:
-			calc(var(--cc-outline-size, 0.09) * -1em) 0 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * 1em) 0 0 var(--cc-outline-color, #000),
-			0 calc(var(--cc-outline-size, 0.09) * -1em) 0 var(--cc-outline-color, #000),
-			0 calc(var(--cc-outline-size, 0.09) * 1em) 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * -0.7em) calc(var(--cc-outline-size, 0.09) * -0.7em) 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * 0.7em) calc(var(--cc-outline-size, 0.09) * -0.7em) 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * -0.7em) calc(var(--cc-outline-size, 0.09) * 0.7em) 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * 0.7em) calc(var(--cc-outline-size, 0.09) * 0.7em) 0 var(--cc-outline-color, #000);
+		-webkit-text-stroke-width: calc(var(--cc-outline-size, 0.09) * 2em);
+		-webkit-text-stroke-color: var(--cc-outline-color, #000);
+		paint-order: stroke fill;
+		text-shadow: none;
 	}
 	.cc-num {
 		position: absolute;
 		left: var(--cc-num-x, 50.5%);
 		top: var(--cc-num-y, 35.5%);
 		transform: translate(-50%, -50%);
-		font-family: 'Morpheus', system-ui, sans-serif;
+		font-family: var(--cc-num-font, 'Draco'), system-ui, sans-serif;
 		font-size: calc(var(--hb) * var(--cc-num-factor, 0.26));
 		color: var(--cc-text-color, #fff);
 		line-height: 1;
-		text-shadow:
-			calc(var(--cc-outline-size, 0.09) * -1em) 0 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * 1em) 0 0 var(--cc-outline-color, #000),
-			0 calc(var(--cc-outline-size, 0.09) * -1em) 0 var(--cc-outline-color, #000),
-			0 calc(var(--cc-outline-size, 0.09) * 1em) 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * -0.7em) calc(var(--cc-outline-size, 0.09) * -0.7em) 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * 0.7em) calc(var(--cc-outline-size, 0.09) * -0.7em) 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * -0.7em) calc(var(--cc-outline-size, 0.09) * 0.7em) 0 var(--cc-outline-color, #000),
-			calc(var(--cc-outline-size, 0.09) * 0.7em) calc(var(--cc-outline-size, 0.09) * 0.7em) 0 var(--cc-outline-color, #000);
+		-webkit-text-stroke-width: calc(var(--cc-outline-size, 0.09) * 2em);
+		-webkit-text-stroke-color: var(--cc-outline-color, #000);
+		paint-order: stroke fill;
+		text-shadow: none;
 	}
 </style>

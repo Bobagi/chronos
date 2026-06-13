@@ -38,7 +38,7 @@
 	// prop defaults in CardComposite. Tune here, then bake the exported values there.
 	const CARD_TEXT_DEFAULTS = {
 		ccOutlineColor: '#000000',
-		ccOutlineSize: 0.09, // em-fraction → multiplied by font-size in text-shadow
+		ccOutlineSize: 0.09, // em-fraction; visible outline = this × 1em (stroke is doubled internally)
 		ccTextColor: '#ffffff',
 		// elastic title banner (must match the CSS fallbacks in CardComposite)
 		ccBannerH: 25, // cqh — banner height
@@ -51,7 +51,12 @@
 		ccNumY: 35.5, // %
 		// attribute values + labels
 		ccValSize: 8, // cqh
-		ccLabelSize: 5.6
+		ccLabelSize: 5.6,
+		// per-element font choices (values must be valid CSS font-family names)
+		ccNameFont: 'Morpheus',
+		ccNumFont: 'Draco',
+		ccValFont: 'Draco',
+		ccLabelFont: 'Draco'
 	};
 
 	// One flat tweaks object: tilt + foil + destruction + card text.
@@ -89,7 +94,11 @@
 		`--cc-num-x:${t.ccNumX}%`,
 		`--cc-num-y:${t.ccNumY}%`,
 		`--cc-val-size:${t.ccValSize}cqh`,
-		`--cc-label-size:${t.ccLabelSize}cqh`
+		`--cc-label-size:${t.ccLabelSize}cqh`,
+		`--cc-name-font:'${t.ccNameFont}'`,
+		`--cc-num-font:'${t.ccNumFont}'`,
+		`--cc-val-font:'${t.ccValFont}'`,
+		`--cc-label-font:'${t.ccLabelFont}'`
 	].join(';');
 
 	function loadSaved() {
@@ -276,6 +285,36 @@
 			</div>
 		{/each}
 
+		<h2>Card text — fonts</h2>
+		<div class="row">
+			<label for="cnf">Name font</label>
+			<select id="cnf" bind:value={t.ccNameFont}>
+				<option value="Morpheus">Morpheus</option>
+				<option value="Draco">Draco (Exocet)</option>
+			</select>
+		</div>
+		<div class="row">
+			<label for="cnuf">Number font</label>
+			<select id="cnuf" bind:value={t.ccNumFont}>
+				<option value="Draco">Draco (Exocet)</option>
+				<option value="Morpheus">Morpheus</option>
+			</select>
+		</div>
+		<div class="row">
+			<label for="cvf">Attr value font</label>
+			<select id="cvf" bind:value={t.ccValFont}>
+				<option value="Draco">Draco (Exocet)</option>
+				<option value="Morpheus">Morpheus</option>
+			</select>
+		</div>
+		<div class="row">
+			<label for="clf">Attr label font</label>
+			<select id="clf" bind:value={t.ccLabelFont}>
+				<option value="Draco">Draco (Exocet)</option>
+				<option value="Morpheus">Morpheus</option>
+			</select>
+		</div>
+
 		<h2>Card text — size / outline / position</h2>
 		<div class="row">
 			<label for="tc">Text color</label>
@@ -283,7 +322,7 @@
 			<label for="sc">Outline color</label>
 			<input id="sc" type="color" bind:value={t.ccOutlineColor} />
 		</div>
-		{#each [['ccBannerH', 'Banner height (cqh)', 8, 36, 0.2], ['ccBannerTop', 'Banner top %', 0, 12, 0.2], ['ccBannerRight', 'Banner right %', 0, 12, 0.2], ['ccBannerMin', 'Ribbon min width (cqw)', 8, 45, 0.5], ['ccNameFactor', 'Name size ×height', 0.10, 0.55, 0.005], ['ccOutlineSize', 'Outline thickness (×em)', 0.02, 0.16, 0.005], ['ccNumFactor', 'Number size ×height', 0.08, 0.9, 0.01], ['ccNumX', 'Number X %', 20, 70, 0.5], ['ccNumY', 'Number Y %', 15, 65, 0.5], ['ccValSize', 'Attr value size (cqh)', 4, 16, 0.2], ['ccLabelSize', 'Attr label size (cqh)', 2, 9, 0.2]] as [key, lbl, min, max, step]}
+		{#each [['ccBannerH', 'Banner height (cqh)', 8, 36, 0.2], ['ccBannerTop', 'Banner top %', 0, 12, 0.2], ['ccBannerRight', 'Banner right %', 0, 12, 0.2], ['ccBannerMin', 'Ribbon min width (cqw)', 8, 45, 0.5], ['ccNameFactor', 'Name size ×height', 0.10, 0.55, 0.005], ['ccOutlineSize', 'Outline thickness (×em)', 0.02, 1.0, 0.005], ['ccNumFactor', 'Number size ×height', 0.08, 0.9, 0.01], ['ccNumX', 'Number X %', 20, 70, 0.5], ['ccNumY', 'Number Y %', 15, 65, 0.5], ['ccValSize', 'Attr value size (cqh)', 4, 16, 0.2], ['ccLabelSize', 'Attr label size (cqh)', 2, 9, 0.2]] as [key, lbl, min, max, step]}
 			<div class="slider">
 				<span>{lbl}</span>
 				<input
